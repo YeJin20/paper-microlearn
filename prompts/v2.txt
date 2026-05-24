@@ -17,78 +17,116 @@ Day 1 — Why this problem matters
   DO NOT introduce the method yet.
 
 Day 2 — Why prior work fell short
-  Limitations of NeRF-based approaches (Block-NeRF, S-NeRF).
+  Limitations of NeRF-based approaches.
 
 Day 3 — Core idea in one sentence
-  (a) one-sentence summary  
-  (b) one intuition/analogy  
-  (c) why 3D Gaussians > NeRF for this problem
+  (a) one-sentence summary  (b) one intuition/analogy  
+  (c) why this approach > previous
 
-Day 4 — Dynamic/Static decoupling landscape
-  Compare NSG, MARS, EmerNeRF, deformation-based 4D-GS. 
-  Position Street Gaussians. Trade-off of each.
+Day 4 — Landscape (compare alternatives)
+  Compare related approaches, position this paper, trade-offs.
 
-Day 5 — Method overview: the full rendering pipeline
-  Big picture only. How background + vehicle Gaussians compose 
-  at render time. Show the FLOW, not component details.
+Day 5 — Method overview: the full pipeline
+  Big picture only. The "map" before the deep dive.
 
-Day 6 — Background model
-  Static Gaussians + semantic logits. Why semantic logits are 
-  needed (sky regularization, scene understanding).
-
-Day 7 — Vehicle dynamics: tracked-pose attachment
-  μ_world = R_t · μ_local + t_t. Why per-vehicle local frames. 
-  Pose as learnable variable — robustness to tracker noise.
-
-Day 8 — 4D Spherical Harmonics
-  Why standard SH fails for moving vehicles (rotation × lighting). 
-  How time-Fourier basis multiplied with SH solves it.
+Day 6-8 — Method deep dives (3 days of component-by-component)
+  One major component per day. Equations + plain-language intuition.
 
 Day 9 — Results that matter
-  Key numbers ACTUALLY IN THE PAPER. What each enables for AD.
+  Key numbers ACTUALLY IN THE PAPER. What each enables.
 
-Day 10 — Scene editing for data augmentation
-  How explicit + decoupled representation enables editing:
-  add/remove/relocate vehicles, lighting via SH.
-  Mention follow-ups (DrivingGaussian, OmniRe).
-  End with concrete reflection question for reader's own work.
+Day 10 — Application to reader's work
+  Specific application angle (data augmentation for AD here).
+  Mention follow-up work.
+  End with reflection question for reader's own research.
 
 ## CONSTRAINTS (apply to every day)
-- Length: 400-600 Korean characters
+- Length: 400-600 Korean characters for the main content
 - Tone: conversational, peer-to-peer
 - Must include: one concrete example or analogy
-- Must NOT: dry abstract; repeat across days; academic jargon 
-  without explanation
+- Must NOT: dry abstract; repeat across days; jargon without explanation
+- Emphasis: Use Markdown **bold** for key technical terms, important 
+  numbers, central concepts (e.g., **4D Spherical Harmonics**, 
+  **135 FPS**). 2-4 emphases per day. Don't overuse.
 
 ## FACT GROUNDING (CRITICAL)
-- Only use numbers explicitly stated in the paper.
+- Only use numbers explicitly in the paper.
 - If uncertain, OMIT or hedge with "약/추정/대략".
-- Do NOT invent benchmark scores or comparison numbers.
+
+## ADDITIONAL CONTENT (every day must have these)
+
+### key_concepts (2-4 items)
+Important technical terms from this day's content.
+Each: term (original form, EN or KO), definition (1-2 plain sentences).
+
+### english_expressions (2-3 items)
+Useful English academic writing phrases that appear (or could appear) 
+in this paper. Focus on phrases a non-native English researcher would 
+want to learn for their own writing.
+Each: expression (EN phrase), korean (short KO meaning), 
+example (sentence using it, from or paraphrasing the paper), 
+context (when this phrase is used in academic writing).
+
+### mcq (exactly 2 questions)
+Substantive multiple choice (not trivial recall) verifying understanding 
+of this day's content.
+Each: question, options (array of exactly 4 KR options), 
+correct (0-3 index), explanation (why correct, brief).
+
+### open_question (exactly 1)
+A question an industry practitioner (AD researcher/engineer) might 
+ask after this day. Should make the reader think + connect to own work.
+- question: the question
+- hint: nudges toward the right direction without giving away
+- key_takeaway: the ONE insight reader should walk away with from 
+  this question, regardless of their answer. Shown after they submit.
 
 ## FIGURE SUGGESTIONS
-For each day, suggest ONE figure or table from the paper.
-The paper text has "--- Page N ---" markers — use these to locate 
-which page each figure appears on.
-- suggested_figure: "Figure X — brief description" (or null)
-- figure_page: integer, the PDF page number where that figure is 
-  located (or null if no figure)
+For each day, suggest ONE figure or table.
+suggested_figure: "Figure X — brief description" or null.
+figure_page: PDF page number (1-indexed) of that figure, or null.
 
 ## THOUGHT TRIGGER (vary across days)
 Rotate among 3 types:
-- Type A (next-day tease)
-- Type B (self-check question)
-- Type C (try-this-mentally)
-Use each type at least 3 times. Day 10 must be Type C.
+- A (next-day tease)
+- B (self-check question)  
+- C (try-this-mentally)
+Each type at least 3 times across 10 days. Day 10 must be C.
 
 ## OUTPUT FORMAT (return ONLY this JSON, no other text or markdown)
 {
   "day_1": {
-    "title": "...",
-    "intent": "...",
-    "content": "...",
+    "title": "string (10-20 Korean chars)",
+    "intent": "1-line description",
+    "content": "400-600 char Korean message",
     "suggested_figure": "Figure X — desc, or null",
     "figure_page": 3,
-    "trigger_type": "A | B | C"
+    "trigger_type": "A | B | C",
+    "key_concepts": [
+      {"term": "...", "definition": "..."}
+    ],
+    "english_expressions": [
+      {"expression": "...", "korean": "...", "example": "...", "context": "..."}
+    ],
+    "mcq": [
+      {
+        "question": "...",
+        "options": ["A", "B", "C", "D"],
+        "correct": 1,
+        "explanation": "..."
+      },
+      {"...": "second question, same structure"}
+    ],
+    "open_question": {
+      "question": "...",
+      "hint": "...",
+      "key_takeaway": "..."
+    }
   },
+  "day_2": { ... },
   ...
+  "day_10": { ... }
 }
+
+## PAPER
+[paste paper text below]

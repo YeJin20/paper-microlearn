@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+import shutil
 
 from paper_download import download_arxiv_pdf
 from pdf_extract import extract_pdf_text
@@ -43,16 +44,21 @@ def call_claude(prompt: str) -> str:
 
 
 def extract_json(text: str) -> dict:
-    """Claude 출력에서 JSON 추출. 코드펜스 등 제거."""
+    """Claude 출력에서 JSON 추출. 코드펜스/preamble 제거."""
     text = text.strip()
-    # ```json ... ``` 제거
+    # 마크다운 코드펜스 제거
     text = re.sub(r"^```(?:json)?\s*\n?", "", text)
     text = re.sub(r"\n?```\s*$", "", text)
+    
+    # 첫 { 부터 마지막 } 까지만 추출 (앞뒤 preamble/후기 제거)
+    first = text.find("{")
+    last = text.rfind("}")
+    if first != -1 and last != -1 and last > first:
+        text = text[first:last + 1]
     
     try:
         return json.loads(text)
     except json.JSONDecodeError as e:
-        # 디버깅용: 원본 응답 저장
         with open("debug_raw_response.txt", "w", encoding="utf-8") as f:
             f.write(text)
         print(f"JSON 파싱 실패: {e}")
@@ -60,9 +66,19 @@ def extract_json(text: str) -> dict:
         sys.exit(1)
 
 
-def generate_curriculum(arxiv_url: str) -> dict:
-    # 1. PDF 다운로드
-    pdf_path = download_arxiv_pdf(arxiv_url)
+def generate_curriculum(input_arg: str) -> dict:
+    # 1. PDF 확보 (URL 또는 로컬 경로)
+    if input_arg.startswith("http"):
+        pdf_path = download_arxiv_pdf(input_arg)
+    else:
+        # 로컬 파일 모드
+        if not os.path.exists(input_arg):
+            raise FileNotFoundError(f"파일 없음: {input_arg}")
+        arxiv_id = Path(input_arg).stem  # 파일명 → ID
+        pdf_path = f"papers/{arxiv_id}.pdf"
+        os.makedirs("papers", exist_ok=True)
+        if input_arg != pdf_path and not os.path.exists(pdf_path):
+            shutil.copy(input_arg, pdf_path)
     
     # 2. 텍스트 추출 (없으면)
     txt_path = pdf_path.replace(".pdf", ".txt")

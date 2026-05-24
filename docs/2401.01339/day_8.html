@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 8 — 4D SH — 시간에 따라 변하는 광택을 그리는 법</title>
+<title>Day 8 — Pose 최적화·LiDAR 초기화·Sky</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -22,41 +22,21 @@ body {
   color: white;
   border-radius: 20px;
   padding: 36px 28px;
-  margin: 8px 0 32px;
+  margin: 8px 0 24px;
   position: relative;
   overflow: hidden;
 }
-.hero-meta {
-  color: #023BE6;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  margin-bottom: 24px;
-}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
 .hero-tag {
-  position: absolute;
-  top: 28px;
-  right: 28px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 500;
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
 }
-.hero-title {
-  font-size: 36px;
-  font-weight: 800;
-  line-height: 1.15;
-  margin-bottom: 18px;
-  color: white;
-  word-break: keep-all;
-}
-.hero-subtitle {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 16px;
-  line-height: 1.55;
-}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
 @media (max-width: 480px) {
   .hero { padding: 28px 22px; }
   .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
@@ -64,23 +44,107 @@ body {
   .hero-subtitle { font-size: 15px; }
 }
 
-/* CONTENT */
-.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 32px; }
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
 .figure-box {
   background: #f0f4ff; border-left: 4px solid #5b8def;
   padding: 14px 16px; border-radius: 8px;
   margin: 24px 0; font-size: 15px;
 }
-.figure-box .label {
-  font-size: 12px; color: #5b8def; font-weight: 600;
-  margin-bottom: 4px; letter-spacing: 0.5px;
-}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
 .figure-box .desc { margin-bottom: 10px; }
-.figure-box img {
-  display: block; max-width: 100%; margin-top: 8px;
-  border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in;
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
 }
-.trigger { color: #888; font-size: 13px; text-align: center; margin: 24px 0; }
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
 .nav {
   display: flex; justify-content: space-between; gap: 12px;
   margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
@@ -91,10 +155,7 @@ body {
   font-weight: 500; color: #333; background: #f0f0f0;
 }
 .nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
-.home-link {
-  display: block; text-align: center; margin-top: 24px;
-  color: #888; font-size: 14px; text-decoration: none;
-}
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
 
 /* INDEX */
 .day-list { list-style: none; padding: 0; }
@@ -116,21 +177,101 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 8</div>
   <div class="hero-tag">방법론</div>
-  <h1 class="hero-title">4D SH — 시간에 따라 변하는 광택을 그리는 법</h1>
-  <div class="hero-subtitle">표준 SH가 움직이는 차량의 환경광을 흡수 못 하는 이유와 Fourier in time이 푸는 방식</div>
+  <h1 class="hero-title">Pose 최적화·LiDAR 초기화·Sky</h1>
+  <div class="hero-subtitle">세부 학습 트릭들 — tracked pose 학습 가능화, LiDAR 초기화, sky cubemap</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 80%"></div>
+  </div>
 </div>
-<div class="content">표준 SH는 &#x27;이 점을 어느 시선 방향에서 보면 어떤 색?&#x27;을 답하는 함수입니다. 그러나 도로 위 차량은 또 하나의 변수에 휘둘려요 — 시간이 지나면 차량 위치와 heading이 바뀌고, 같은 표면이라도 만나는 환경광이 완전히 달라집니다. 햇빛 받는 쪽에서 그늘로 미끄러져 들어가는 순간 색이 휙 바뀌죠.
 
-표준 SH 계수는 시간과 무관하니 이 변화를 흡수 못 해 ghost한 외형이 남아요(Figure 3 두 번째 행). 단순 대안은 &#x27;타임스텝마다 SH 계수 한 세트&#x27; — 100 프레임이면 저장이 100배 부푸는 게 문제.
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
 
-논문의 답은 각 SH 계수 z_{m,l}을 시간의 Fourier series로 푸는 것.
-  z_{m,l}(t) = Σ_{i=0}^{k-1} f_i · cos(iπt / N_t)
-즉 SH 한 칸의 시간 곡선을 cosine basis로 근사하고, 학습 변수는 그 Fourier 계수 f_i들. 논문은 k=5로 두는데, 시퀀스 안에서 부드러운 광택 변화에는 충분합니다.
+<div class="tab-panel active" id="tab-content">
+<div class="content">세 번째 deep dive — <strong>Pose Optimization + 초기화 + Sky</strong>입니다.
 
-머릿속 실험 — k=1이면 4D SH는 표준 SH로 회귀합니다. k=2면 가장 느린 시간 변화 한 모드만 추가. 한 시퀀스 100프레임 동안 그림자 트랜지션이 몇 번 일어나는지 떠올려보면 k를 왜 작게 둬도 되는지 감이 옵니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 3 — 4D SH 있을 때와 없을 때의 차량 외형(그림자·반사) 비교</div><a href="figures/page_7.png" target="_blank"><img src="figures/page_7.png" alt="Figure" loading="lazy"></a></div>
-<div class="trigger">Trigger Type C</div>
+문제: off-the-shelf tracker가 준 bounding box는 <strong>noisy</strong>합니다. 이 pose를 그대로 쓰면 차량 텍스처가 흐려져요. 해법은 단순하지만 강력합니다 — pose 자체를 학습 가능 파라미터로 두는 것.
+
+R&#x27;ₜ = Rₜ · ΔRₜ,  T&#x27;ₜ = Tₜ + ΔTₜ.
+
+ΔT는 3D 벡터, ΔR은 <strong>yaw offset Δθ</strong>에서 만든 회전행렬. 6DoF 전체가 아니라 yaw만 학습한다는 점이 흥미롭죠 — 도로 위 차량의 자세 노이즈는 주로 heading에 몰린다는 사전지식 반영입니다. 놀랍게도 <strong>GT pose보다 결과가 더 좋습니다</strong> (PSNR\* GT 29.84 vs Ours 30.23). GT 어노테이션조차 미세 노이즈가 있다는 방증이죠.
+
+<strong>초기화</strong>: SfM 점군은 텍스처 없는 영역에서 약하니, <strong>ego 차량의 누적 LiDAR</strong>를 사용. 객체는 box 안 LiDAR 점, <strong>2K 미만이면 box 안에서 8K random sampling</strong>.
+
+<strong>Sky</strong>: 3D Gaussian은 유클리드라 무한 영역 부적합. 해상도 <strong>1024 cubemap</strong>으로 view direction → sky color 매핑한 뒤 잔여 투과율 (1 − O_g)에 블렌딩 (Eq. 8).</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 5 — pose optimization ablation 시각화</div><a href="figures/page_12.png" target="_blank"><img src="figures/page_12.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type B</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Learnable Pose Refinement</div><div class="concept-def">tracker가 준 노이즈 있는 pose에 학습 가능한 잔차 (ΔR, ΔT)를 더해 함께 최적화하는 기법. 별도 implicit module 없이 grad가 직통한다.</div></div>
+<div class="concept-card"><div class="concept-term">Yaw-only Rotation Offset</div><div class="concept-def">회전 보정을 yaw 한 축에만 허용. 도로 평면 위 차량 자세 오류의 주요 자유도가 heading임을 반영한 design choice.</div></div>
+<div class="concept-card"><div class="concept-term">Aggregated LiDAR Initialization</div><div class="concept-def">여러 프레임의 ego LiDAR를 누적해 점군 초기값으로 사용. SfM이 약한 텍스처리스 영역을 보완한다.</div></div>
+<div class="concept-card"><div class="concept-term">Sky Cubemap</div><div class="concept-def">view direction을 입력 받아 sky color를 반환하는 1024 해상도 cubemap. 무한 거리 sky를 explicit·고속으로 모델링한다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">By a large margin</div><div class="expr-ko">큰 폭으로</div><div class="expr-example">Our complete model outperforms the model trained without pose optimization by a large margin.</div><div class="expr-context">ablation 결과의 차이가 클 때</div></div>
+<div class="expr-card"><div class="expr-en">a plausible explanation is that</div><div class="expr-ko">그럴듯한 해석으로는 ~</div><div class="expr-example">A plausible explanation is that there still exists noise in ground truth annotations.</div><div class="expr-context">관찰된 현상에 가설을 제시할 때 신중하게 말하는 표현</div></div>
+<div class="expr-card"><div class="expr-en">do not require any extra computation</div><div class="expr-ko">추가 연산이 필요 없다</div><div class="expr-example">Gradients can be directly obtained without any extra computation during back-propagation.</div><div class="expr-context">효율성·단순성을 강조할 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">tracked pose를 학습 가능하게 두었을 때 GT pose보다 좋은 결과가 나온 현상에 대한 본문의 해석은?</div><div class="mcq-options"><button class="mcq-option" data-correct="true">GT pose에는 잡히지 않은 미세 노이즈가 있어 보정 여지가 남아 있기 때문</button><button class="mcq-option" data-correct="false">Adam optimizer가 GT를 무시하기 때문</button><button class="mcq-option" data-correct="false">LiDAR 노이즈를 GT로 잘못 인식했기 때문</button><button class="mcq-option" data-correct="false">4D SH가 pose 오차를 흡수했기 때문</button></div><div class="mcq-explanation">본문은 &quot;GT 어노테이션에도 노이즈가 있어 학습된 pose가 더 좋을 수 있다&quot;는 해석을 명시한다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">sky 영역을 별도 cubemap으로 다루는 이유로 가장 적절한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">GPU memory를 절약하기 위해</button><button class="mcq-option" data-correct="true">3D Gaussian이 정의된 유클리드 공간이 무한 거리 sky를 표현하기 부적절하기 때문</button><button class="mcq-option" data-correct="false">LiDAR depth loss와 충돌하기 때문</button><button class="mcq-option" data-correct="false">tracker가 sky 영역을 인식하지 못하기 때문</button></div><div class="mcq-explanation">Gaussian은 유한 위치/공분산을 가져 무한 거리 영역에 부적합하므로 view-direction 기반 cubemap을 보조 표현으로 둔다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">본인 augmentation 파이프라인에 &#x27;pose refinement&#x27;를 도입한다면, tracker 출력의 어떤 자유도를 학습 가능하게 풀어주고 어떤 자유도는 고정하고 싶은가?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>augmentation은 &#x27;같은 클립을 다양화&#x27;하는 것이므로, 도메인 사전지식(road plane, vehicle dynamics)을 살리는 게 유리합니다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>augmentation은 무제한 자유도가 아니라 도메인 제약(평면 위 yaw 중심) 안에서 다양성을 키워야 perception 모델이 받는 분포 시프트가 의미 있게 된다.</div>
+  </div>
+</div></div>
 <div class="nav"><a href="day_7.html">← Day 7</a><a href="day_9.html">Day 9 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
 </body>
 </html>

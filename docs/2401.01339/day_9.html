@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 9 — 숫자가 말해주는 것들</title>
+<title>Day 9 — 숫자로 보는 결과</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -22,41 +22,21 @@ body {
   color: white;
   border-radius: 20px;
   padding: 36px 28px;
-  margin: 8px 0 32px;
+  margin: 8px 0 24px;
   position: relative;
   overflow: hidden;
 }
-.hero-meta {
-  color: #023BE6;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  margin-bottom: 24px;
-}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
 .hero-tag {
-  position: absolute;
-  top: 28px;
-  right: 28px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 500;
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
 }
-.hero-title {
-  font-size: 36px;
-  font-weight: 800;
-  line-height: 1.15;
-  margin-bottom: 18px;
-  color: white;
-  word-break: keep-all;
-}
-.hero-subtitle {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 16px;
-  line-height: 1.55;
-}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
 @media (max-width: 480px) {
   .hero { padding: 28px 22px; }
   .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
@@ -64,23 +44,107 @@ body {
   .hero-subtitle { font-size: 15px; }
 }
 
-/* CONTENT */
-.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 32px; }
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
 .figure-box {
   background: #f0f4ff; border-left: 4px solid #5b8def;
   padding: 14px 16px; border-radius: 8px;
   margin: 24px 0; font-size: 15px;
 }
-.figure-box .label {
-  font-size: 12px; color: #5b8def; font-weight: 600;
-  margin-bottom: 4px; letter-spacing: 0.5px;
-}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
 .figure-box .desc { margin-bottom: 10px; }
-.figure-box img {
-  display: block; max-width: 100%; margin-top: 8px;
-  border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in;
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
 }
-.trigger { color: #888; font-size: 13px; text-align: center; margin: 24px 0; }
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
 .nav {
   display: flex; justify-content: space-between; gap: 12px;
   margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
@@ -91,10 +155,7 @@ body {
   font-weight: 500; color: #333; background: #f0f0f0;
 }
 .nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
-.home-link {
-  display: block; text-align: center; margin-top: 24px;
-  color: #888; font-size: 14px; text-decoration: none;
-}
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
 
 /* INDEX */
 .day-list { list-style: none; padding: 0; }
@@ -116,34 +177,102 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 9</div>
   <div class="hero-tag">결과</div>
-  <h1 class="hero-title">숫자가 말해주는 것들</h1>
-  <div class="hero-subtitle">논문에 적힌 핵심 수치만 정리하고 AD 관점에서 의미를 붙임</div>
+  <h1 class="hero-title">숫자로 보는 결과</h1>
+  <div class="hero-subtitle">PSNR/FPS/LPIPS/ablation — 어떤 비용 구조의 모델인지 정량 파악</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 90%"></div>
+  </div>
 </div>
-<div class="content">오늘은 논문에 실제 적힌 숫자만 뽑아 의미를 붙입니다. 데이터는 Waymo 8 sequence, 1066×1600, RTX 4090 한 장.
 
-학습 시간 / 렌더 속도
-• Street Gaussians: 30분 / 135 FPS
-• MARS: 18시간 이상 / 0.68 FPS
-• EmerNeRF: 2.5시간 / 0.21 FPS
-→ 학습 36배 이상, 렌더 약 200~600배. 디지털 트윈 데이터 양산 라인에 &#x27;실용&#x27; 영역으로 들어옵니다.
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
 
-전체 PSNR / 동적 영역 PSNR*
-• Ours: 34.61 / 30.23
-• MARS: 29.75 / 26.54
-• EmerNeRF: 30.87 / 21.67
-• 3D GS: 29.64 / 21.25
-→ 동적 영역 격차가 더 큽니다. AD에서 중요한 건 다른 차의 디테일이라 PSNR*가 사실상의 핵심 지표죠.
+<div class="tab-panel active" id="tab-content">
+<div class="content">숫자를 봅시다. Waymo 1066×1600 기준:
 
-Ablation에서 눈에 띄는 두 줄
-• pose optimization 끄면 PSNR* 30.23 → 28.24
-• 4D SH 끄면 30.23 → 29.27
+- <strong>PSNR 34.61</strong> (EmerNeRF 30.87, MARS 29.75, 3D GS 29.64) — 약 <strong>12.1% 향상</strong>.
+- **moving object PSNR\* 30.23<strong> (MARS 26.54, NSG 24.32) — 움직이는 차량 한정 </strong>13.9% 향상<strong>.
+- </strong>LPIPS 0.079<strong> — 사람이 보는 지각 품질도 최고.
+- </strong>렌더링 135 FPS @ 1066×1600<strong> (EmerNeRF 0.21, MARS 0.68, NSG 0.47) — </strong>약 100배 이상<strong> 빠름.
+- </strong>학습 30분<strong> on single RTX 4090. MARS는 18시간 이상.
 
-흥미로운 부산물 — 렌더된 semantic map의 mIoU가 입력으로 쓴 Video K-Net(53.81)을 넘어 58.81. 3D fusion이 2D 예측을 정제하는 효과인데, 라벨 자동 증강 파이프라인의 단서로 보입니다.
+KITTI에서도 25/50/75% split 전 구간 SOTA. </strong>VKITTI2-75에서 PSNR 30.10, LPIPS 0.025<strong>로 격차가 더 큽니다.
 
-내일은 이 표현이 결국 어떻게 AD scene editing·data augmentation으로 흘러가는지로 마무리할게요.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 — Waymo PSNR/SSIM/LPIPS/PSNR*/FPS 종합 비교표</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a></div>
-<div class="trigger">Trigger Type A</div>
+</strong>Ablation (Waymo, PSNR / PSNR\*)<strong>: w/o LiDAR </strong>34.02 / 29.53<strong>, w/o 4DSH </strong>34.36 / 29.27<strong>, w/o pose opt </strong>34.18 / 28.24<strong>, full </strong>34.61 / 30.23<strong>. 각 컴포넌트가 다 일하는 깔끔한 ablation입니다. 특히 pose opt는 동적 객체 metric에서 가장 크게 기여.
+
+세그멘테이션 mIoU도 </strong>58.81**로 Video K-Net GT 입력 결과(57.94)보다 높았다는 점은 흥미롭죠. 3D consistent한 표현이 2D 분할 노이즈를 정리해주는 셈입니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 / Table 3 — Waymo 정량 결과 + ablation</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type B</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">PSNR* (moving-object PSNR)</div><div class="concept-def">3D bounding box를 이미지에 투영한 영역에서만 PSNR을 계산. 동적 객체 렌더링 품질을 분리해 평가한다.</div></div>
+<div class="concept-card"><div class="concept-term">LPIPS</div><div class="concept-def">딥 피처 기반 perceptual 유사도 지표. 사람이 느끼는 시각 품질에 가까운 평가가 가능하다.</div></div>
+<div class="concept-card"><div class="concept-term">Ablation Study</div><div class="concept-def">각 컴포넌트를 빼고 성능 변화를 측정해 기여도를 분리 검증하는 실험. 본 논문은 LiDAR/4DSH/pose opt 세 축에서 수행한다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">achieves the best performance among</div><div class="expr-ko">~ 가운데 최고 성능을 달성한다</div><div class="expr-example">Our model achieves the best performance among all the methods.</div><div class="expr-context">Results 섹션에서 정량 우위를 선언할 때</div></div>
+<div class="expr-card"><div class="expr-en">by a margin of</div><div class="expr-ko">~ 만큼의 격차로</div><div class="expr-example">Our method improves PSNR by a margin of 12.1%.</div><div class="expr-context">구체적 수치로 격차를 강조할 때</div></div>
+<div class="expr-card"><div class="expr-en">It is interesting to notice that</div><div class="expr-ko">흥미롭게도 ~를 관찰할 수 있다</div><div class="expr-example">It is interesting to notice that our method outperforms the model trained with ground truth poses.</div><div class="expr-context">예상 밖 결과를 학술적으로 부드럽게 언급할 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">본 논문의 정량 결과에서 &#x27;NeRF 베이스라인 대비 약 100배 빠르다&#x27;는 주장의 근거가 되는 비교는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">PSNR 34.61 vs 30.87</button><button class="mcq-option" data-correct="true">FPS 135 vs EmerNeRF 0.21 / MARS 0.68</button><button class="mcq-option" data-correct="false">LPIPS 0.079 vs 0.117</button><button class="mcq-option" data-correct="false">학습 30분 vs 2.5시간</button></div><div class="mcq-explanation">FPS 비율 (135 / 0.68 ≈ 198, 135 / 0.21 ≈ 643) 이 &#x27;two magnitudes faster&#x27;의 근거다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">Ablation에서 동적 객체 품질(PSNR*)에 가장 크게 기여한 컴포넌트는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">LiDAR 초기화</button><button class="mcq-option" data-correct="false">4D Spherical Harmonics</button><button class="mcq-option" data-correct="true">Tracking Pose Optimization (28.24 → 30.23)</button><button class="mcq-option" data-correct="false">Sky Cubemap</button></div><div class="mcq-explanation">Table 3에서 pose opt 제거 시 PSNR*가 28.24로 가장 크게 떨어진다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">쓰임새가 &#x27;AD perception 학습용 augmentation&#x27;이라면 PSNR/PSNR*/LPIPS/FPS 중 가장 결정적인 지표는 무엇이며, 왜인가?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>augmentation 품질이 downstream 모델 학습에 미치는 영향과, 파이프라인 처리량을 함께 생각해보세요.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>downstream perception은 객체 영역 품질에 민감하므로 **PSNR\*와 FPS의 곱**이 augmentation의 실효 비용·효익 지표가 된다. 전체 PSNR만 보고 채택하지 말 것.</div>
+  </div>
+</div></div>
 <div class="nav"><a href="day_8.html">← Day 8</a><a href="day_10.html">Day 10 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
 </body>
 </html>

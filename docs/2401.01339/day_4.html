@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 4 — 분리 표현의 네 갈래, Street Gaussians는 어디?</title>
+<title>Day 4 — 동적 도시 모델링 지형도</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -22,41 +22,21 @@ body {
   color: white;
   border-radius: 20px;
   padding: 36px 28px;
-  margin: 8px 0 32px;
+  margin: 8px 0 24px;
   position: relative;
   overflow: hidden;
 }
-.hero-meta {
-  color: #023BE6;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  margin-bottom: 24px;
-}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
 .hero-tag {
-  position: absolute;
-  top: 28px;
-  right: 28px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 500;
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
 }
-.hero-title {
-  font-size: 36px;
-  font-weight: 800;
-  line-height: 1.15;
-  margin-bottom: 18px;
-  color: white;
-  word-break: keep-all;
-}
-.hero-subtitle {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 16px;
-  line-height: 1.55;
-}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
 @media (max-width: 480px) {
   .hero { padding: 28px 22px; }
   .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
@@ -64,23 +44,107 @@ body {
   .hero-subtitle { font-size: 15px; }
 }
 
-/* CONTENT */
-.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 32px; }
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
 .figure-box {
   background: #f0f4ff; border-left: 4px solid #5b8def;
   padding: 14px 16px; border-radius: 8px;
   margin: 24px 0; font-size: 15px;
 }
-.figure-box .label {
-  font-size: 12px; color: #5b8def; font-weight: 600;
-  margin-bottom: 4px; letter-spacing: 0.5px;
-}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
 .figure-box .desc { margin-bottom: 10px; }
-.figure-box img {
-  display: block; max-width: 100%; margin-top: 8px;
-  border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in;
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
 }
-.trigger { color: #888; font-size: 13px; text-align: center; margin: 24px 0; }
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
 .nav {
   display: flex; justify-content: space-between; gap: 12px;
   margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
@@ -91,10 +155,7 @@ body {
   font-weight: 500; color: #333; background: #f0f0f0;
 }
 .nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
-.home-link {
-  display: block; text-align: center; margin-top: 24px;
-  color: #888; font-size: 14px; text-decoration: none;
-}
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
 
 /* INDEX */
 .day-list { list-style: none; padding: 0; }
@@ -116,20 +177,103 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 4</div>
   <div class="hero-tag">개요</div>
-  <h1 class="hero-title">분리 표현의 네 갈래, Street Gaussians는 어디?</h1>
-  <div class="hero-subtitle">NSG·MARS·EmerNeRF·deformation 4D-GS와의 trade-off 비교, Street Gaussians의 좌표 짚기</div>
+  <h1 class="hero-title">동적 도시 모델링 지형도</h1>
+  <div class="hero-subtitle">관련 접근들과 비교하며 본 논문의 위치와 trade-off 파악</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 40%"></div>
+  </div>
 </div>
-<div class="content">같은 &#x27;동적 거리 모델링&#x27; 문제를 푼 친구들을 좌표 위에 놓아봅시다. 두 축은 (A) 차량을 어떻게 분리하느냐, (B) 표현이 implicit이냐 explicit이냐.
 
-• NSG: latent code per-object + MPI 배경. 차량은 ID-conditioned NeRF로 디코딩. 분리는 분명하지만 background가 MPI라 시점 자유도가 좁고 렌더는 0.47 FPS.
-• MARS: Nerfstudio 위에 scene graph 구성. tracker box로 차량을 canonical하게 정렬한 뒤 NeRF로 학습. 품질은 NSG보다 낫지만 raymarching 비용은 그대로(0.68 FPS).
-• EmerNeRF: tracker box 없이도 self-supervision으로 static/dynamic field를 분해. annotation-free라는 장점이 큰 대신 instance 단위로 쪼개주지 않아 &#x27;차 한 대 빼기&#x27; 같은 편집이 본질적으로 어렵습니다.
-• Deformation 기반 4D-GS: 가우시안에 시간 deformation을 입혀 동적 표현. 소규모 객체엔 강력하지만 도시 거리처럼 차량이 수십 미터 이동하는 대변위에선 motion이 너무 크고 instance 분리도 모호.
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
 
-Street Gaussians의 좌표는 &#x27;explicit + instance-aware + tracker-pose 결합&#x27;. 머릿속에 4분면을 그려놓고, 각 방법이 어느 칸에 들어가는지 한번 직접 배치해 보세요. 어디가 비어있는지가 이 논문의 빈 자리입니다.</div>
+<div class="tab-panel active" id="tab-content">
+<div class="content">오늘은 동적 도시 장면 모델링의 지형도를 그려봅시다.
 
-<div class="trigger">Trigger Type C</div>
+1) <strong>순수 NeRF 계열</strong> (Block-NeRF, Mip-NeRF, GridNeRF): 정적 배경 고화질엔 강하지만 동적 객체를 못 다루고 학습이 매우 느림.
+
+2) <strong>Compositional NeRF</strong> (NSG, MARS, UniSim, Panoptic Neural Fields): 배경+객체로 분리해 instance-aware하지만 implicit MLP라 raymarching 비용·메모리 부담이 큼.
+
+3) <strong>Self-supervised Decomposition</strong> (EmerNeRF, SUDS): 정적/동적 필드를 자동 분리. 그러나 instance-aware하지 않아 &quot;이 차량만 옮기기&quot;가 어려움.
+
+4) <strong>Static 3D GS</strong>: 빠르지만 정적 장면 전용. 움직이는 차량에선 ghost/ smear artifact 발생.
+
+5) <strong>Street Gaussians (본 논문)</strong>: 명시적 점군 + instance-aware + 4D SH + pose 학습으로 위 한계를 한꺼번에 메움.
+
+Trade-off는 명확합니다. explicit 표현은 빠르고 편집 친화적이지만, sky 같은 무한 영역은 <strong>cubemap</strong> 같은 보조 표현이 필요하고, tracker 품질에 시작점이 의존합니다. 동시기 연구인 <strong>DrivingGaussian, PVG</strong>도 같은 길을 걷는다는 점이 시사적이죠.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 4 — Waymo 정성 비교 (Ours vs 3DGS/NSG/MARS/EmerNeRF)</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">NSG (Neural Scene Graph)</div><div class="concept-def">장면을 그래프로 표현해 배경은 multi-plane image, 객체는 latent code+공유 디코더로 모델링한 초기 동적 NeRF.</div></div>
+<div class="concept-card"><div class="concept-term">MARS</div><div class="concept-def">Nerfstudio 기반의 인스턴스 인식형 NeRF 시뮬레이터. 동적 객체를 다루지만 학습·렌더링이 매우 느리다.</div></div>
+<div class="concept-card"><div class="concept-term">EmerNeRF</div><div class="concept-def">Self-supervision으로 정적·동적 필드를 분리하는 NeRF. 카테고리/인스턴스를 명시적으로 다루지 않는다.</div></div>
+<div class="concept-card"><div class="concept-term">DrivingGaussian / PVG</div><div class="concept-def">본 논문과 동시기에 등장한 3D Gaussian 기반 동적 도시 장면 표현들. 같은 흐름을 보여주는 비교군이다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">is most similar to ours</div><div class="expr-ko">우리와 가장 유사하다</div><div class="expr-example">Compositional neural representations is most similar to us.</div><div class="expr-context">Related work에서 가장 가까운 선행연구를 짚을 때</div></div>
+<div class="expr-card"><div class="expr-en">Another line of works</div><div class="expr-ko">또 다른 연구 흐름</div><div class="expr-example">Another line of works model the scene as the composition of moving object models and a background model.</div><div class="expr-context">관련 연구를 흐름별로 분류해 소개할 때</div></div>
+<div class="expr-card"><div class="expr-en">In contrast, our method</div><div class="expr-ko">이와 대조적으로 우리 방법은</div><div class="expr-example">In contrast, our method focuses on performing real-time rendering of dynamic urban scenes.</div><div class="expr-context">본인 방법과 선행연구의 차이를 강조하며 결론지을 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">EmerNeRF와 Street Gaussians의 가장 큰 표현 차이는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">둘 다 LiDAR를 반드시 요구한다</button><button class="mcq-option" data-correct="true">EmerNeRF는 정적/동적 필드를 분리하지만 instance-aware하지 않고, Street Gaussians는 instance 단위로 분리한다</button><button class="mcq-option" data-correct="false">EmerNeRF는 explicit Gaussian을 쓰고 Street Gaussians는 MLP를 쓴다</button><button class="mcq-option" data-correct="false">두 방법 모두 cubemap 기반 sky를 쓴다</button></div><div class="mcq-explanation">EmerNeRF는 self-supervised static/dynamic 분리지만 객체 단위 분해가 아니어서 차량 단위 편집이 어렵다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">3D GS를 그대로 동적 도시 장면에 적용하면 어떤 현상이 두드러지는가?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">정적 배경의 텍스처가 비현실적으로 부드러워진다</button><button class="mcq-option" data-correct="true">움직이는 차량 영역에서 ghosting/잔상 아티팩트가 발생한다</button><button class="mcq-option" data-correct="false">FPS가 1 미만으로 떨어진다</button><button class="mcq-option" data-correct="false">sky 영역만 학습이 발산한다</button></div><div class="mcq-explanation">3D GS는 정적 가정이므로 동적 객체가 잔상으로 누적돼 표시된다 (Figure 4).</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">DrivingGaussian, PVG, Street Gaussians가 거의 동시에 같은 방향으로 수렴한 이유는 무엇이라고 보는가?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>3D GS 등장이 시점적으로 무엇을 가능하게 했는지를 생각해보세요.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>3D GS(2023)가 explicit·real-time이라는 새 베이스라인을 만들자 &#x27;도시·동적&#x27;으로 확장하는 자연스러운 후속 흐름이 동시다발적으로 터진 것. 새 표현이 풀리면 응용 도메인은 병렬로 따라온다.</div>
+  </div>
+</div></div>
 <div class="nav"><a href="day_3.html">← Day 3</a><a href="day_5.html">Day 5 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 7 — 차량은 어떻게 &#x27;움직이는 가우시안&#x27;이 되나</title>
+<title>Day 7 — 4D Spherical Harmonics</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -22,41 +22,21 @@ body {
   color: white;
   border-radius: 20px;
   padding: 36px 28px;
-  margin: 8px 0 32px;
+  margin: 8px 0 24px;
   position: relative;
   overflow: hidden;
 }
-.hero-meta {
-  color: #023BE6;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  margin-bottom: 24px;
-}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
 .hero-tag {
-  position: absolute;
-  top: 28px;
-  right: 28px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 500;
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
 }
-.hero-title {
-  font-size: 36px;
-  font-weight: 800;
-  line-height: 1.15;
-  margin-bottom: 18px;
-  color: white;
-  word-break: keep-all;
-}
-.hero-subtitle {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 16px;
-  line-height: 1.55;
-}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
 @media (max-width: 480px) {
   .hero { padding: 28px 22px; }
   .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
@@ -64,23 +44,107 @@ body {
   .hero-subtitle { font-size: 15px; }
 }
 
-/* CONTENT */
-.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 32px; }
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
 .figure-box {
   background: #f0f4ff; border-left: 4px solid #5b8def;
   padding: 14px 16px; border-radius: 8px;
   margin: 24px 0; font-size: 15px;
 }
-.figure-box .label {
-  font-size: 12px; color: #5b8def; font-weight: 600;
-  margin-bottom: 4px; letter-spacing: 0.5px;
-}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
 .figure-box .desc { margin-bottom: 10px; }
-.figure-box img {
-  display: block; max-width: 100%; margin-top: 8px;
-  border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in;
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
 }
-.trigger { color: #888; font-size: 13px; text-align: center; margin: 24px 0; }
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
 .nav {
   display: flex; justify-content: space-between; gap: 12px;
   margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
@@ -91,10 +155,7 @@ body {
   font-weight: 500; color: #333; background: #f0f0f0;
 }
 .nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
-.home-link {
-  display: block; text-align: center; margin-top: 24px;
-  color: #888; font-size: 14px; text-decoration: none;
-}
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
 
 /* INDEX */
 .day-list { list-style: none; padding: 0; }
@@ -116,23 +177,100 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 7</div>
   <div class="hero-tag">방법론</div>
-  <h1 class="hero-title">차량은 어떻게 &#x27;움직이는 가우시안&#x27;이 되나</h1>
-  <div class="hero-subtitle">μ_w = R_t·μ_o + T_t, per-vehicle local frame의 이유, pose도 학습 변수라는 트릭</div>
+  <h1 class="hero-title">4D Spherical Harmonics</h1>
+  <div class="hero-subtitle">왜 4D SH가 필요한지, 어떻게 푸리에로 시간을 인코딩하는지</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 70%"></div>
+  </div>
 </div>
-<div class="content">차량 가우시안은 자기 local 좌표계에 점을 정의해두고, 시간 t의 tracker pose로 world에 풀어놓아요.
 
-μ_w = R_t · μ_o + T_t,  R_w = R_t · R_o
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
 
-왜 local frame을 따로 두느냐 — 차량은 매 프레임 위치가 바뀌므로 점을 world에 두면 모든 점이 시간마다 같이 움직여야 합니다. local 좌표는 &#x27;차량 자체의 형상&#x27;이라 시간과 무관하고, 시간 의존성은 (R_t, T_t)에만 격리되죠. 깔끔한 책임 분리.
+<div class="tab-panel active" id="tab-content">
+<div class="content">두 번째 deep dive — <strong>4D Spherical Harmonics</strong>입니다. 왜 필요할까요?
 
-여기서 핵심 트릭. off-the-shelf tracker가 주는 박스는 노이즈가 큽니다. 그대로 쓰면 차 표면이 한 픽셀씩 흔들리며 rendering이 흐려져요. 그래서 (R_t, T_t)에 학습 가능한 보정 (ΔR_t, ΔT_t)를 더해 backprop으로 같이 깎습니다. ΔR_t는 yaw 오프셋 한 각으로 표현해 차량당 4 DoF만 더하죠.
+차량이 도로를 따라 움직이면 햇빛, 그림자, 반사가 매 프레임 바뀝니다. 그런데 객체 점군은 로컬 좌표계에서 &quot;정지&quot; 상태죠. 같은 점이 시간에 따라 <strong>다른 색</strong>을 토해내야 합니다. 그냥 매 timestep마다 별도 SH 계수를 두면 저장 비용이 폭증해요.
 
-흥미로운 ablation — GT pose로 학습한 모델보다 optimized pose 쪽이 PSNR* 30.23 &gt; 29.84로 오히려 높습니다. &#x27;GT annotation에도 노이즈가 있다&#x27;는 뜻이에요.
+저자들은 <strong>각 SH 계수 z_{m,l}을 시간의 푸리에 급수</strong>로 표현했습니다:
 
-자문 — ΔR을 full rotation(roll/pitch/yaw)으로 풀면 더 좋을까요? &#x27;도로 위 차량&#x27;이라는 prior 위에서 왜 yaw 하나만 두는지 곱씹어보면 답이 보입니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 5 — pose optimization 켜고 끄고에 따른 차량 디테일 차이</div><a href="figures/page_12.png" target="_blank"><img src="figures/page_12.png" alt="Figure" loading="lazy"></a></div>
-<div class="trigger">Trigger Type B</div>
+z_{m,l}(t) = Σᵢ₌₀^{k-1} fᵢ · cos(iπt / N_t).
+
+즉 점이 갖는 건 <strong>k개 푸리에 계수 f</strong>뿐이고, 렌더링 시점 t에서 IDFT로 복원하죠. 직관적으로는 &quot;차량의 외형 변화는 시간에 대해 부드러운 주기적 신호&quot;라는 가정을 깔고, 그 신호를 <strong>저주파 기저로 압축</strong>한 셈입니다. 라디오 신호처럼 시간축 신호를 주파수 도메인 몇 개 계수로 줄이는 거죠.
+
+ablation을 보면 4D SH 없이는 그림자가 noisy해지고 **moving object PSNR\*가 30.23 → 29.27**로 크게 떨어집니다. 정적 metric으로는 작아 보여도 동적 영역에서 진가가 드러나는 컴포넌트예요.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 3 — w/ vs w/o 4D SH 비교</div><a href="figures/page_7.png" target="_blank"><img src="figures/page_7.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Spherical Harmonics Coefficients</div><div class="concept-def">방향 의존 색을 구면 기저함수의 계수로 표현한 것. view direction에 따른 색 변화를 압축적으로 담는다.</div></div>
+<div class="concept-card"><div class="concept-term">Inverse Discrete Fourier Transform (IDFT)</div><div class="concept-def">주파수 도메인 계수에서 시간 도메인 신호를 복원하는 변환. 본 논문은 cos 항만 쓰는 실수 IDFT를 사용한다.</div></div>
+<div class="concept-card"><div class="concept-term">Time-varying Appearance</div><div class="concept-def">같은 점·같은 방향에서도 시간에 따라 색이 달라지는 현상. 움직이는 차량의 빛 상호작용을 표현하기 위해 필요하다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">we instead</div><div class="expr-ko">대신에 우리는</div><div class="expr-example">We instead use aggregated LiDAR point cloud as initialization.</div><div class="expr-context">대안적 선택을 강조할 때, &#x27;instead&#x27; 위치가 중요한 표현</div></div>
+<div class="expr-card"><div class="expr-en">is influenced by</div><div class="expr-ko">~의 영향을 받는다</div><div class="expr-example">The appearance of a moving vehicle is influenced by its position in the global scene.</div><div class="expr-context">원인-결과 관계를 부드럽게 기술할 때</div></div>
+<div class="expr-card"><div class="expr-en">without high storage cost</div><div class="expr-ko">큰 저장 비용 없이</div><div class="expr-example">We encode time information into appearance without high storage cost.</div><div class="expr-context">효율성을 강조할 때 자주 쓰이는 &#x27;without&#x27; 패턴</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">4D Spherical Harmonics가 해결하는 본질적 문제는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">객체 점군이 box 밖으로 자라는 문제</button><button class="mcq-option" data-correct="true">로컬 좌표계의 정지 점군이 시간에 따라 다른 색을 내야 하는 문제를 저비용으로 풀기</button><button class="mcq-option" data-correct="false">tracker pose 노이즈</button><button class="mcq-option" data-correct="false">sky 영역의 무한 거리 모델링</button></div><div class="mcq-explanation">객체 점은 로컬에서 정지지만 시간에 따라 외형이 변하므로, 시간 의존 색을 효율적으로 저장하는 장치가 필요하다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">4D SH의 저장 효율성이 &#x27;timestep마다 별도 SH&#x27;보다 좋은 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">GPU shared memory에 더 잘 맞기 때문</button><button class="mcq-option" data-correct="true">k개의 푸리에 계수만 저장하면 임의 t의 SH를 복원할 수 있어 시간 길이에 선형 비례 저장이 사라지기 때문</button><button class="mcq-option" data-correct="false">loss를 줄이기 때문</button><button class="mcq-option" data-correct="false">tracker가 푸리에 형태로 출력하기 때문</button></div><div class="mcq-explanation">프레임 수가 늘어도 점당 저장은 k로 고정이라 메모리가 시간에 따라 폭증하지 않는다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">4D SH는 &#x27;부드러운 주기 신호&#x27; 가정에 기반합니다. 자율주행 데이터에서 이 가정이 깨질 만한 시나리오는 어떤 게 있을까?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>터널 진입, 헤드라이트 점멸, 그림자 경계 — 시간축에서 &#x27;계단처럼&#x27; 변하는 신호를 떠올려보세요.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>고주파/불연속 외형 변화(터널 출입, 깜빡이, 강한 그림자 경계)는 저주파 푸리에 기저로 잘 표현되지 않으므로, augmentation 데이터를 만들 때 이런 구간의 품질은 따로 검증해야 한다.</div>
+  </div>
+</div></div>
 <div class="nav"><a href="day_6.html">← Day 6</a><a href="day_8.html">Day 8 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
 </body>
 </html>
