@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 2 — NeRF 기반 거리 모델링은 어디서 막혔나</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 32px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta {
+  color: #023BE6;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-bottom: 24px;
+}
+.hero-tag {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.hero-title {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 18px;
+  color: white;
+  word-break: keep-all;
+}
+.hero-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  line-height: 1.55;
+}
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* CONTENT */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 32px; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label {
+  font-size: 12px; color: #5b8def; font-weight: 600;
+  margin-bottom: 4px; letter-spacing: 0.5px;
+}
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img {
+  display: block; max-width: 100%; margin-top: 8px;
+  border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in;
+}
+.trigger { color: #888; font-size: 13px; text-align: center; margin: 24px 0; }
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link {
+  display: block; text-align: center; margin-top: 24px;
+  color: #888; font-size: 14px; text-decoration: none;
+}
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 2</div>
+  <div class="hero-tag">배경</div>
+  <h1 class="hero-title">NeRF 기반 거리 모델링은 어디서 막혔나</h1>
+  <div class="hero-subtitle">Block-NeRF/S-NeRF의 정적 한계와 MARS/NSG의 학습·렌더 비용을 짚어 explicit 표현 동기로 연결</div>
+</div>
+<div class="content">어제 말한 &#x27;거리 장면을 통째로&#x27;라는 그림, 2021–2023년 NeRF 계열이 먼저 시도했습니다. 두 갈래로 봅시다.
+
+Block-NeRF는 큰 도시를 block 단위로 쪼개 각 block마다 NeRF를 하나씩 학습해요. Photo-real에 가까운 결과를 냈지만 (1) block당 거대 MLP라 학습이 며칠 단위, (2) 동적 차량을 못 다룹니다. 멈춘 차도 지나가는 차도 모두 정적 배경처럼 fit돼 ghosting이 끼었죠. S-NeRF 같은 street view 전용 NeRF도 비슷한 정적 가정 위에 출발한 한계가 있어요.
+
+이걸 풀려고 NSG, MARS는 &#x27;전경 차량 + 배경&#x27; compositional 표현을 도입했습니다. tracker pose로 차량을 canonical space에 정렬한 뒤 NeRF로 외형을 학습하죠. 동적 문제는 풀렸지만 비용은 살아남았어요 — 본 논문 측정 기준 MARS는 학습 18시간 이상 · 렌더 0.68 FPS, EmerNeRF는 2.5h · 0.21 FPS. digital twin 라인으로 돌리기엔 너무 비쌉니다.
+
+여기서 한 번 자문해 보세요. 우리한테 진짜 필요한 게 &#x27;정밀한 implicit field&#x27;일까요, 아니면 &#x27;편집과 합성이 자유로운 explicit scene&#x27;일까요? 이 질문의 답이 내일 등장합니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 4 — Waymo에서 MARS/NSG/3D GS/EmerNeRF가 동적 영역에서 보이는 blur·ghosting</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type B</div>
+<div class="nav"><a href="day_1.html">← Day 1</a><a href="day_3.html">Day 3 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+</body>
+</html>

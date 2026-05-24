@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 10 — 다시 우리 일로 — scene editing 데이터 증강</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 32px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta {
+  color: #023BE6;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-bottom: 24px;
+}
+.hero-tag {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.hero-title {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 18px;
+  color: white;
+  word-break: keep-all;
+}
+.hero-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  line-height: 1.55;
+}
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* CONTENT */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 32px; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label {
+  font-size: 12px; color: #5b8def; font-weight: 600;
+  margin-bottom: 4px; letter-spacing: 0.5px;
+}
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img {
+  display: block; max-width: 100%; margin-top: 8px;
+  border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in;
+}
+.trigger { color: #888; font-size: 13px; text-align: center; margin: 24px 0; }
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link {
+  display: block; text-align: center; margin-top: 24px;
+  color: #888; font-size: 14px; text-decoration: none;
+}
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 10</div>
+  <div class="hero-tag">응용</div>
+  <h1 class="hero-title">다시 우리 일로 — scene editing 데이터 증강</h1>
+  <div class="hero-subtitle">explicit·instance 분리·tracker pose·4D SH가 합쳐져 가능해지는 편집 연산과 후속 연구, 그리고 자기 일에 끌어오는 자문</div>
+</div>
+<div class="content">10일의 마지막. 지금까지 본 디자인 — explicit primitive, instance 분리, tracker pose 결합, 4D SH — 이 모두가 한 가지 능력으로 수렴합니다: scene editing.
+
+논문이 직접 보여주는 편집 연산
+• Rotation: 차량 heading 회전 (R_t에 곱하기)
+• Translation: 위치만 이동 (T_t 변경)
+• Swap: 한 차량의 가우시안 묶음을 다른 시퀀스에서 가져와 끼우기
+
+표현 디자인이 자연스럽게 열어주는 축
+• 차량별 시간 t를 어긋나게 두면 추월·끼어들기 counterfactual 생성
+• 4D SH의 Fourier 계수 일부를 흔들면 조명·그림자 augmentation
+• semantic logit이 점에 박혀있으니 새 차량을 끼울 때 라벨이 자동 재투영
+
+후속 흐름도 짧게 — DrivingGaussian은 incremental static + composite dynamic graph로 surround view를 확장했고, OmniRe는 보행자·자전거 같은 non-rigid instance까지 카테고리를 일반화합니다. 둘 다 Street Gaussians의 &#x27;분리된 explicit primitive&#x27; DNA를 그대로 이어받은 줄기예요.
+
+마지막 한 가지, 머릿속으로 직접 그려보세요 — 본인의 현재 scene editing 파이프라인에서 어떤 한 부분을 Street Gaussians 표현으로 갈아끼우면 가장 먼저 만들고 싶은 augmentation은 무엇이고, 그 결과로 어떤 perception 모델의 어떤 약점을 메우고 싶은가요? 한 줄로 노트에 적어두면 다음 실험의 출발선이 됩니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 7 — 회전·이동·스왑 세 가지 편집 결과</div><a href="figures/page_13.png" target="_blank"><img src="figures/page_13.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type C</div>
+<div class="nav"><a href="day_9.html">← Day 9</a><span class="disabled">다음 →</span></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+</body>
+</html>

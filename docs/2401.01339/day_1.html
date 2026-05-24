@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 1 — 왜 거리 장면을 통째로 재현하려 할까</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 32px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta {
+  color: #023BE6;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-bottom: 24px;
+}
+.hero-tag {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.hero-title {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 18px;
+  color: white;
+  word-break: keep-all;
+}
+.hero-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  line-height: 1.55;
+}
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* CONTENT */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 32px; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label {
+  font-size: 12px; color: #5b8def; font-weight: 600;
+  margin-bottom: 4px; letter-spacing: 0.5px;
+}
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img {
+  display: block; max-width: 100%; margin-top: 8px;
+  border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in;
+}
+.trigger { color: #888; font-size: 13px; text-align: center; margin: 24px 0; }
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link {
+  display: block; text-align: center; margin-top: 24px;
+  color: #888; font-size: 14px; text-decoration: none;
+}
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 1</div>
+  <div class="hero-tag">배경</div>
+  <h1 class="hero-title">왜 거리 장면을 통째로 재현하려 할까</h1>
+  <div class="hero-subtitle">방법론은 아직 꺼내지 않고, 거리 재구성이 AD에서 왜 중요한지를 sim2real, data augmentation, digital twin 세 축으로 깐다</div>
+</div>
+<div class="content">오늘은 본격 메서드 얘기 전에 motivation부터 풀어볼게요.
+
+자율주행 시뮬레이터를 다뤄본 사람이라면 익숙한 고민이 있죠. CARLA, AirSim 같은 합성 환경은 만들기에 손이 너무 많이 가고, 실제 카메라 데이터와의 시각적 갭도 큽니다. 그래서 최근 흐름은 &#x27;실제 주행 로그로부터 거리 장면 자체를 통째로 재구성하기&#x27;로 빠르게 기울고 있어요.
+
+얻는 가치는 셋.
+① sim2real — 합성이 아닌 실제 장면 기반이라 도메인 갭이 줄어듭니다.
+② data augmentation — 한 번 재구성해두면 새 시점·새 시간에서 가짜 카메라 데이터를 무한히 뽑아낼 수 있어요. annotation 재투영까지 자동.
+③ digital twin — 충돌 직전 시나리오, 차량 배치 변경 같은 보지 못한 코너 케이스를 재구성된 거리 위에서 그대로 실험할 수 있죠.
+
+특히 scene editing 관점에서 &#x27;이 교차로에서 앞 차량이 우회전했다면?&#x27; 같은 counterfactual을 실제처럼 만든다는 게 진짜 노림수입니다. perception 학습 데이터 양산이 키보드 조작으로 가능해진다는 얘기죠.
+
+내일은 이 흐름의 첫 답안이었던 NeRF 계열이 어디서 막혔는지 짚어볼게요.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 — Waymo에서 우리 방법 vs EmerNeRF vs MARS의 학습시간/FPS 비교</div><a href="figures/page_2.png" target="_blank"><img src="figures/page_2.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type A</div>
+<div class="nav"><span class="disabled">← 이전</span><a href="day_2.html">Day 2 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+</body>
+</html>

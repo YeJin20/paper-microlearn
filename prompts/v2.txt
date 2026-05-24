@@ -1,0 +1,94 @@
+You are designing a 10-day microlearning curriculum to help an 
+autonomous driving researcher deeply understand a single paper 
+through brief, KakaoTalk-style daily messages.
+
+## CONTEXT
+- Reader: senior AI/autonomous driving researcher
+- Currently exploring: scene editing for data augmentation
+- Reading mode: mobile, 3-5 minutes per day
+- Goal after Day 10: reader can explain the paper to a peer, 
+  knows where it sits in the field, sees concrete application 
+  angles for their own work
+
+## DAY-BY-DAY RUBRIC (follow exactly)
+
+Day 1 — Why this problem matters
+  Motivation. Tie to sim2real, digital twin, data augmentation.
+  DO NOT introduce the method yet.
+
+Day 2 — Why prior work fell short
+  Limitations of NeRF-based approaches (Block-NeRF, S-NeRF).
+
+Day 3 — Core idea in one sentence
+  (a) one-sentence summary  
+  (b) one intuition/analogy  
+  (c) why 3D Gaussians > NeRF for this problem
+
+Day 4 — Dynamic/Static decoupling landscape
+  Compare NSG, MARS, EmerNeRF, deformation-based 4D-GS. 
+  Position Street Gaussians. Trade-off of each.
+
+Day 5 — Method overview: the full rendering pipeline
+  Big picture only. How background + vehicle Gaussians compose 
+  at render time. Show the FLOW, not component details.
+
+Day 6 — Background model
+  Static Gaussians + semantic logits. Why semantic logits are 
+  needed (sky regularization, scene understanding).
+
+Day 7 — Vehicle dynamics: tracked-pose attachment
+  μ_world = R_t · μ_local + t_t. Why per-vehicle local frames. 
+  Pose as learnable variable — robustness to tracker noise.
+
+Day 8 — 4D Spherical Harmonics
+  Why standard SH fails for moving vehicles (rotation × lighting). 
+  How time-Fourier basis multiplied with SH solves it.
+
+Day 9 — Results that matter
+  Key numbers ACTUALLY IN THE PAPER. What each enables for AD.
+
+Day 10 — Scene editing for data augmentation
+  How explicit + decoupled representation enables editing:
+  add/remove/relocate vehicles, lighting via SH.
+  Mention follow-ups (DrivingGaussian, OmniRe).
+  End with concrete reflection question for reader's own work.
+
+## CONSTRAINTS (apply to every day)
+- Length: 400-600 Korean characters
+- Tone: conversational, peer-to-peer
+- Must include: one concrete example or analogy
+- Must NOT: dry abstract; repeat across days; academic jargon 
+  without explanation
+
+## FACT GROUNDING (CRITICAL)
+- Only use numbers explicitly stated in the paper.
+- If uncertain, OMIT or hedge with "약/추정/대략".
+- Do NOT invent benchmark scores or comparison numbers.
+
+## FIGURE SUGGESTIONS
+For each day, suggest ONE figure or table from the paper.
+The paper text has "--- Page N ---" markers — use these to locate 
+which page each figure appears on.
+- suggested_figure: "Figure X — brief description" (or null)
+- figure_page: integer, the PDF page number where that figure is 
+  located (or null if no figure)
+
+## THOUGHT TRIGGER (vary across days)
+Rotate among 3 types:
+- Type A (next-day tease)
+- Type B (self-check question)
+- Type C (try-this-mentally)
+Use each type at least 3 times. Day 10 must be Type C.
+
+## OUTPUT FORMAT (return ONLY this JSON, no other text or markdown)
+{
+  "day_1": {
+    "title": "...",
+    "intent": "...",
+    "content": "...",
+    "suggested_figure": "Figure X — desc, or null",
+    "figure_page": 3,
+    "trigger_type": "A | B | C"
+  },
+  ...
+}

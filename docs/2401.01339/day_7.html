@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 7 — 차량은 어떻게 &#x27;움직이는 가우시안&#x27;이 되나</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 32px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta {
+  color: #023BE6;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-bottom: 24px;
+}
+.hero-tag {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.hero-title {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 18px;
+  color: white;
+  word-break: keep-all;
+}
+.hero-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  line-height: 1.55;
+}
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* CONTENT */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 32px; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label {
+  font-size: 12px; color: #5b8def; font-weight: 600;
+  margin-bottom: 4px; letter-spacing: 0.5px;
+}
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img {
+  display: block; max-width: 100%; margin-top: 8px;
+  border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in;
+}
+.trigger { color: #888; font-size: 13px; text-align: center; margin: 24px 0; }
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link {
+  display: block; text-align: center; margin-top: 24px;
+  color: #888; font-size: 14px; text-decoration: none;
+}
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 7</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">차량은 어떻게 &#x27;움직이는 가우시안&#x27;이 되나</h1>
+  <div class="hero-subtitle">μ_w = R_t·μ_o + T_t, per-vehicle local frame의 이유, pose도 학습 변수라는 트릭</div>
+</div>
+<div class="content">차량 가우시안은 자기 local 좌표계에 점을 정의해두고, 시간 t의 tracker pose로 world에 풀어놓아요.
+
+μ_w = R_t · μ_o + T_t,  R_w = R_t · R_o
+
+왜 local frame을 따로 두느냐 — 차량은 매 프레임 위치가 바뀌므로 점을 world에 두면 모든 점이 시간마다 같이 움직여야 합니다. local 좌표는 &#x27;차량 자체의 형상&#x27;이라 시간과 무관하고, 시간 의존성은 (R_t, T_t)에만 격리되죠. 깔끔한 책임 분리.
+
+여기서 핵심 트릭. off-the-shelf tracker가 주는 박스는 노이즈가 큽니다. 그대로 쓰면 차 표면이 한 픽셀씩 흔들리며 rendering이 흐려져요. 그래서 (R_t, T_t)에 학습 가능한 보정 (ΔR_t, ΔT_t)를 더해 backprop으로 같이 깎습니다. ΔR_t는 yaw 오프셋 한 각으로 표현해 차량당 4 DoF만 더하죠.
+
+흥미로운 ablation — GT pose로 학습한 모델보다 optimized pose 쪽이 PSNR* 30.23 &gt; 29.84로 오히려 높습니다. &#x27;GT annotation에도 노이즈가 있다&#x27;는 뜻이에요.
+
+자문 — ΔR을 full rotation(roll/pitch/yaw)으로 풀면 더 좋을까요? &#x27;도로 위 차량&#x27;이라는 prior 위에서 왜 yaw 하나만 두는지 곱씹어보면 답이 보입니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 5 — pose optimization 켜고 끄고에 따른 차량 디테일 차이</div><a href="figures/page_12.png" target="_blank"><img src="figures/page_12.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type B</div>
+<div class="nav"><a href="day_6.html">← Day 6</a><a href="day_8.html">Day 8 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+</body>
+</html>

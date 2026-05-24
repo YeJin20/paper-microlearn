@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 5 — 렌더링 한 사이클, 큰 그림으로 보기</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 32px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta {
+  color: #023BE6;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-bottom: 24px;
+}
+.hero-tag {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.hero-title {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 18px;
+  color: white;
+  word-break: keep-all;
+}
+.hero-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  line-height: 1.55;
+}
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* CONTENT */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 32px; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label {
+  font-size: 12px; color: #5b8def; font-weight: 600;
+  margin-bottom: 4px; letter-spacing: 0.5px;
+}
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img {
+  display: block; max-width: 100%; margin-top: 8px;
+  border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in;
+}
+.trigger { color: #888; font-size: 13px; text-align: center; margin: 24px 0; }
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link {
+  display: block; text-align: center; margin-top: 24px;
+  color: #888; font-size: 14px; text-decoration: none;
+}
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 5</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">렌더링 한 사이클, 큰 그림으로 보기</h1>
+  <div class="hero-subtitle">컴포넌트 디테일 빼고 시간 t에서 한 프레임이 만들어지는 흐름만</div>
+</div>
+<div class="content">오늘은 컴포넌트 디테일은 다 빼고 흐름만 봅시다. Figure 2 한 장이면 충분해요.
+
+입력: 시간 t, 카메라 외참·내참(W, K).
+
+step 1. 시간 t에 맞춰 각 차량의 4D SH 계수를 Fourier basis로 합성해 &#x27;그 순간&#x27;의 SH 계수를 만든다(자세한 건 8일차).
+step 2. 각 차량 가우시안의 local 좌표 μ_o를 tracker pose (R_t, T_t)로 world 좌표로 옮긴다 — μ_w = R_t · μ_o + T_t.
+step 3. 배경 가우시안 + 옮겨진 차량 가우시안들을 그냥 하나로 concat. MLP 호출 없음.
+step 4. concat된 점군을 카메라로 투영해 EWA splatting. 픽셀마다 α-blending으로 색 C를 얻는다.
+step 5. 멀리 하늘은 1024 cubemap에서 view direction으로 query해 C_sky를 가우시안이 비운 자리에 덮어쓴다.
+
+핵심은 NeRF의 compositional raymarching이 사라졌다는 점. &#x27;각 모델이 점을 내놓으면 한 평면에 한꺼번에 뿌린다&#x27; — 이 단순화가 135 FPS의 근본 이유입니다. concat은 가우시안이 모두 같은 world 좌표계에 사니까 가능한 거고요.
+
+내일부터 사흘에 걸쳐 배경 → 차량 pose → 4D SH 순으로 줌인합니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 2 — Composition / Decomposition / Point-based Rendering 파이프라인</div><a href="figures/page_5.png" target="_blank"><img src="figures/page_5.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type A</div>
+<div class="nav"><a href="day_4.html">← Day 4</a><a href="day_6.html">Day 6 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+</body>
+</html>

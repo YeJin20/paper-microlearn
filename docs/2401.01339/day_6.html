@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 6 — 배경 모델 — 가우시안 + semantic logit</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 32px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta {
+  color: #023BE6;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-bottom: 24px;
+}
+.hero-tag {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.hero-title {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 18px;
+  color: white;
+  word-break: keep-all;
+}
+.hero-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  line-height: 1.55;
+}
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* CONTENT */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 32px; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label {
+  font-size: 12px; color: #5b8def; font-weight: 600;
+  margin-bottom: 4px; letter-spacing: 0.5px;
+}
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img {
+  display: block; max-width: 100%; margin-top: 8px;
+  border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in;
+}
+.trigger { color: #888; font-size: 13px; text-align: center; margin: 24px 0; }
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link {
+  display: block; text-align: center; margin-top: 24px;
+  color: #888; font-size: 14px; text-decoration: none;
+}
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 6</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">배경 모델 — 가우시안 + semantic logit</h1>
+  <div class="hero-subtitle">정적 3D 가우시안에 semantic logit이 왜 같이 붙어있는지 (하늘 정규화·semantic 렌더·3D fusion)</div>
+</div>
+<div class="content">배경 모델은 가장 단순한 쪽이에요. 기본은 3D Gaussian Splatting 그대로 — 각 점이 (μ, Σ=RSS^TR^T, α, SH 계수 z)를 가집니다. 거기에 추가된 한 가지가 semantic logit β_b ∈ R^M — 각 점이 M개 클래스에 대한 점수를 들고 있어요.
+
+왜 색만 두지 않고 semantic까지 점에 박았을까요? 셋입니다.
+1) 하늘 정규화. 3D 가우시안은 Euclidean 공간이라 무한 멀리의 하늘을 표현 못 해요. 그래서 Grounded SAM이 뽑은 sky mask로 alpha를 0 쪽으로 미는 BCE supervision을 걸어, 하늘 영역엔 가우시안이 자라지 못하게 막습니다. 그 자리에 cubemap이 들어가죠.
+2) Semantic map 렌더링. 색 c 대신 logit β를 splatting하면 그대로 2D semantic map이 나옵니다. KITTI에서 mIoU가 입력으로 쓴 Video K-Net의 53.81을 넘어 58.81이 나왔어요 — 3D fusion이 2D 예측을 정제한 셈.
+3) Scene 이해. 3D semantic이 일관되니 그림자 같은 ambiguous 영역에서도 분할이 안정적입니다.
+
+자문 — semantic을 빼면 어떤 시각적 artifact가 어디서 가장 먼저 터질까요? 답은 하늘과 thin structure(가로등·표지판 봉) 근처입니다. cubemap을 못 받쳐주거든요.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 9 — KITTI에서 우리 렌더링 semantic map이 Video K-Net 예측을 보완하는 모습</div><a href="figures/page_14.png" target="_blank"><img src="figures/page_14.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type B</div>
+<div class="nav"><a href="day_5.html">← Day 5</a><a href="day_7.html">Day 7 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+</body>
+</html>

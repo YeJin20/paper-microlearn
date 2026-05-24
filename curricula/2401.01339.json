@@ -1,0 +1,82 @@
+{
+  "day_1": {
+    "title": "왜 거리 장면을 통째로 재현하려 할까",
+    "intent": "방법론은 아직 꺼내지 않고, 거리 재구성이 AD에서 왜 중요한지를 sim2real, data augmentation, digital twin 세 축으로 깐다",
+    "content": "오늘은 본격 메서드 얘기 전에 motivation부터 풀어볼게요.\n\n자율주행 시뮬레이터를 다뤄본 사람이라면 익숙한 고민이 있죠. CARLA, AirSim 같은 합성 환경은 만들기에 손이 너무 많이 가고, 실제 카메라 데이터와의 시각적 갭도 큽니다. 그래서 최근 흐름은 '실제 주행 로그로부터 거리 장면 자체를 통째로 재구성하기'로 빠르게 기울고 있어요.\n\n얻는 가치는 셋.\n① sim2real — 합성이 아닌 실제 장면 기반이라 도메인 갭이 줄어듭니다.\n② data augmentation — 한 번 재구성해두면 새 시점·새 시간에서 가짜 카메라 데이터를 무한히 뽑아낼 수 있어요. annotation 재투영까지 자동.\n③ digital twin — 충돌 직전 시나리오, 차량 배치 변경 같은 보지 못한 코너 케이스를 재구성된 거리 위에서 그대로 실험할 수 있죠.\n\n특히 scene editing 관점에서 '이 교차로에서 앞 차량이 우회전했다면?' 같은 counterfactual을 실제처럼 만든다는 게 진짜 노림수입니다. perception 학습 데이터 양산이 키보드 조작으로 가능해진다는 얘기죠.\n\n내일은 이 흐름의 첫 답안이었던 NeRF 계열이 어디서 막혔는지 짚어볼게요.",
+    "suggested_figure": "Figure 1 — Waymo에서 우리 방법 vs EmerNeRF vs MARS의 학습시간/FPS 비교",
+    "figure_page": 2,
+    "trigger_type": "A"
+  },
+  "day_2": {
+    "title": "NeRF 기반 거리 모델링은 어디서 막혔나",
+    "intent": "Block-NeRF/S-NeRF의 정적 한계와 MARS/NSG의 학습·렌더 비용을 짚어 explicit 표현 동기로 연결",
+    "content": "어제 말한 '거리 장면을 통째로'라는 그림, 2021–2023년 NeRF 계열이 먼저 시도했습니다. 두 갈래로 봅시다.\n\nBlock-NeRF는 큰 도시를 block 단위로 쪼개 각 block마다 NeRF를 하나씩 학습해요. Photo-real에 가까운 결과를 냈지만 (1) block당 거대 MLP라 학습이 며칠 단위, (2) 동적 차량을 못 다룹니다. 멈춘 차도 지나가는 차도 모두 정적 배경처럼 fit돼 ghosting이 끼었죠. S-NeRF 같은 street view 전용 NeRF도 비슷한 정적 가정 위에 출발한 한계가 있어요.\n\n이걸 풀려고 NSG, MARS는 '전경 차량 + 배경' compositional 표현을 도입했습니다. tracker pose로 차량을 canonical space에 정렬한 뒤 NeRF로 외형을 학습하죠. 동적 문제는 풀렸지만 비용은 살아남았어요 — 본 논문 측정 기준 MARS는 학습 18시간 이상 · 렌더 0.68 FPS, EmerNeRF는 2.5h · 0.21 FPS. digital twin 라인으로 돌리기엔 너무 비쌉니다.\n\n여기서 한 번 자문해 보세요. 우리한테 진짜 필요한 게 '정밀한 implicit field'일까요, 아니면 '편집과 합성이 자유로운 explicit scene'일까요? 이 질문의 답이 내일 등장합니다.",
+    "suggested_figure": "Figure 4 — Waymo에서 MARS/NSG/3D GS/EmerNeRF가 동적 영역에서 보이는 blur·ghosting",
+    "figure_page": 10,
+    "trigger_type": "B"
+  },
+  "day_3": {
+    "title": "Street Gaussians, 한 문장으로 압축",
+    "intent": "핵심 아이디어 한 줄 + 디오라마 비유 + 3D Gaussians가 NeRF보다 이 문제에 유리한 이유",
+    "content": "오늘은 핵심을 한 문장으로 압축할게요.\n\n'거리 장면을 배경 가우시안 한 덩어리 + 차량별 가우시안 N개로 명시적으로 쪼개고, 차량 가우시안은 tracker pose에 매달아 움직이며, 한 번에 splatting으로 렌더링한다.'\n\n직관 비유 하나 — 종이 디오라마예요. 배경 그림 위에 차량 종이인형을 따로 만들어 자석으로 붙여둔 모양. 자석(=tracker pose)을 움직이면 차가 따라가고, 인형만 빼면 깨끗한 빈 거리가 남죠. 명시적 표현이라 자르고 붙이는 비용이 거의 0입니다.\n\n왜 NeRF 대신 3D Gaussians인가, 셋으로 정리합니다.\n1) Explicit primitive — 좌표만 옮기면 차량 이동·제거가 끝. MLP 재학습이 필요 없어 편집 비용이 거의 없죠.\n2) Rasterization 기반이라 NeRF raymarching 대비 두 자릿수 배 빠릅니다(논문 측정 135 FPS @ 1066×1600).\n3) Anisotropic 가우시안이라 차량 표면 같은 sharp한 모양을 적은 primitive로 표현 가능.\n\n명시적·분리·실시간 — 이 세 키워드가 다음 6일을 관통합니다. 내일은 같은 문제를 푼 NSG/MARS/EmerNeRF/4D-GS 사이에서 이 방법의 좌표를 그려볼게요.",
+    "suggested_figure": "Figure 2 — Street Gaussians 전체 표현 개요(배경 모델 + 객체 모델)",
+    "figure_page": 5,
+    "trigger_type": "A"
+  },
+  "day_4": {
+    "title": "분리 표현의 네 갈래, Street Gaussians는 어디?",
+    "intent": "NSG·MARS·EmerNeRF·deformation 4D-GS와의 trade-off 비교, Street Gaussians의 좌표 짚기",
+    "content": "같은 '동적 거리 모델링' 문제를 푼 친구들을 좌표 위에 놓아봅시다. 두 축은 (A) 차량을 어떻게 분리하느냐, (B) 표현이 implicit이냐 explicit이냐.\n\n• NSG: latent code per-object + MPI 배경. 차량은 ID-conditioned NeRF로 디코딩. 분리는 분명하지만 background가 MPI라 시점 자유도가 좁고 렌더는 0.47 FPS.\n• MARS: Nerfstudio 위에 scene graph 구성. tracker box로 차량을 canonical하게 정렬한 뒤 NeRF로 학습. 품질은 NSG보다 낫지만 raymarching 비용은 그대로(0.68 FPS).\n• EmerNeRF: tracker box 없이도 self-supervision으로 static/dynamic field를 분해. annotation-free라는 장점이 큰 대신 instance 단위로 쪼개주지 않아 '차 한 대 빼기' 같은 편집이 본질적으로 어렵습니다.\n• Deformation 기반 4D-GS: 가우시안에 시간 deformation을 입혀 동적 표현. 소규모 객체엔 강력하지만 도시 거리처럼 차량이 수십 미터 이동하는 대변위에선 motion이 너무 크고 instance 분리도 모호.\n\nStreet Gaussians의 좌표는 'explicit + instance-aware + tracker-pose 결합'. 머릿속에 4분면을 그려놓고, 각 방법이 어느 칸에 들어가는지 한번 직접 배치해 보세요. 어디가 비어있는지가 이 논문의 빈 자리입니다.",
+    "suggested_figure": null,
+    "figure_page": null,
+    "trigger_type": "C"
+  },
+  "day_5": {
+    "title": "렌더링 한 사이클, 큰 그림으로 보기",
+    "intent": "컴포넌트 디테일 빼고 시간 t에서 한 프레임이 만들어지는 흐름만",
+    "content": "오늘은 컴포넌트 디테일은 다 빼고 흐름만 봅시다. Figure 2 한 장이면 충분해요.\n\n입력: 시간 t, 카메라 외참·내참(W, K).\n\nstep 1. 시간 t에 맞춰 각 차량의 4D SH 계수를 Fourier basis로 합성해 '그 순간'의 SH 계수를 만든다(자세한 건 8일차).\nstep 2. 각 차량 가우시안의 local 좌표 μ_o를 tracker pose (R_t, T_t)로 world 좌표로 옮긴다 — μ_w = R_t · μ_o + T_t.\nstep 3. 배경 가우시안 + 옮겨진 차량 가우시안들을 그냥 하나로 concat. MLP 호출 없음.\nstep 4. concat된 점군을 카메라로 투영해 EWA splatting. 픽셀마다 α-blending으로 색 C를 얻는다.\nstep 5. 멀리 하늘은 1024 cubemap에서 view direction으로 query해 C_sky를 가우시안이 비운 자리에 덮어쓴다.\n\n핵심은 NeRF의 compositional raymarching이 사라졌다는 점. '각 모델이 점을 내놓으면 한 평면에 한꺼번에 뿌린다' — 이 단순화가 135 FPS의 근본 이유입니다. concat은 가우시안이 모두 같은 world 좌표계에 사니까 가능한 거고요.\n\n내일부터 사흘에 걸쳐 배경 → 차량 pose → 4D SH 순으로 줌인합니다.",
+    "suggested_figure": "Figure 2 — Composition / Decomposition / Point-based Rendering 파이프라인",
+    "figure_page": 5,
+    "trigger_type": "A"
+  },
+  "day_6": {
+    "title": "배경 모델 — 가우시안 + semantic logit",
+    "intent": "정적 3D 가우시안에 semantic logit이 왜 같이 붙어있는지 (하늘 정규화·semantic 렌더·3D fusion)",
+    "content": "배경 모델은 가장 단순한 쪽이에요. 기본은 3D Gaussian Splatting 그대로 — 각 점이 (μ, Σ=RSS^TR^T, α, SH 계수 z)를 가집니다. 거기에 추가된 한 가지가 semantic logit β_b ∈ R^M — 각 점이 M개 클래스에 대한 점수를 들고 있어요.\n\n왜 색만 두지 않고 semantic까지 점에 박았을까요? 셋입니다.\n1) 하늘 정규화. 3D 가우시안은 Euclidean 공간이라 무한 멀리의 하늘을 표현 못 해요. 그래서 Grounded SAM이 뽑은 sky mask로 alpha를 0 쪽으로 미는 BCE supervision을 걸어, 하늘 영역엔 가우시안이 자라지 못하게 막습니다. 그 자리에 cubemap이 들어가죠.\n2) Semantic map 렌더링. 색 c 대신 logit β를 splatting하면 그대로 2D semantic map이 나옵니다. KITTI에서 mIoU가 입력으로 쓴 Video K-Net의 53.81을 넘어 58.81이 나왔어요 — 3D fusion이 2D 예측을 정제한 셈.\n3) Scene 이해. 3D semantic이 일관되니 그림자 같은 ambiguous 영역에서도 분할이 안정적입니다.\n\n자문 — semantic을 빼면 어떤 시각적 artifact가 어디서 가장 먼저 터질까요? 답은 하늘과 thin structure(가로등·표지판 봉) 근처입니다. cubemap을 못 받쳐주거든요.",
+    "suggested_figure": "Figure 9 — KITTI에서 우리 렌더링 semantic map이 Video K-Net 예측을 보완하는 모습",
+    "figure_page": 14,
+    "trigger_type": "B"
+  },
+  "day_7": {
+    "title": "차량은 어떻게 '움직이는 가우시안'이 되나",
+    "intent": "μ_w = R_t·μ_o + T_t, per-vehicle local frame의 이유, pose도 학습 변수라는 트릭",
+    "content": "차량 가우시안은 자기 local 좌표계에 점을 정의해두고, 시간 t의 tracker pose로 world에 풀어놓아요.\n\nμ_w = R_t · μ_o + T_t,  R_w = R_t · R_o\n\n왜 local frame을 따로 두느냐 — 차량은 매 프레임 위치가 바뀌므로 점을 world에 두면 모든 점이 시간마다 같이 움직여야 합니다. local 좌표는 '차량 자체의 형상'이라 시간과 무관하고, 시간 의존성은 (R_t, T_t)에만 격리되죠. 깔끔한 책임 분리.\n\n여기서 핵심 트릭. off-the-shelf tracker가 주는 박스는 노이즈가 큽니다. 그대로 쓰면 차 표면이 한 픽셀씩 흔들리며 rendering이 흐려져요. 그래서 (R_t, T_t)에 학습 가능한 보정 (ΔR_t, ΔT_t)를 더해 backprop으로 같이 깎습니다. ΔR_t는 yaw 오프셋 한 각으로 표현해 차량당 4 DoF만 더하죠.\n\n흥미로운 ablation — GT pose로 학습한 모델보다 optimized pose 쪽이 PSNR* 30.23 > 29.84로 오히려 높습니다. 'GT annotation에도 노이즈가 있다'는 뜻이에요.\n\n자문 — ΔR을 full rotation(roll/pitch/yaw)으로 풀면 더 좋을까요? '도로 위 차량'이라는 prior 위에서 왜 yaw 하나만 두는지 곱씹어보면 답이 보입니다.",
+    "suggested_figure": "Figure 5 — pose optimization 켜고 끄고에 따른 차량 디테일 차이",
+    "figure_page": 12,
+    "trigger_type": "B"
+  },
+  "day_8": {
+    "title": "4D SH — 시간에 따라 변하는 광택을 그리는 법",
+    "intent": "표준 SH가 움직이는 차량의 환경광을 흡수 못 하는 이유와 Fourier in time이 푸는 방식",
+    "content": "표준 SH는 '이 점을 어느 시선 방향에서 보면 어떤 색?'을 답하는 함수입니다. 그러나 도로 위 차량은 또 하나의 변수에 휘둘려요 — 시간이 지나면 차량 위치와 heading이 바뀌고, 같은 표면이라도 만나는 환경광이 완전히 달라집니다. 햇빛 받는 쪽에서 그늘로 미끄러져 들어가는 순간 색이 휙 바뀌죠.\n\n표준 SH 계수는 시간과 무관하니 이 변화를 흡수 못 해 ghost한 외형이 남아요(Figure 3 두 번째 행). 단순 대안은 '타임스텝마다 SH 계수 한 세트' — 100 프레임이면 저장이 100배 부푸는 게 문제.\n\n논문의 답은 각 SH 계수 z_{m,l}을 시간의 Fourier series로 푸는 것.\n  z_{m,l}(t) = Σ_{i=0}^{k-1} f_i · cos(iπt / N_t)\n즉 SH 한 칸의 시간 곡선을 cosine basis로 근사하고, 학습 변수는 그 Fourier 계수 f_i들. 논문은 k=5로 두는데, 시퀀스 안에서 부드러운 광택 변화에는 충분합니다.\n\n머릿속 실험 — k=1이면 4D SH는 표준 SH로 회귀합니다. k=2면 가장 느린 시간 변화 한 모드만 추가. 한 시퀀스 100프레임 동안 그림자 트랜지션이 몇 번 일어나는지 떠올려보면 k를 왜 작게 둬도 되는지 감이 옵니다.",
+    "suggested_figure": "Figure 3 — 4D SH 있을 때와 없을 때의 차량 외형(그림자·반사) 비교",
+    "figure_page": 7,
+    "trigger_type": "C"
+  },
+  "day_9": {
+    "title": "숫자가 말해주는 것들",
+    "intent": "논문에 적힌 핵심 수치만 정리하고 AD 관점에서 의미를 붙임",
+    "content": "오늘은 논문에 실제 적힌 숫자만 뽑아 의미를 붙입니다. 데이터는 Waymo 8 sequence, 1066×1600, RTX 4090 한 장.\n\n학습 시간 / 렌더 속도\n• Street Gaussians: 30분 / 135 FPS\n• MARS: 18시간 이상 / 0.68 FPS\n• EmerNeRF: 2.5시간 / 0.21 FPS\n→ 학습 36배 이상, 렌더 약 200~600배. 디지털 트윈 데이터 양산 라인에 '실용' 영역으로 들어옵니다.\n\n전체 PSNR / 동적 영역 PSNR*\n• Ours: 34.61 / 30.23\n• MARS: 29.75 / 26.54\n• EmerNeRF: 30.87 / 21.67\n• 3D GS: 29.64 / 21.25\n→ 동적 영역 격차가 더 큽니다. AD에서 중요한 건 다른 차의 디테일이라 PSNR*가 사실상의 핵심 지표죠.\n\nAblation에서 눈에 띄는 두 줄\n• pose optimization 끄면 PSNR* 30.23 → 28.24\n• 4D SH 끄면 30.23 → 29.27\n\n흥미로운 부산물 — 렌더된 semantic map의 mIoU가 입력으로 쓴 Video K-Net(53.81)을 넘어 58.81. 3D fusion이 2D 예측을 정제하는 효과인데, 라벨 자동 증강 파이프라인의 단서로 보입니다.\n\n내일은 이 표현이 결국 어떻게 AD scene editing·data augmentation으로 흘러가는지로 마무리할게요.",
+    "suggested_figure": "Table 1 — Waymo PSNR/SSIM/LPIPS/PSNR*/FPS 종합 비교표",
+    "figure_page": 10,
+    "trigger_type": "A"
+  },
+  "day_10": {
+    "title": "다시 우리 일로 — scene editing 데이터 증강",
+    "intent": "explicit·instance 분리·tracker pose·4D SH가 합쳐져 가능해지는 편집 연산과 후속 연구, 그리고 자기 일에 끌어오는 자문",
+    "content": "10일의 마지막. 지금까지 본 디자인 — explicit primitive, instance 분리, tracker pose 결합, 4D SH — 이 모두가 한 가지 능력으로 수렴합니다: scene editing.\n\n논문이 직접 보여주는 편집 연산\n• Rotation: 차량 heading 회전 (R_t에 곱하기)\n• Translation: 위치만 이동 (T_t 변경)\n• Swap: 한 차량의 가우시안 묶음을 다른 시퀀스에서 가져와 끼우기\n\n표현 디자인이 자연스럽게 열어주는 축\n• 차량별 시간 t를 어긋나게 두면 추월·끼어들기 counterfactual 생성\n• 4D SH의 Fourier 계수 일부를 흔들면 조명·그림자 augmentation\n• semantic logit이 점에 박혀있으니 새 차량을 끼울 때 라벨이 자동 재투영\n\n후속 흐름도 짧게 — DrivingGaussian은 incremental static + composite dynamic graph로 surround view를 확장했고, OmniRe는 보행자·자전거 같은 non-rigid instance까지 카테고리를 일반화합니다. 둘 다 Street Gaussians의 '분리된 explicit primitive' DNA를 그대로 이어받은 줄기예요.\n\n마지막 한 가지, 머릿속으로 직접 그려보세요 — 본인의 현재 scene editing 파이프라인에서 어떤 한 부분을 Street Gaussians 표현으로 갈아끼우면 가장 먼저 만들고 싶은 augmentation은 무엇이고, 그 결과로 어떤 perception 모델의 어떤 약점을 메우고 싶은가요? 한 줄로 노트에 적어두면 다음 실험의 출발선이 됩니다.",
+    "suggested_figure": "Figure 7 — 회전·이동·스왑 세 가지 편집 결과",
+    "figure_page": 13,
+    "trigger_type": "C"
+  }
+}
