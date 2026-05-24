@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 8 — 4종 Q&amp;A — caption부터 counterfactual까지</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 32px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta {
+  color: #023BE6;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-bottom: 24px;
+}
+.hero-tag {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.hero-title {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 18px;
+  color: white;
+  word-break: keep-all;
+}
+.hero-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  line-height: 1.55;
+}
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* CONTENT */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 32px; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label {
+  font-size: 12px; color: #5b8def; font-weight: 600;
+  margin-bottom: 4px; letter-spacing: 0.5px;
+}
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img {
+  display: block; max-width: 100%; margin-top: 8px;
+  border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in;
+}
+.trigger { color: #888; font-size: 13px; text-align: center; margin: 24px 0; }
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link {
+  display: block; text-align: center; margin-top: 24px;
+  color: #888; font-size: 14px; text-decoration: none;
+}
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 8</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">4종 Q&amp;A — caption부터 counterfactual까지</h1>
+  <div class="hero-subtitle">네 가지 conversation type의 역할과, 단일 task 학습이 왜 무너지는지</div>
+</div>
+<div class="content">GPT-4가 만들어내는 Q&amp;A는 네 종류로 갈립니다. (1) Scene description: front 3뷰·rear 3뷰를 각각 stitch한 두 장으로 날씨·시간·장면 유형까지 묘사. (2) Attention: ego trajectory 기준 &#x27;다음 3초 내 최소 거리 10m 이하&#x27;인 객체를 close object로 뽑아 &#x27;무엇을 봐야 하는가&#x27;를 명시. (3) Counterfactual reasoning: &#x27;가속하며 좌회전하면?&#x27; 같은 가정에 대한 결과 추론. (4) Decision-making &amp; planning: expert trajectory를 정답으로 두고 &#x27;왜 그것이 안전한지&#x27; 설명. 왜 굳이 4종으로 쪼개나? 논문이 Table 2에서 보여주듯, trajectory 예측만으로 학습한 Omni-L‡는 collision 3.22% / intersection 3.90%인데, OmniDrive Q&amp;A로 같이 학습한 Omni-L은 1.90% / 3.29%로 떨어집니다. 단일 task로만 가면 LLM의 분포 모델링 능력이 무너진다는 증거예요. 자가점검: 한 종류만 빼야 한다면 어떤 게 가장 아까울까요? 카운터팩추얼이 빠지면 dense supervision 그 자체가 사라지는 셈이라 가장 치명적입니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 — Conversation type 1~3 예시(Attention / Counterfactual / Decision)</div><a href="figures/page_4.png" target="_blank"><img src="figures/page_4.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type B</div>
+<div class="nav"><a href="day_7.html">← Day 7</a><a href="day_9.html">Day 9 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+</body>
+</html>

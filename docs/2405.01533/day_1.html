@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 1 — 왜 자율주행에 VLM이 필요한가</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 32px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta {
+  color: #023BE6;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-bottom: 24px;
+}
+.hero-tag {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.hero-title {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 18px;
+  color: white;
+  word-break: keep-all;
+}
+.hero-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  line-height: 1.55;
+}
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* CONTENT */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 32px; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label {
+  font-size: 12px; color: #5b8def; font-weight: 600;
+  margin-bottom: 4px; letter-spacing: 0.5px;
+}
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img {
+  display: block; max-width: 100%; margin-top: 8px;
+  border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in;
+}
+.trigger { color: #888; font-size: 13px; text-align: center; margin: 24px 0; }
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link {
+  display: block; text-align: center; margin-top: 24px;
+  color: #888; font-size: 14px; text-decoration: none;
+}
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 1</div>
+  <div class="hero-tag">배경</div>
+  <h1 class="hero-title">왜 자율주행에 VLM이 필요한가</h1>
+  <div class="hero-subtitle">VLM × 자율주행 접점, sim2real·데이터 증강 관점에서 문제 의식을 세팅 (방법은 아직 언급 X)</div>
+</div>
+<div class="content">오늘부터 10일 동안 OmniDrive 논문을 함께 뜯어볼 거예요. 자율주행에서 VLM(Vision-Language Model)이 왜 핫한지 짧게 짚어볼게요. 우리가 보통 데이터 증강이나 sim2real에서 부딪치는 가장 큰 벽은, &#x27;전문가 시연 궤적&#x27;만으론 학습 신호가 너무 sparse하다는 점이에요. 안전했던 trajectory만 모델에 보여주니, &#x27;왜 다른 길은 위험한가&#x27;를 배우지 못해요. 사람 운전자는 매 순간 &#x27;저쪽으로 꺾었다면 어떻게 됐을까?&#x27;를 머릿속에서 시뮬해가며 의사결정을 합니다. 이걸 카운터팩추얼 추론이라 부르고, OmniDrive는 바로 그 사고방식을 VLM에 주입해 3D 운전 Q&amp;A를 자동 생성해요. 디지털 트윈/시나리오 합성을 고민하는 우리 입장에선, 이미지 장면을 편집하지 않고도 &#x27;행동 가정&#x27;으로 supervision을 폭증시키는 또 다른 증강 축이라는 점이 흥미롭습니다. 내일은 expert 궤적만 쓰는 기존 open-loop 평가가 왜 깨지는지, BEV-Planner의 비판을 같이 봅니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 — OmniDrive 전체 컨셉(시뮬 trajectory · counterfactual · QA 생성)</div><a href="figures/page_1.png" target="_blank"><img src="figures/page_1.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type A</div>
+<div class="nav"><span class="disabled">← 이전</span><a href="day_2.html">Day 2 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+</body>
+</html>

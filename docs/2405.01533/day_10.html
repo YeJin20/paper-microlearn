@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 10 — Scene editing 관점에서 OmniDrive 다시 보기</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 32px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta {
+  color: #023BE6;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-bottom: 24px;
+}
+.hero-tag {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.hero-title {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 18px;
+  color: white;
+  word-break: keep-all;
+}
+.hero-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  line-height: 1.55;
+}
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* CONTENT */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 32px; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label {
+  font-size: 12px; color: #5b8def; font-weight: 600;
+  margin-bottom: 4px; letter-spacing: 0.5px;
+}
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img {
+  display: block; max-width: 100%; margin-top: 8px;
+  border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in;
+}
+.trigger { color: #888; font-size: 13px; text-align: center; margin: 24px 0; }
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link {
+  display: block; text-align: center; margin-top: 24px;
+  color: #888; font-size: 14px; text-decoration: none;
+}
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 10</div>
+  <div class="hero-tag">응용</div>
+  <h1 class="hero-title">Scene editing 관점에서 OmniDrive 다시 보기</h1>
+  <div class="hero-subtitle">본인 연구(scene editing for augmentation)와의 결합 가능성, 한계, 후속 작업, 회고 질문</div>
+</div>
+<div class="content">마지막 날이에요. 여러분 관심사인 scene editing × data augmentation 관점에서 OmniDrive를 다시 보면, 이 논문은 &#x27;이미지에 손대지 않고 trajectory만 시뮬해서 supervision을 폭증시키는&#x27; 증강이에요. 시각 장면은 그대로 두고 &#x27;행동 가정&#x27;을 늘리는 축이죠. 반대로 3D Gaussian Splatting 기반 scene editing 계열(Street Gaussians, DrivingGaussian, OmniRe 등)은 시각 장면 자체를 편집해 새 sample을 만듭니다. 두 축은 직교하고 상보적이에요. 편집된 장면 위에 시뮬 trajectory를 얹고, 그 결과를 카운터팩추얼 체크리스트와 GPT-4에 통과시키면 &#x27;시각 × 행동&#x27; 양쪽에서 dense한 QA가 자동 생성됩니다. 논문이 인정하는 한계도 정직해요 — &#x27;closed-loop가 아니라서 타 에이전트의 반응을 모델링하지 못한다&#x27;는 점. 편집된 장면을 인터랙티브 시뮬레이터에 넣어야 풀리는 문제예요. 자, 머릿속으로 한 번 굴려보세요 — 여러분의 파이프라인에서 &#x27;편집된 장면 × 시뮬 trajectory × counterfactual QA&#x27;를 합쳤을 때, 지금 가장 부족한 어떤 long-tail 시나리오(끼어들기, 갑작스러운 보행자, 야간 신호 위반 등)를 가장 먼저 채우시겠어요?</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 2 — 데이터 생성 파이프라인 전체도(scene editing을 어디에 끼울지 상상해보는 용)</div><a href="figures/page_3.png" target="_blank"><img src="figures/page_3.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type C</div>
+<div class="nav"><a href="day_9.html">← Day 9</a><span class="disabled">다음 →</span></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+</body>
+</html>

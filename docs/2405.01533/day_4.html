@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 4 — Omni-L vs Omni-Q — 두 갈래 길</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 32px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta {
+  color: #023BE6;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-bottom: 24px;
+}
+.hero-tag {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.hero-title {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 18px;
+  color: white;
+  word-break: keep-all;
+}
+.hero-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  line-height: 1.55;
+}
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* CONTENT */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 32px; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label {
+  font-size: 12px; color: #5b8def; font-weight: 600;
+  margin-bottom: 4px; letter-spacing: 0.5px;
+}
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img {
+  display: block; max-width: 100%; margin-top: 8px;
+  border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in;
+}
+.trigger { color: #888; font-size: 13px; text-align: center; margin: 24px 0; }
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link {
+  display: block; text-align: center; margin-top: 24px;
+  color: #888; font-size: 14px; text-decoration: none;
+}
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 4</div>
+  <div class="hero-tag">개요</div>
+  <h1 class="hero-title">Omni-L vs Omni-Q — 두 갈래 길</h1>
+  <div class="hero-subtitle">2D-VLM-first(Omni-L) vs 3D-perception-first(Omni-Q) 패러다임 비교와 trade-off 정리</div>
+</div>
+<div class="content">운전 VLM을 만들 때 두 갈래 길이 있어요. 길 A — 잘 만든 2D VLM(LLaVA류)에 3D positional encoding만 얹어 멀티뷰로 확장: 이게 Omni-L입니다. 길 B — 이미 검증된 3D BEV 인지 스택(StreamPETR류) 위에 Q-Former를 얹어 carrier query로 LLM과 결합: 이게 Omni-Q예요. Trade-off는 또렷합니다. Omni-L은 언어 능력이 강해 caption(CIDEr 73.2)·reasoning에서 앞서지만, 3D localization은 약해요. Omni-Q는 3D perception supervision 덕에 collision 같은 기하 의존 태스크에서 Recall이 더 잘 뽑히지만(72.6%), 언어 일반화는 약합니다(CIDEr 68.6). 잠깐 머릿속으로 굴려보세요 — 여러분 task의 병목이 &#x27;차량 위치/박스 정확도&#x27;인지, &#x27;상황 설명/이유 생성&#x27;인지에 따라 어느 쪽이 더 맞을지 답이 다를 거예요. 논문의 결론은 흥미롭게도 &#x27;2D VLM을 3D로 끌어올리는 쪽이 그 반대보다 더 직선적이다&#x27;입니다. 전통 3D 스택과 LLM을 어떻게 정렬할지가 여전히 열린 문제로 남아 있어요.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 3 — Omni-L과 Omni-Q projector 구조 비교</div><a href="figures/page_5.png" target="_blank"><img src="figures/page_5.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type C</div>
+<div class="nav"><a href="day_3.html">← Day 3</a><a href="day_5.html">Day 5 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+</body>
+</html>
