@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 2 — Expert 궤적만으로는 왜 부족한가</title>
+<title>Day 2 — 왜 기존 접근들은 부족했나 — open-loop 함정과 2D VLM 한계</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -108,6 +108,27 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+
+/* Progress bar (in hero) */
+.progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 24px;
+}
+.progress-fill {
+  height: 100%;
+  background: #4d7cff;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Content emphasis */
+.content strong {
+  color: #0231BD;
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -116,12 +137,23 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 2</div>
   <div class="hero-tag">배경</div>
-  <h1 class="hero-title">Expert 궤적만으로는 왜 부족한가</h1>
-  <div class="hero-subtitle">open-loop 평가와 sparse supervision의 구조적 한계를 짚어 카운터팩추얼의 동기를 강화</div>
+  <h1 class="hero-title">왜 기존 접근들은 부족했나 — open-loop 함정과 2D VLM 한계</h1>
+  <div class="hero-subtitle">BEV-Planner가 드러낸 ego-status 과적합 현상과 2D VLM의 3D 공간 추론 부재라는 두 가지 한계를 명확히 짚어 OmniDrive의 동기를 설득.</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 20%"></div>
+  </div>
 </div>
-<div class="content">어제는 카운터팩추얼이 필요한 이유를 운만 띄웠죠. 오늘은 그 근거를 좀 더 또렷하게 봅니다. 논문이 인용하는 BEV-Planner[22], Ego-MLP[54]는 nuScenes open-loop 평가의 빈틈을 들춘 연구예요. 핵심 지적 세 가지: (1) 모델이 ego 상태(속도·yaw)만 보고 L2와 collision 지표를 다 맞춰 버린다, (2) 시나리오가 단순해 expert 궤적에 쉽게 오버피팅된다, (3) &#x27;안 한 선택&#x27;에 대한 supervision이 0이다. 마치 학생에게 정답만 보여주고 오답엔 한마디도 안 해주는 셈이죠. 그래서 한 줄짜리 expert trajectory를 모방하는 학습은 위험 상황의 분포 자체를 배우지 못해요. OmniDrive는 시뮬 궤적 위에 &#x27;collision/red light/out-of-drivable area&#x27; 자동 라벨을 부여해 dense supervision으로 바꿉니다. 잠깐 자가점검: 여러분 task에서 &#x27;expert 궤적의 사실성&#x27;과 &#x27;시뮬 궤적의 다양성&#x27;, 무게중심을 어디에 두시겠어요? 그 답이 데이터 파이프라인 설계의 첫 분기점입니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 2 — nuScenes open-loop planning 비교(ego status 유무에 따른 지표 변화)</div><a href="figures/page_6.png" target="_blank"><img src="figures/page_6.png" alt="Figure" loading="lazy"></a></div>
-<div class="trigger">Trigger Type B</div>
+<div class="content">어제 ego status 과적합 얘기 잠깐 했죠. BEV-Planner [22]가 던진 결과를 보면 답이 보입니다. 카메라 이미지 없이 <strong>ego status만 입력</strong>해도 L2 error가 SoTA 수준으로 나옵니다. 즉, 기존 open-loop 벤치마크는 &#x27;장면을 이해&#x27;하는 게 아니라 &#x27;내 속도와 회전각의 관성&#x27;을 외우고 있던 거죠.
+
+그럼 2D VLM을 그대로 가져다 쓰면 될까요? 안 됩니다. LLaVA, BLIP-2 같은 모델은 단일 2D 이미지에 최적화돼 있어 <strong>multi-view 3D 공간 추론</strong>이 어렵습니다. 차선 토폴로지, 차량 미래 trajectory, ego와 객체의 시공간 관계를 한 번에 다루지 못해요.
+
+그리고 결정적으로, expert trajectory는 sparse supervision입니다. 한 장면에 정답 trajectory 하나 — 모델은 결국 평균 행동만 학습하고, &#x27;좌회전 대신 직진했다면 충돌했을 것&#x27;이라는 <strong>counterfactual 정보</strong>는 어디에도 없죠.
+
+비유하자면, 정답 풀이 노트만 잔뜩 본 학생이 변형 문제에 약한 것과 같아요.
+
+내일은 이 두 함정을 한 방향으로 푸는 OmniDrive의 핵심 아이디어를 한 문장으로 봅니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 2 — nuScenes open-loop 비교, ego-status 유무가 모든 지표를 끌어올림</div><a href="figures/page_6.png" target="_blank"><img src="figures/page_6.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type A</div>
 <div class="nav"><a href="day_1.html">← Day 1</a><a href="day_3.html">Day 3 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
 </body>

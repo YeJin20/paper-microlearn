@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 5 — 큰 그림 — Q&amp;A 생성 파이프라인</title>
+<title>Day 5 — 전체 파이프라인 한 장 — key-frame, counterfactual, checklist, human-in-the-loop</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -108,6 +108,27 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+
+/* Progress bar (in hero) */
+.progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 24px;
+}
+.progress-fill {
+  height: 100%;
+  background: #4d7cff;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Content emphasis */
+.content strong {
+  color: #0231BD;
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -116,12 +137,27 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 5</div>
   <div class="hero-tag">방법론</div>
-  <h1 class="hero-title">큰 그림 — Q&amp;A 생성 파이프라인</h1>
-  <div class="hero-subtitle">데이터 생성 전체 흐름(키프레임→시뮬→체크리스트→GPT-4→QA→HITL) 큰 그림 잡기</div>
+  <h1 class="hero-title">전체 파이프라인 한 장 — key-frame, counterfactual, checklist, human-in-the-loop</h1>
+  <div class="hero-subtitle">데이터 생성 파이프라인의 4단계 흐름을 빅픽처로 보여주고, 디테일 학습 전 reader가 전체 구조를 잡도록 함.</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 50%"></div>
+  </div>
 </div>
-<div class="content">오늘은 컴포넌트 디테일 말고 흐름만 잡습니다. 네 단계예요. (1) Planning-oriented keyframe selection: nuScenes에서 의미적·행동적 다양성을 두 번의 K-means로 추려냄. (2) Counterfactual checklist &amp; prompt design: 시뮬 궤적 위에 rule-based 검사(충돌·도로 경계·신호)와 GPT-4 추론(고차원 의사결정)을 조합. (3) Q&amp;A generation: 4가지 conversation type(scene description / attention / counterfactual reasoning / decision-planning)을 GPT-4가 일관되게 생성. (4) Human-in-the-loop QA로 prompt를 다듬은 뒤 대규모 iterate. 비유하자면, 요리 레시피를 소량으로 시제품 만들고 맛 보정한 다음 공장으로 보내는 구조예요. 시제품 단계에서 다양성이 보장돼야 공장 라인이 균질해집니다. 자가점검: 만약 우리 scene editing 파이프라인에 human-in-the-loop을 단 하나의 단계에만 박을 수 있다면, 키프레임 선택 / 체크리스트 / Q&amp;A 검증 중 어디가 가장 ROI가 클까요? 내일부터 각 단계를 한 칸씩 들여다봅니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 2 — counterfactual 기반 QA 생성 파이프라인 전체도</div><a href="figures/page_3.png" target="_blank"><img src="figures/page_3.png" alt="Figure" loading="lazy"></a></div>
-<div class="trigger">Trigger Type B</div>
+<div class="content">오늘은 OmniDrive 데이터 생성 파이프라인 전체 그림만. 디테일은 내일부터.
+
+흐름은 4단계입니다.
+1) Planning-oriented <strong>key-frame 선택</strong>: nuScenes 프런트 이미지의 CLIP 임베딩으로 K-means → 20% 선택, 다시 미래 trajectory로 K-means → 200개 클러스터 중심. 멈춤·직진·좌회전·우회전·U-turn·가감속·정속까지 운전 행동을 포괄.
+2) <strong>Counterfactual 시뮬레이션</strong>: 위 카테고리별 가상 trajectory를 각 장면에 투영.
+3) <strong>Rule-based checklist + GPT-4 reasoning</strong>: 충돌·도로 경계·신호 위반은 3D 어노테이션 + OpenLane-v2 lane topology로 자동 판정, 미묘한 케이스는 high-level decision으로 추상화 후 GPT-4가 안전성 reasoning.
+4) Human-in-the-loop quality assurance: prompt와 checklist를 반복 튜닝, 통과 후 대규모 생성.
+
+비유하자면 한 장면에 대해 &#x27;8가지 다른 미래&#x27;를 일부러 굴려보고, 각각의 결과를 라벨로 만드는 <strong>trajectory-level augmentation</strong>입니다. 운전 교습 영상을 한 장면당 8버전으로 늘리는 셈.
+
+핵심은 &#x27;GPT-4에 raw 3D를 그대로 넣지 않는다&#x27;는 점이에요.
+
+머릿속에서 한 번 돌려보세요 — 여러분 도메인 데이터로 똑같이 이 4단계를 적용한다면 1단계 key-frame 선택 기준은 무엇이 될까요?</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 2 — counterfactual 기반 합성 QA 파이프라인 전체</div><a href="figures/page_3.png" target="_blank"><img src="figures/page_3.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type C</div>
 <div class="nav"><a href="day_4.html">← Day 4</a><a href="day_6.html">Day 6 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
 </body>

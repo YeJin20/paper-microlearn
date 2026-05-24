@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 1 — 왜 자율주행에 VLM이 필요한가</title>
+<title>Day 1 — 왜 이 문제가 자율주행에서 진짜 문제인가</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -108,6 +108,27 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+
+/* Progress bar (in hero) */
+.progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 24px;
+}
+.progress-fill {
+  height: 100%;
+  background: #4d7cff;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Content emphasis */
+.content strong {
+  color: #0231BD;
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -116,11 +137,20 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 1</div>
   <div class="hero-tag">배경</div>
-  <h1 class="hero-title">왜 자율주행에 VLM이 필요한가</h1>
-  <div class="hero-subtitle">VLM × 자율주행 접점, sim2real·데이터 증강 관점에서 문제 의식을 세팅 (방법은 아직 언급 X)</div>
+  <h1 class="hero-title">왜 이 문제가 자율주행에서 진짜 문제인가</h1>
+  <div class="hero-subtitle">전문가 trajectory 기반 데이터셋의 sparse supervision 한계와 ego-status 과적합 현상을 reader가 본인 augmentation 관심사와 연결해 체감하도록 유도. 방법론은 아직 꺼내지 않음.</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 10%"></div>
+  </div>
 </div>
-<div class="content">오늘부터 10일 동안 OmniDrive 논문을 함께 뜯어볼 거예요. 자율주행에서 VLM(Vision-Language Model)이 왜 핫한지 짧게 짚어볼게요. 우리가 보통 데이터 증강이나 sim2real에서 부딪치는 가장 큰 벽은, &#x27;전문가 시연 궤적&#x27;만으론 학습 신호가 너무 sparse하다는 점이에요. 안전했던 trajectory만 모델에 보여주니, &#x27;왜 다른 길은 위험한가&#x27;를 배우지 못해요. 사람 운전자는 매 순간 &#x27;저쪽으로 꺾었다면 어떻게 됐을까?&#x27;를 머릿속에서 시뮬해가며 의사결정을 합니다. 이걸 카운터팩추얼 추론이라 부르고, OmniDrive는 바로 그 사고방식을 VLM에 주입해 3D 운전 Q&amp;A를 자동 생성해요. 디지털 트윈/시나리오 합성을 고민하는 우리 입장에선, 이미지 장면을 편집하지 않고도 &#x27;행동 가정&#x27;으로 supervision을 폭증시키는 또 다른 증강 축이라는 점이 흥미롭습니다. 내일은 expert 궤적만 쓰는 기존 open-loop 평가가 왜 깨지는지, BEV-Planner의 비판을 같이 봅니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 — OmniDrive 전체 컨셉(시뮬 trajectory · counterfactual · QA 생성)</div><a href="figures/page_1.png" target="_blank"><img src="figures/page_1.png" alt="Figure" loading="lazy"></a></div>
+<div class="content">자율주행 연구하시면 한 번쯤 멈칫하는 순간이 있죠. <strong>모방학습</strong>으로 학습된 end-to-end 모델이 nuScenes 같은 open-loop 벤치마크에선 잘 돌아가는데, 시뮬레이터에 올려보면 자기 ego status에만 과적합되어 무너지는 현상.
+
+문제의 본질은 데이터에 있습니다. 전문가가 운전한 trajectory는 &#x27;안전한 결과&#x27;만 보여줄 뿐, <strong>왜 그게 안전한지</strong>는 설명하지 않거든요. 사고가 안 난 경로만 모은 데이터셋은 시험 정답지만 외운 학생과 같아서, sim2real 갭이나 새로운 도시 환경에 약합니다.
+
+여러분이 요즘 보는 <strong>scene editing 기반 data augmentation</strong> 흐름과도 연결돼요. 픽셀을 편집해 새 장면을 만들 수 있어도, 그 장면에 붙는 &#x27;reasoning 라벨&#x27;이 없으면 supervision은 여전히 sparse하죠. 즉, augmentation의 다음 단계는 &#x27;편집된 장면에 어떤 의사결정 supervision을 붙일 것인가&#x27;입니다.
+
+내일은 이 갈증을 채우려던 기존 시도들이 왜 부족했는지 짚어볼게요.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 — OmniDrive 전체 개념 (counterfactual + actual trajectory)</div><a href="figures/page_1.png" target="_blank"><img src="figures/page_1.png" alt="Figure" loading="lazy"></a></div>
 <div class="trigger">Trigger Type A</div>
 <div class="nav"><span class="disabled">← 이전</span><a href="day_2.html">Day 2 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>

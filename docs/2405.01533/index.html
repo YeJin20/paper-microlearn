@@ -108,6 +108,27 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+
+/* Progress bar (in hero) */
+.progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 24px;
+}
+.progress-fill {
+  height: 100%;
+  background: #4d7cff;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Content emphasis */
+.content strong {
+  color: #0231BD;
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -115,16 +136,16 @@ body {
 <div class="index-meta">arXiv 2405.01533</div>
 <h1 class="index-title">10일 마이크로러닝</h1>
 <ul class="day-list">
-<li><a href="day_1.html"><div class="day-num">DAY 1</div><div class="day-title">왜 자율주행에 VLM이 필요한가</div></a></li>
-<li><a href="day_2.html"><div class="day-num">DAY 2</div><div class="day-title">Expert 궤적만으로는 왜 부족한가</div></a></li>
-<li><a href="day_3.html"><div class="day-num">DAY 3</div><div class="day-title">한 문장으로 본 OmniDrive</div></a></li>
-<li><a href="day_4.html"><div class="day-num">DAY 4</div><div class="day-title">Omni-L vs Omni-Q — 두 갈래 길</div></a></li>
-<li><a href="day_5.html"><div class="day-num">DAY 5</div><div class="day-title">큰 그림 — Q&amp;A 생성 파이프라인</div></a></li>
-<li><a href="day_6.html"><div class="day-num">DAY 6</div><div class="day-title">키프레임 고르기 — 왜 두 번 클러스터링하나</div></a></li>
-<li><a href="day_7.html"><div class="day-num">DAY 7</div><div class="day-title">체크리스트 — 규칙과 GPT-4의 역할 분담</div></a></li>
-<li><a href="day_8.html"><div class="day-num">DAY 8</div><div class="day-title">4종 Q&amp;A — caption부터 counterfactual까지</div></a></li>
-<li><a href="day_9.html"><div class="day-num">DAY 9</div><div class="day-title">숫자로 보는 OmniDrive</div></a></li>
-<li><a href="day_10.html"><div class="day-num">DAY 10</div><div class="day-title">Scene editing 관점에서 OmniDrive 다시 보기</div></a></li>
+<li><a href="day_1.html"><div class="day-num">DAY 1</div><div class="day-title">왜 이 문제가 자율주행에서 진짜 문제인가</div></a></li>
+<li><a href="day_2.html"><div class="day-num">DAY 2</div><div class="day-title">왜 기존 접근들은 부족했나 — open-loop 함정과 2D VLM 한계</div></a></li>
+<li><a href="day_3.html"><div class="day-num">DAY 3</div><div class="day-title">핵심 아이디어 한 문장 — counterfactual reasoning을 자연어로</div></a></li>
+<li><a href="day_4.html"><div class="day-num">DAY 4</div><div class="day-title">지형도 — DriveLM, LingoQA, NuScenes-QA 사이에서 OmniDrive의 자리</div></a></li>
+<li><a href="day_5.html"><div class="day-num">DAY 5</div><div class="day-title">전체 파이프라인 한 장 — key-frame, counterfactual, checklist, human-in-the-loop</div></a></li>
+<li><a href="day_6.html"><div class="day-num">DAY 6</div><div class="day-title">Counterfactual checklist 속살 — 규칙 자동판정과 GPT-4의 분업</div></a></li>
+<li><a href="day_7.html"><div class="day-num">DAY 7</div><div class="day-title">Omni-L 아키텍처 — 2D VLM에 부드러운 3D 안경을 씌우기</div></a></li>
+<li><a href="day_8.html"><div class="day-num">DAY 8</div><div class="day-title">Omni-Q 아키텍처 — StreamPETR × Q-Former, carrier query의 역할</div></a></li>
+<li><a href="day_9.html"><div class="day-num">DAY 9</div><div class="day-title">결과 — DriveLM에서 +3점, ego-status 없이 collision 3.22% → 1.90%</div></a></li>
+<li><a href="day_10.html"><div class="day-num">DAY 10</div><div class="day-title">여러분의 scene editing pipeline에 counterfactual 라벨 한 줄 더하기</div></a></li>
 </ul>
 </body>
 </html>

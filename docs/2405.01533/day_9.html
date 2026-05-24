@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 9 — 숫자로 보는 OmniDrive</title>
+<title>Day 9 — 결과 — DriveLM에서 +3점, ego-status 없이 collision 3.22% → 1.90%</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -108,6 +108,27 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+
+/* Progress bar (in hero) */
+.progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 24px;
+}
+.progress-fill {
+  height: 100%;
+  background: #4d7cff;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Content emphasis */
+.content strong {
+  color: #0231BD;
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -116,11 +137,32 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 9</div>
   <div class="hero-tag">결과</div>
-  <h1 class="hero-title">숫자로 보는 OmniDrive</h1>
-  <div class="hero-subtitle">논문에 명시된 핵심 지표만 정확히 인용하고, AD 관점에서 무엇이 enable되는지</div>
+  <h1 class="hero-title">결과 — DriveLM에서 +3점, ego-status 없이 collision 3.22% → 1.90%</h1>
+  <div class="hero-subtitle">페이퍼에 명시된 핵심 수치만 인용하여 OmniDrive 데이터가 실제로 무엇을 끌어올렸는지 자율주행 관점에서 정리.</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 90%"></div>
+  </div>
 </div>
-<div class="content">이 논문의 메시지는 &#x27;SOTA 갱신&#x27;이 아니라 &#x27;데이터의 효과&#x27;예요. Table 3 DriveLM 벤치마크 평균 score: DriveLM 단독 0.53 → +OmniDrive 0.56 → +LLaVA665k 0.57 → +Both 0.58. 약 5%p 상승이지만, 자동 생성된 데이터로 확보했다는 점이 본질이에요. Table 5 nuScenes open-loop(without ego status): Omni-Q는 Col 3.79% / Inter 4.59%로 약하고, Omni-L은 Col 1.90% / Inter 3.29%로 더 강합니다. 같은 Omni-L이라도 OmniDrive Q&amp;A 없이 trajectory만 학습한 변종(‡)은 Col 3.22% / Inter 3.90% — 즉 Q&amp;A 학습이 충돌률을 약 1.32%p 끌어내렸다는 비교가 핵심. 카운터팩추얼 자체 평가에서도 Omni-L이 AP 53.7% / AR 63.0%로 Omni-Q(AP 52.3 / AR 59.6)보다 평균 우위. AD 관점의 함의: 모델이 &#x27;안 한 선택의 결과&#x27;를 말로 설명할 수 있다는 것 — 즉 plan 위에 안전 redundancy가 한 겹 얹힌다는 의미입니다. 내일은 이걸 scene editing과 어떻게 묶을지로 마무리합니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 5 — Counterfactual / Language / Open-loop 종합 비교</div><a href="figures/page_8.png" target="_blank"><img src="figures/page_8.png" alt="Figure" loading="lazy"></a></div>
+<div class="content">오늘은 숫자 정리. 단, 페이퍼에 명시된 것만 인용합니다.
+
+DriveLM Q&amp;A 벤치마크 (Tab. 3, Omni-L 기준)
+- DriveLM만 사전학습: 평균 score 0.53
+- + OmniDrive 사전학습 추가: <strong>0.56</strong>
+- + LLaVA665k 추가: 0.57
+- 둘 다 결합: 0.58
+→ OmniDrive 자동 생성 데이터만으로 +3pt. 자동 데이터인데도 품질이 받쳐줍니다.
+
+nuScenes Open-loop planning, ego-status 없이 (Tab. 2, Omni-L)
+- trajectory-only 학습 (Omni-L‡): collision <strong>3.22%</strong>, intersection 3.90%
+- OmniDrive Q&amp;A 함께 학습 (Omni-L): collision <strong>1.90%</strong>, intersection 3.29%
+→ counterfactual reasoning이 plan distribution을 살린다는 직접 증거.
+
+Counterfactual reasoning quality (Tab. 4) — Omni-L Safe P/R = 72.1/58.0, Omni-Q = 70.7/49.0. 페이퍼 결론은 &#x27;<strong>VLM 출신 백본이 평균 우세, 단 Collision detection은 Omni-Q가 강함</strong>&#x27;.
+
+자율주행 관점의 의미는 두 가지 — 자동 데이터로 만든 reasoning supervision이 단순 행동 모방을 보완하고, ego-status 의존을 낮춥니다.
+
+내일은 마지막 — 이걸 scene editing 기반 data augmentation과 어떻게 잇는지로 마무리합니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 3 — DriveLM 벤치마크에서 OmniDrive 사전학습 효과</div><a href="figures/page_6.png" target="_blank"><img src="figures/page_6.png" alt="Figure" loading="lazy"></a></div>
 <div class="trigger">Trigger Type A</div>
 <div class="nav"><a href="day_8.html">← Day 8</a><a href="day_10.html">Day 10 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>

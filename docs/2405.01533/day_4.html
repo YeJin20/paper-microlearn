@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 4 — Omni-L vs Omni-Q — 두 갈래 길</title>
+<title>Day 4 — 지형도 — DriveLM, LingoQA, NuScenes-QA 사이에서 OmniDrive의 자리</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -108,6 +108,27 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+
+/* Progress bar (in hero) */
+.progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 24px;
+}
+.progress-fill {
+  height: 100%;
+  background: #4d7cff;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Content emphasis */
+.content strong {
+  color: #0231BD;
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -116,12 +137,26 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 4</div>
   <div class="hero-tag">개요</div>
-  <h1 class="hero-title">Omni-L vs Omni-Q — 두 갈래 길</h1>
-  <div class="hero-subtitle">2D-VLM-first(Omni-L) vs 3D-perception-first(Omni-Q) 패러다임 비교와 trade-off 정리</div>
+  <h1 class="hero-title">지형도 — DriveLM, LingoQA, NuScenes-QA 사이에서 OmniDrive의 자리</h1>
+  <div class="hero-subtitle">주요 Drive-LLM 데이터셋들의 강조점과 trade-off를 정리해 OmniDrive의 차별점을 위치 짓기.</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 40%"></div>
+  </div>
 </div>
-<div class="content">운전 VLM을 만들 때 두 갈래 길이 있어요. 길 A — 잘 만든 2D VLM(LLaVA류)에 3D positional encoding만 얹어 멀티뷰로 확장: 이게 Omni-L입니다. 길 B — 이미 검증된 3D BEV 인지 스택(StreamPETR류) 위에 Q-Former를 얹어 carrier query로 LLM과 결합: 이게 Omni-Q예요. Trade-off는 또렷합니다. Omni-L은 언어 능력이 강해 caption(CIDEr 73.2)·reasoning에서 앞서지만, 3D localization은 약해요. Omni-Q는 3D perception supervision 덕에 collision 같은 기하 의존 태스크에서 Recall이 더 잘 뽑히지만(72.6%), 언어 일반화는 약합니다(CIDEr 68.6). 잠깐 머릿속으로 굴려보세요 — 여러분 task의 병목이 &#x27;차량 위치/박스 정확도&#x27;인지, &#x27;상황 설명/이유 생성&#x27;인지에 따라 어느 쪽이 더 맞을지 답이 다를 거예요. 논문의 결론은 흥미롭게도 &#x27;2D VLM을 3D로 끌어올리는 쪽이 그 반대보다 더 직선적이다&#x27;입니다. 전통 3D 스택과 LLM을 어떻게 정렬할지가 여전히 열린 문제로 남아 있어요.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 3 — Omni-L과 Omni-Q projector 구조 비교</div><a href="figures/page_5.png" target="_blank"><img src="figures/page_5.png" alt="Figure" loading="lazy"></a></div>
-<div class="trigger">Trigger Type C</div>
+<div class="content">OmniDrive의 위치를 알려면 자율주행 VLM 데이터셋 지형도를 잠깐 봐야 합니다.
+
+- DriveLM [41]: <strong>Graph VQA</strong>로 perception→prediction→planning 의존성을 명시화. 단, ego의 미래에 대한 counterfactual은 약함.
+- LingoQA [33]: 비디오 QA에 counterfactual 질문을 일부 도입. 다만 2D 중심, 3D 좌표 추론은 부재.
+- NuScenes-QA, Reason2Drive: 객체 인지·행동 설명에 초점. trajectory 수준 reasoning은 없음.
+- DriveGPT4, DriveVLM: end-to-end 텍스트 생성 + 제어 신호, 그러나 supervision은 여전히 전문가 궤적에 의존.
+
+OmniDrive의 차별점은 두 축입니다. (1) <strong>시뮬레이션된 counterfactual 궤적</strong>을 명시적으로 도입한 거의 유일한 데이터셋, (2) 3D 좌표·차선 위상을 high-level decision으로 추상화해 GPT-4에 투입.
+
+각 데이터셋마다 trade-off가 다릅니다 — DriveLM은 <strong>그래프 의존성</strong>, LingoQA는 비디오 시계열, OmniDrive는 <strong>trajectory counterfactual</strong>. 우리 task가 셋 중 무엇을 가장 필요로 하는지 떠올리면서 봐주세요.
+
+내일은 OmniDrive 데이터 생성 파이프라인을 큰 그림으로 훑습니다.</div>
+
+<div class="trigger">Trigger Type A</div>
 <div class="nav"><a href="day_3.html">← Day 3</a><a href="day_5.html">Day 5 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
 </body>

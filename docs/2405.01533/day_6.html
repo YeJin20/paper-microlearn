@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 6 — 키프레임 고르기 — 왜 두 번 클러스터링하나</title>
+<title>Day 6 — Counterfactual checklist 속살 — 규칙 자동판정과 GPT-4의 분업</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -108,6 +108,27 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+
+/* Progress bar (in hero) */
+.progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 24px;
+}
+.progress-fill {
+  height: 100%;
+  background: #4d7cff;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Content emphasis */
+.content strong {
+  color: #0231BD;
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -116,12 +137,27 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 6</div>
   <div class="hero-tag">방법론</div>
-  <h1 class="hero-title">키프레임 고르기 — 왜 두 번 클러스터링하나</h1>
-  <div class="hero-subtitle">CLIP 시각 K-means × trajectory K-means 이중 클러스터링의 동기와 효과</div>
+  <h1 class="hero-title">Counterfactual checklist 속살 — 규칙 자동판정과 GPT-4의 분업</h1>
+  <div class="hero-subtitle">왜 raw 3D를 GPT-4에 그대로 넣지 않는지, 그리고 어떻게 rule + LLM 분업으로 풀어내는지 메커니즘 단위로 이해.</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 60%"></div>
+  </div>
 </div>
-<div class="content">파이프라인의 첫 단계, keyframe selection이에요. nuScenes 같은 로그 데이터는 인접 프레임 간 중복이 많아 그대로 쓰면 시간·비용만 잡아먹어요. OmniDrive의 트릭은 &#x27;두 번 클러스터링&#x27;입니다. 먼저 front view에서 CLIP image encoder로 임베딩을 뽑아 K-means로 cluster center의 약 20%를 선택 — 랜드마크·신호등·차선 마킹 같은 시각적 다양성을 확보합니다. 그 다음 ego의 미래 trajectory로 K-means를 또 돌려 200개 cluster center를 뽑아 정지·전진·좌·우회전·U턴·가감속·등속 같은 행동 다양성을 확보해요. 핵심은 &#x27;시각 다양성&#x27;과 &#x27;행동 다양성&#x27;을 분리해서 각각 잡는다는 점. 마치 사진 앨범을 &#x27;풍경 vs 인물&#x27;과 &#x27;여행지 vs 일상&#x27; 두 축으로 따로 거르는 것과 같습니다. 다양성이 확보된 소량의 keyframe 위에서 rule과 prompt를 prototyping하고, 검증되면 대규모로 iterate — 이게 비용 효율의 비결이에요. 내일은 그 위에 얹히는 체크리스트 설계로 들어갑니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 2 — Key-frame Selection 블록(Semantic Similarity + Trajectory Similarity)</div><a href="figures/page_3.png" target="_blank"><img src="figures/page_3.png" alt="Figure" loading="lazy"></a></div>
-<div class="trigger">Trigger Type A</div>
+<div class="content">5일차에 본 파이프라인의 심장부, <strong>counterfactual checklist</strong>를 오늘은 더 깊이.
+
+문제 설정: GPT-4에 multi-view 이미지 + 3D 박스 + 차선 좌표를 한꺼번에 던지면? 페이퍼는 &#x27;3D 관계를 효과적으로 이해하지 못한다, 객체가 많아질수록 더 심해진다&#x27;고 명시합니다.
+
+OmniDrive의 해법은 2단 분업이에요.
+1) <strong>Rule-based 자동 판정</strong>: 객체 충돌, 도로 경계 이탈, 신호 위반처럼 명확한 카테고리는 nuScenes 3D detection + OpenLane-v2 lane topology로 코드가 직접 체크.
+2) <strong>High-level decision으로 추상화 후 GPT-4</strong>: 미묘한 traffic rule은 trajectory를 &#x27;좌회전 + 가속&#x27; 같은 결정 텍스트로 변환한 뒤 GPT-4가 안전성과 사유를 추론.
+
+예시 — &#x27;simulated decision: Moderate Speed, Left Turn&#x27; + lane assignment 정보가 들어가면 checklist가 &#x27;Out of drivable area: True&#x27;를 자동 출력하고, GPT-4는 &#x27;opposite-flow lane으로 진입해 맞은편 차량과 충돌 위험&#x27;이라는 자연어 사유를 생성.
+
+작지만 중요한 트릭 하나 — &#x27;object as close&#x27; 정의는 <strong>trajectory와의 최소 거리 &lt; 10m, 향후 3초 이내</strong>. attention 후보를 이 규칙으로 좁힙니다.
+
+체크 — 여러분 task에서 &#x27;규칙으로 자동 판정 가능한 부분&#x27;과 &#x27;LLM에 맡겨야 하는 미묘한 부분&#x27;을 어떻게 가르시겠어요?</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 — 실제 prompt(simulated decision/trajectory)와 response 예시</div><a href="figures/page_4.png" target="_blank"><img src="figures/page_4.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type B</div>
 <div class="nav"><a href="day_5.html">← Day 5</a><a href="day_7.html">Day 7 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
 </body>
