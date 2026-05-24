@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 2 — NeRF 계열은 왜 막혔나</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 2</div>
+  <div class="hero-tag">배경</div>
+  <h1 class="hero-title">NeRF 계열은 왜 막혔나</h1>
+  <div class="hero-subtitle">Block-NeRF·NSG·MARS·EmerNeRF의 한계 정리</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 20%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">어제 정리한 세 조건 — *고품질·실시간·편집* — 을 NeRF 계열이 왜 다 못 잡았을까요.
+
+<strong>Block-NeRF</strong>는 도시를 블록으로 쪼개 각 블록에 NeRF MLP를 붙입니다. 정적인 거리는 잘 그리지만 <strong>MLP 파라미터가 워낙 무거워</strong> 학습이 며칠 단위, 무엇보다 *움직이는 차*를 다루지 못합니다. AD 시뮬엔 치명적이죠.
+
+<strong>NSG·MARS</strong> 같은 compositional NeRF는 차마다 latent를 두고 트래커가 준 박스로 canonical 공간에 매핑해 동적 차를 처리합니다. 컨셉은 맞지만 — Waymo에서 MARS 학습 <strong>18시간 초과</strong>, 렌더 <strong>0.68 FPS</strong>. <strong>EmerNeRF</strong>는 2.5시간 학습에 <strong>0.21 FPS</strong>. 픽셀당 광선을 따라 수십 샘플을 평가하는 ray marching이 근본 원인이에요.
+
+<strong>3D Gaussian Splatting</strong>이 점-기반 splatting으로 속도 문제를 풀어주는 듯 했지만 정적 씬 가정이어서, 거리 위 차들이 ghosting으로 무너집니다.
+
+요약: NeRF 계열은 *속도*에서, 3D GS는 *동역학*에서 발이 묶였다. 내일은 Street Gaussians가 이 둘을 어떻게 동시에 푸는지 한 문장으로 정리합니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 — 학습/렌더 시간 비교(EmerNeRF 2.5h@0.21FPS, MARS &gt;18h@0.68FPS vs Ours 30min@135FPS)</div><a href="figures/page_2.png" target="_blank"><img src="figures/page_2.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type B</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Compositional NeRF</div><div class="concept-def">장면을 &#x27;배경 + 객체별&#x27; 신경 필드로 분리해 합성 렌더링하는 구조. NSG·MARS·UniSim이 대표적.</div></div>
+<div class="concept-card"><div class="concept-term">Ray marching</div><div class="concept-def">픽셀마다 광선을 따라 다수의 샘플 위치에서 신경망을 평가해 색·밀도를 적분하는 NeRF의 렌더 방식. 픽셀당 비용이 크다.</div></div>
+<div class="concept-card"><div class="concept-term">Ghosting artifact</div><div class="concept-def">정적 씬 가정 모델이 움직이는 객체를 평균화해 잔상·이중상으로 그려내는 현상.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">suffer from</div><div class="expr-ko">~로 인해 어려움을 겪다</div><div class="expr-example">Block-NeRF suffers from long training time due to the large amount of network parameters.</div><div class="expr-context">기존 방법의 한계를 지적할 때 가장 흔히 쓰이는 동사구.</div></div>
+<div class="expr-card"><div class="expr-en">are still limited to</div><div class="expr-ko">여전히 ~에 제한된다</div><div class="expr-example">These methods produce reasonable results, but are still limited to the high training cost and low rendering speed.</div><div class="expr-context">선행 연구가 일부 성공을 거뒀음을 인정하면서도 잔여 한계를 짚을 때.</div></div>
+<div class="expr-card"><div class="expr-en">cannot handle</div><div class="expr-ko">~을 다루지 못한다</div><div class="expr-example">Block-NeRF cannot handle dynamic vehicles on the street.</div><div class="expr-context">특정 기능 부재를 직접적으로 명시할 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Block-NeRF가 동적 거리를 다루지 못하는 가장 근본적인 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">학습 데이터가 부족하기 때문</button><button class="mcq-option" data-correct="true">정적 NeRF 표현이라 시간 변동을 입력으로 받지 않기 때문</button><button class="mcq-option" data-correct="false">카메라 캘리브레이션이 어려워서</button><button class="mcq-option" data-correct="false">GPU 메모리가 부족해서</button></div><div class="mcq-explanation">Block-NeRF는 시간 입력이 없는 정적 NeRF의 블록 분할 확장. 동적 객체를 위한 메커니즘 자체가 없다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">MARS·NSG처럼 &#x27;배경 + 객체별 NeRF&#x27; 구조가 실시간 렌더링에 도달하지 못하는 핵심 원인은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">객체 박스가 너무 많아서</button><button class="mcq-option" data-correct="true">ray marching이 픽셀마다 다수 샘플의 MLP 평가를 요구하기 때문</button><button class="mcq-option" data-correct="false">학습 epoch가 부족해서</button><button class="mcq-option" data-correct="false">트래킹 노이즈 때문에</button></div><div class="mcq-explanation">NeRF의 볼륨 적분은 광선당 수십~수백 번의 신경망 호출을 요구함 — 실시간(&gt;30 FPS)의 근본 병목.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">NeRF 기반 시뮬레이터 위에서 perception 데이터 합성을 한다면, 가장 먼저 부딪힐 병목은 무엇이고 그 비용은 결국 누구의 시간/예산으로 전가될까요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>학습/렌더 시간을 &#x27;시퀀스 수 × GPU 시간 × 단가&#x27;로 환산해보세요. 실험 1회의 비용이 얼마인지.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>&#x27;좋은 품질&#x27;과 &#x27;실험 가능&#x27;은 다른 차원의 제약이다 — 속도는 곧 가설 검증의 횟수이고, 연구 속도 자체가 결과 품질의 상한이 된다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_1.html">← Day 1</a><a href="day_3.html">Day 3 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

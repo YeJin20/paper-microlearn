@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 6 — 점·Gaussian·초기화</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 6</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">점·Gaussian·초기화</h1>
+  <div class="hero-subtitle">기하 모델(배경+객체)과 LiDAR 기반 초기화 깊이 보기</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 60%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">첫 번째 deep dive — <strong>점·Gaussian 기하 모델</strong>.
+
+각 점은 3D Gaussian 1개. 파라미터는 평균 μ, 회전 R, 스케일 S, opacity α, SH 계수, semantic logit. 공분산은 Σ = R·S·Sᵀ·Rᵀ (Eq.1) — R은 <strong>unit quaternion</strong>, S는 대각 성분만. 이렇게 분해하는 이유는 임의 행렬이 *유효한 공분산*이 되지 못할 위험을 막기 위해서.
+
+<strong>배경 모델</strong>: μ_b, R_b를 world 좌표계에서 직접 학습. semantic은 M차원 logit β_b.
+
+<strong>객체 모델</strong>: μ_o, R_o는 차량 *local 좌표계*에 살다가, 매 프레임 트래킹 포즈 (R_t, T_t)로 world로 변환 (Eq.2): μ_w = R_t·μ_o + T_t, R_w = R_t·R_o. semantic은 1차원 scalar(차량 클래스 id) — 렌더 시 one-hot으로 펼쳐 배경과 합쳐요.
+
+<strong>초기화</strong>가 결정적입니다. 3D GS의 SfM 점은 텍스처 없는 도시 거리에 무력. 대신 <strong>ego LiDAR 누적 점</strong>을 쓰고 이미지에 투영해 색을 입힙니다. 객체 박스 안 LiDAR 점이 <strong>2K 미만</strong>이면 박스 안 <strong>8K 점 랜덤 샘플링</strong>으로 대체.
+
+학습 중 박스 *바깥*으로 자라난 객체 Gaussian은 가지치기 — occlusion 영역으로의 누설 차단. 내일은 외형: 4D SH로.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 2 — 객체/배경 표현 도식(geometry + appearance + semantic)</div><a href="figures/page_5.png" target="_blank"><img src="figures/page_5.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type B</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Covariance decomposition Σ = RSSᵀRᵀ</div><div class="concept-def">공분산을 회전·스케일로 분해. 임의 행렬이 비-positive-definite가 되는 걸 막아 학습 안정성 확보.</div></div>
+<div class="concept-card"><div class="concept-term">LiDAR initialization</div><div class="concept-def">ego 차량 LiDAR 점을 시퀀스 전체에 걸쳐 누적해 점-기반 표현의 초기 위치로 사용. 텍스처 없는 영역에 강함.</div></div>
+<div class="concept-card"><div class="concept-term">Adaptive density control</div><div class="concept-def">3D GS에서 가져온 학습 중 점 분할·복제·제거 기법. 본 논문은 객체 박스 밖 점을 추가로 가지치기.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">consist of</div><div class="expr-ko">~으로 구성된다</div><div class="expr-example">The Gaussian parameters consist of a covariance matrix and a position vector.</div><div class="expr-context">수식·구조의 구성 요소를 열거할 때 표준 표현.</div></div>
+<div class="expr-card"><div class="expr-en">is assigned with</div><div class="expr-ko">~이 할당된다</div><div class="expr-example">Each point is assigned with a 3D Gaussian to softly represent the continuous scene geometry and color.</div><div class="expr-context">데이터 구조의 단위 요소가 어떤 속성을 갖는지 정의할 때.</div></div>
+<div class="expr-card"><div class="expr-en">to avoid invalid value during optimization</div><div class="expr-ko">최적화 중 비유효 값을 막기 위해</div><div class="expr-example">To avoid invalid value during optimization, each covariance matrix is further reduced to a scaling matrix and a rotation matrix.</div><div class="expr-context">설계 결정의 동기를 *수치 안정성* 관점에서 정당화할 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">공분산 Σ를 직접 학습하지 않고 R·S·Sᵀ·Rᵀ로 분해해 R, S만 학습하는 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">메모리를 줄이기 위해</button><button class="mcq-option" data-correct="true">임의 행렬이 비-positive-definite(유효 공분산이 아닌) 값으로 가는 것을 방지하기 위해</button><button class="mcq-option" data-correct="false">GPU에서 더 빠르기 때문</button><button class="mcq-option" data-correct="false">SH 계수와 차원을 맞추기 위해</button></div><div class="mcq-explanation">임의 행렬은 유효 공분산이 아닐 수 있음. 회전(quaternion)·스케일로 분해하면 항상 유효 공분산이 보장된다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">박스 안 LiDAR 점이 2K 미만일 때 박스 안 *8K 점을 랜덤 샘플링*해 초기화하는 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">데이터 누수를 막기 위해</button><button class="mcq-option" data-correct="true">학습 초기 단계에 충분한 점이 필요하고, 박스 안은 객체일 가능성이 높은 신뢰 영역이기 때문</button><button class="mcq-option" data-correct="false">라벨링이 더 빠르기 때문</button><button class="mcq-option" data-correct="false">박스 자체가 학습 대상이라서</button></div><div class="mcq-explanation">점이 부족하면 splatting 품질이 무너짐. 박스라는 강한 prior로 안전한 위치에 초기 점을 뿌리는 셈.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">당신 데이터에 텍스처 없는 영역(야간·터널·흰 벽)이 많다면, LiDAR 초기화만으로 충분할까요? 그렇지 않다면 어떤 보강 소스를 고려하시겠어요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>논문은 LiDAR + SfM을 보완적으로 사용합니다. 다른 가능한 소스로는?</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>초기화는 &#x27;학습이 자력으로 도달할 수 없는 영역을 미리 채우는&#x27; 작업이다 — 데이터셋 특성에 맞춰 *다중 소스 점 합치기*는 거의 항상 합리적이다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_5.html">← Day 5</a><a href="day_7.html">Day 7 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 10 — 내 perception 데이터에 꽂기</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 10</div>
+  <div class="hero-tag">응용</div>
+  <h1 class="hero-title">내 perception 데이터에 꽂기</h1>
+  <div class="hero-subtitle">Scene editing 기반 AD perception 증강 — 활용 시나리오 + 후속 + 반성</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 100%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">열흘 마무리. 당신이 하는 <strong>scene editing for AD perception data augmentation</strong>에 Street Gaussians가 어떻게 꽂히는가.
+
+핵심은 *명시적 인스턴스 분리*입니다. 차량을 떼어 회전·이동·교체할 수 있다는 건 곧 <strong>하나의 실거리 시퀀스로 무한한 &#x27;라벨 보존&#x27; 변형</strong>을 만들 수 있다는 뜻이에요.
+
+구체 시나리오 3가지:
+
+1. <strong>희귀 차종 증강</strong> — 트럭/이륜이 한 번 잡힌 시퀀스에서 그 인스턴스만 떼서 다른 평범한 거리에 swap. 인스턴스의 (R, T)를 알기 때문에 박스·yaw 라벨이 자동으로 따라옵니다.
+
+2. <strong>코너 케이스 합성</strong> — 차량을 인도 쪽으로 translate + yaw 회전 → &#x27;cut-in 직전&#x27; 장면을 안전하게 합성. *분포 끝단*을 채울 수 있어요.
+
+3. <strong>Closed-loop 평가</strong> — <strong>135 FPS</strong>면 ego 정책이 새 궤적을 그릴 때마다 view를 즉시 재렌더. CARLA를 photo-real로 갈아끼우는 셈.
+
+후속도 빠르게 보세요. 동시기 <strong>DrivingGaussian</strong>·<strong>PVG</strong>, 이후 <strong>NeuRAD</strong>(2024) — surround view·LiDAR까지 통합하는 흐름입니다.
+
+<strong>머릿속 실험</strong>: 당신 perception 모델이 가장 약한 *한 가지 시나리오* — 그걸 Street Gaussians로 합성한다면, 어떤 인스턴스를 어디서 떼어 어디에 붙이실 건가요? 그 한 컷이 라벨 비용 대비 가장 큰 ROI를 가질 가능성이 큽니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 7 — Rotation/Translation/Swapping 편집 시연(편집 전후 비교)</div><a href="figures/page_13.png" target="_blank"><img src="figures/page_13.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type C</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Label-preserving augmentation</div><div class="concept-def">이미지 변형 후에도 박스·세그·포즈 같은 라벨이 자동으로 동등하게 변환되는 증강. 명시적 인스턴스 변환이 가능할 때 자연스럽게 성립.</div></div>
+<div class="concept-card"><div class="concept-term">Long-tail / corner case</div><div class="concept-def">데이터 분포 끝단에 위치해 자연 발생 빈도가 낮은 시나리오. 합성 증강의 가장 본질적 가치가 발휘되는 영역.</div></div>
+<div class="concept-card"><div class="concept-term">NeuRAD / DrivingGaussian / PVG</div><div class="concept-def">Street Gaussians 이후/동시기의 후속 흐름. 멀티 카메라·LiDAR·시간 동역학을 통합해 production-grade AD 시뮬에 다가가는 방향.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">demonstrate the effectiveness of</div><div class="expr-ko">~의 효과를 입증한다</div><div class="expr-example">Detailed ablations and scene editing applications demonstrate the effectiveness of the proposed components.</div><div class="expr-context">결론·실험 요약에서 자기 방법의 검증을 선언할 때 사용하는 단단한 정형구.</div></div>
+<div class="expr-card"><div class="expr-en">enables</div><div class="expr-ko">~을 가능하게 한다</div><div class="expr-example">Our instance-aware scene representation enables various types of scene editing operations.</div><div class="expr-context">표현/구조의 결과로 무엇이 가능해졌는지 강조하는 응용/결론 단락.</div></div>
+<div class="expr-card"><div class="expr-en">future work / follow-up</div><div class="expr-ko">후속 연구로</div><div class="expr-example">We leave the integration with multi-modal sensors as future work.</div><div class="expr-context">한계나 다음 단계를 명시할 때 책임감 있게 마무리하는 학술 정형구.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Street Gaussians로 합성한 영상으로 perception 모델을 학습할 때, &#x27;편집 후에도 박스·yaw 라벨이 자동으로 유효&#x27;한 가장 본질적 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">편집 후 사람이 다시 라벨링하기 때문</button><button class="mcq-option" data-correct="true">차량 인스턴스가 *명시적*이라 변환 행렬 (R, T)을 라벨에도 동일하게 적용할 수 있기 때문</button><button class="mcq-option" data-correct="false">시멘틱 logit이 자동 보정되어서</button><button class="mcq-option" data-correct="false">모델이 합성을 자동 검출하니까</button></div><div class="mcq-explanation">명시적 인스턴스의 6DoF 변환은 점·박스·yaw에 동일 변환으로 전파 가능 — 라벨이 자동으로 동기화된다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">Street Gaussians가 closed-loop AD 시뮬에 적합한 이유로 가장 정확한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">라벨이 완벽해야 작동한다</button><button class="mcq-option" data-correct="true">135 FPS의 실시간 렌더링과 인스턴스 단위 편집이 *동시에* 가능하기 때문</button><button class="mcq-option" data-correct="false">GPU 4장 이상이 필요하기 때문</button><button class="mcq-option" data-correct="false">LiDAR가 반드시 있어야만 하기 때문</button></div><div class="mcq-explanation">Closed-loop은 정책-환경 상호작용 — *빠른 렌더 + 동적 객체 편집*이 동시에 요구된다. 둘 중 하나만 빠져도 부적합.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">다음 한 주, 당신의 perception 파이프라인에서 *가장 마지막에 실패한* 한 가지 케이스를 골라보세요. Street Gaussians로 그 시나리오의 변형 100개를 만든다면, 어떤 축(차량 종류? 위치? 시간대? 조명?)으로 다양화하시겠어요? 그 축을 고른 이유는?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>변형 축은 *실패 원인*과 직결되어야 의미가 있어요. 단순히 양만 늘리는 게 아니라 분포의 &#x27;비어 있는&#x27; 부분을 채우는 방향으로.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>데이터 증강의 가치는 &#x27;*분포의 어느 부분을 채우는가*&#x27;에서 나온다 — Street Gaussians는 강력한 도구일 뿐, 어떤 축을 다양화할지 결정하는 것은 여전히 연구자의 통찰이다. 도구가 강력할수록 *문제 정의*의 질이 더 중요해진다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_9.html">← Day 9</a><span class="disabled">다음 →</span></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

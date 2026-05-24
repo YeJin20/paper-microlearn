@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 8 — 트래킹 포즈도 학습한다</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 8</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">트래킹 포즈도 학습한다</h1>
+  <div class="hero-subtitle">노이지 박스를 흡수하는 ΔR·ΔT의 의미와 효과</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 80%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">마지막 deep dive — <strong>트래킹 포즈도 학습한다</strong>.
+
+객체 Gaussian의 world 위치/회전은 (R_t, T_t)에 직접 곱해집니다(Eq.2). 그런데 off-the-shelf 트래커가 뽑은 박스는 <strong>노이즈가 큽니다</strong> — yaw가 도 단위로 떨리고 중심도 흔들리죠. 노이지 포즈로 그대로 학습하면 점들이 평균 위치에 뭉개져 텍스처가 흐려져요.
+
+해법은 simple but elegant. 각 프레임 t의 포즈에 <strong>학습 가능한 보정</strong> (ΔR_t, ΔT_t)을 곱해주자 (Eq.6):
+
+R_t&#x27; = R_t · ΔR_t,   T_t&#x27; = T_t + ΔT_t
+
+ΔT_t는 3D 벡터, ΔR_t는 <strong>yaw 보정 각도 Δθ_t 하나</strong>로 충분(도시 거리는 pitch/roll ≈ 0). gradient는 chain rule로 그냥 흐릅니다 — 추가 implicit 모듈 없이.
+
+학습 스케줄: ΔT_t lr 5e-3 → 5e-5, ΔR_t lr 1e-3 → 1e-5로 exponential decay.
+
+ablation (Waymo, PSNR\*):
+- pose opt 없음: <strong>28.24</strong>
+- GT pose 사용: 29.84
+- pose opt + 트래커 박스: <strong>30.23</strong>
+
+*트래커 박스 + 보정*이 GT 박스보다 좋다는 거예요. 저자 해석: GT 어노테이션 자체에도 노이즈가 있다.
+
+시사점: 라벨이 완벽하지 않아도 *공동 최적화*가 흡수해줍니다. 내일은 숫자 총정리.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 5 — pose opt 유무·GT pose 비교(차량 후면 디테일·로고 복원 차이)</div><a href="figures/page_12.png" target="_blank"><img src="figures/page_12.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type B</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Pose residual (ΔR_t, ΔT_t)</div><div class="concept-def">트래커가 제공한 포즈에 곱하거나 더하는 학습 가능한 보정. 노이즈 흡수 + 어노테이션 한계를 넘어서는 미세 정합.</div></div>
+<div class="concept-card"><div class="concept-term">Yaw-only rotation parameterization</div><div class="concept-def">도시 거리에서 차량 회전을 z축 yaw 한 자유도로 제한. 자유도 축소가 정규화 효과로 작용.</div></div>
+<div class="concept-card"><div class="concept-term">Joint optimization</div><div class="concept-def">장면 표현·skybox·트래킹 포즈를 단일 손실로 동시 학습. 부분 라벨 노이즈를 학습 단계에서 흡수하는 일반적 패턴.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">We treat X as Y</div><div class="expr-ko">우리는 X를 Y로 (다룬다/취급한다)</div><div class="expr-example">We treat the tracked vehicle poses as learnable parameters.</div><div class="expr-context">모델링 결정 — 무엇을 고정으로 두고 무엇을 학습 변수로 둘지 — 을 한 줄로 선언할 때.</div></div>
+<div class="expr-card"><div class="expr-en">leads to degradation in</div><div class="expr-ko">~에 있어 성능 저하를 초래한다</div><div class="expr-example">Directly using noisy bounding boxes to optimize our scene representation leads to degradation in rendering quality.</div><div class="expr-context">특정 설계의 결과로 발생하는 부정적 효과를 인과로 진술할 때.</div></div>
+<div class="expr-card"><div class="expr-en">a plausible explanation is</div><div class="expr-ko">그럴듯한 해석은 ~이다</div><div class="expr-example">It is interesting to notice that our model outperforms the GT-pose version; a plausible explanation is that there still exists noise in GT annotations.</div><div class="expr-context">예상과 다른 실험 결과에 대한 가설적 해석을 제시할 때의 학술적 헷지 표현.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">ΔR_t를 full 3DoF 회전이 아니라 *yaw 각도 하나*로 잡은 이유로 가장 적절한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">학습 속도를 높이기 위해</button><button class="mcq-option" data-correct="true">도시 거리에서 차량 pitch/roll은 거의 0이라 자유도 축소가 정규화·안정화 효과를 줌</button><button class="mcq-option" data-correct="false">GPU 메모리를 줄이기 위해</button><button class="mcq-option" data-correct="false">트래커가 yaw만 출력하기 때문</button></div><div class="mcq-explanation">차량은 도로 평면 운동 가정. 사용하지 않을 자유도를 빼면 잘못된 방향으로의 발산을 막는다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">&#x27;pose opt + 트래커 박스&#x27;가 &#x27;GT 박스&#x27;보다 PSNR*이 높다는 결과의 가장 합리적 해석은?</div><div class="mcq-options"><button class="mcq-option" data-correct="true">GT 어노테이션 자체에도 노이즈가 존재한다</button><button class="mcq-option" data-correct="false">트래커가 본질적으로 GT보다 정확하다</button><button class="mcq-option" data-correct="false">테스트 셋을 외운 결과(overfitting)다</button><button class="mcq-option" data-correct="false">메트릭 계산 버그다</button></div><div class="mcq-explanation">저자 본문이 직접 제시하는 해석. GT라고 라벨이 완벽하지 않으며, 학습 가능한 보정이 GT의 미세 오차도 보완한다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">&#x27;노이지 라벨에 학습 가능한 보정을 붙인다&#x27;는 아이디어를, perception 파이프라인의 다른 모듈(detection·tracking·prediction)에 어떻게 옮길 수 있을까요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>라벨의 일부를 latent로 두고 task loss와 함께 공동 최적화하는 패턴을 떠올려보세요.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>노이지 라벨 → 학습 가능 보정 변수의 도입은 *re-labeling 없이* 표현 학습이 라벨 노이즈를 흡수하게 하는 일반화 가능한 트릭이다 — 본 논문은 6DoF 포즈에 적용했을 뿐.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_7.html">← Day 7</a><a href="day_9.html">Day 9 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>
