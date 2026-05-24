@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 9 — 수치로 본 효과</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 9</div>
+  <div class="hero-tag">결과</div>
+  <h1 class="hero-title">수치로 본 효과</h1>
+  <div class="hero-subtitle">DriveLM·nuScenes·counterfactual에서의 정량 결과</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 90%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">실험 결과를 숫자로 정리합니다.
+
+DriveLM 벤치마크(Tab. 3): 베이스라인 최종 점수 0.53. OmniDrive 사전학습 추가 → 0.56(+3%), LLaVA665K까지 합치면 <strong>0.58</strong>. GPT Score·Match Score 모두 함께 상승하는 종합 향상이에요.
+
+nuScenes open-loop planning(Tab. 2): Omni-L 단독 trajectory 학습 시 평균 L2 2.43m, 충돌률 3.22%, 도로 침범 3.90%. OmniDrive Q&amp;A를 추가하면 충돌 <strong>1.90%로 하락</strong>, 침범 <strong>3.29%</strong>로 개선. ego status까지 결합한 Omni-L++는 평균 L2 0.40m, 충돌 0.35%까지 내려갑니다(단, ego status 효과가 큼).
+
+Counterfactual reasoning(Tab. 4·5): Omni-L이 safety task에서 Precision 72.1%, Recall 58.0%. Omni-Q는 collision detection Recall <strong>72.6%</strong>로 3D perception supervision의 강점이 보이지만, 종합 AP/AR과 CIDEr는 Omni-L(73.2)이 우위. BEV-MLP 변형은 safety Recall 17.3%로 크게 무너져, 사전학습 격차가 얼마나 중요한지 보여줍니다.
+
+핵심 메시지 두 가지: ①Q&amp;A 데이터가 trajectory-only 학습에서 무너지던 LLM의 distribution modeling을 살려준다. ②평균적으로는 2D VLM을 3D로 끌어올리는 쪽(Omni-L)이, perception 스택을 VLM에 박는 쪽(Omni-Q)보다 강하다. 단, perception 정밀도가 결정적인 태스크에서는 Omni-Q가 유리.
+
+내일은 이 결과를 dual-system AD 설계에 어떻게 끌어다 쓸지 봅니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 5 — counterfactual·language·open-loop 세 축에서의 비교</div><a href="figures/page_8.png" target="_blank"><img src="figures/page_8.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">CIDEr</div><div class="concept-def">n-gram TF-IDF 기반 캡션 유사도 메트릭. 생성 문장이 GT 집합과 얼마나 합의되는지 측정.</div></div>
+<div class="concept-card"><div class="concept-term">Match Score (DriveLM)</div><div class="concept-def">예측한 2D 박스가 GT 객체와 얼마나 정합하는지를 보는 점수. 종합 점수에 0.2 가중.</div></div>
+<div class="concept-card"><div class="concept-term">Intersection rate</div><div class="concept-def">ego 궤적이 도로 경계와 교차한 비율. 충돌률과 함께 open-loop planning의 안전성 지표.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">demonstrate the effectiveness of X</div><div class="expr-ko">X의 효과를 보여준다</div><div class="expr-example">Significant improvements demonstrate the effectiveness of our dataset.</div><div class="expr-context">결과 섹션 결론 문장 단골 표현</div></div>
+<div class="expr-card"><div class="expr-en">exhibit a positive correlation between A and B</div><div class="expr-ko">A와 B 사이의 양의 상관을 보인다</div><div class="expr-example">There is a positive correlation between language ability and counterfactual performance.</div><div class="expr-context">ablation 표를 해석할 때</div></div>
+<div class="expr-card"><div class="expr-en">boost performance by N%</div><div class="expr-ko">성능을 N% 끌어올리다</div><div class="expr-example">Incorporating our pre-training data boosts performance by 3%.</div><div class="expr-context">정량적 향상을 짧게 전달할 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">OmniDrive Q&amp;A 추가가 Omni-L open-loop planning에 미친 효과로 옳은 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">L2가 늘어남</button><button class="mcq-option" data-correct="true">collision rate가 3.22% → 1.90%로 감소</button><button class="mcq-option" data-correct="false">intersection rate가 8% 이상으로 상승</button><button class="mcq-option" data-correct="false">ego status가 자동 결합됨</button></div><div class="mcq-explanation">Tab. 2에서 trajectory-only 학습 대비 Q&amp;A 추가가 충돌률을 절반 가까이 낮춘다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">Omni-L vs Omni-Q 비교에서 가장 정확한 일반화는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">모든 지표에서 Omni-Q 우위</button><button class="mcq-option" data-correct="true">Omni-L이 평균 우위, 단 perception 정밀이 중요한 일부 태스크(예: collision Recall 72.6%)는 Omni-Q 우위</button><button class="mcq-option" data-correct="false">둘은 완전 동일</button><button class="mcq-option" data-correct="false">Omni-Q가 항상 더 큰 모델</button></div><div class="mcq-explanation">평균 우위는 Omni-L, 그러나 3D perception이 결정적인 collision detection에서는 Omni-Q가 강세를 보인다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">Omni-L++가 ego status를 켜자 L2 0.40m·충돌 0.35%까지 떨어지는 게 진짜 모델 능력 향상일까요, 아니면 평가의 함정일까요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>Day 2에서 봤던 ego status 과적합 문제를 떠올려 보세요.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>수치만 보고 &quot;개선됐다&quot;고 단정하면 안 됩니다. ego status 효과는 평가 함정이 섞여 있을 수 있어, counterfactual reasoning 같은 의도 기반 지표를 함께 봐야 진짜 능력이 보입니다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_8.html">← Day 8</a><a href="day_10.html">Day 10 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

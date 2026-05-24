@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 1 — 왜 반사실 추론이 필요한가</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 1</div>
+  <div class="hero-tag">배경</div>
+  <h1 class="hero-title">왜 반사실 추론이 필요한가</h1>
+  <div class="hero-subtitle">전문가 궤적만으로는 가르칠 수 없는 의사결정 추론의 빈자리</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 10%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">자율주행 학계가 <strong>VLM(Vision-Language Model)</strong>을 운전에 끌어들이는 흐름은 빠릅니다. 그런데 막상 적용해 보면 본질적인 한계가 드러나죠. nuScenes 같은 실주행 로그가 보여주는 건 &#x27;안전했던 한 줄짜리 정답 궤적&#x27;뿐이고, 운전자가 머릿속에서 굴리는 &#x27;만약에&#x27; 추론은 빠져 있어요. 사람은 좌회전 직전 &quot;지금 가속하면 마주오는 차랑 부딪힐까?&quot;를 늘 가늠하는데, 학습 신호에는 그 사고 과정이 없는 거죠.
+
+이 빈자리를 채우려면 <strong>대규모 합성 Q&amp;A 데이터</strong>가 필요합니다. 시뮬레이션으로 가짜 궤적을 던져 충돌·신호 위반·차선 이탈을 자동 평가하고, 이를 자연어 질문-답변 쌍으로 변환하는 거죠. 일종의 <strong>반사실(counterfactual) 데이터 증강</strong>이고, sparse supervision 문제를 정면으로 푸는 방향입니다. 계획 궤적과 언어 추론을 잇는 다리를 놓자는 문제의식이에요.
+
+내일은 이 다리를 놓으려던 기존 시도들이 어디서 막혔는지 살펴보겠습니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 — OmniDrive 전체 개요(반사실 기반 데이터 생성과 두 에이전트)</div><a href="figures/page_1.png" target="_blank"><img src="figures/page_1.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Vision-Language Model (VLM)</div><div class="concept-def">이미지와 텍스트를 함께 처리해 캡션·QA·추론을 수행하는 멀티모달 모델. 2D 기반이 대부분이라 3D 정렬은 별도 과제.</div></div>
+<div class="concept-card"><div class="concept-term">Counterfactual reasoning</div><div class="concept-def">실제로 일어나지 않은 대안 시나리오를 가정하고 그 결과를 평가하는 추론. 사람 운전자의 &#x27;if-then&#x27; 사고에 해당.</div></div>
+<div class="concept-card"><div class="concept-term">Sparse supervision</div><div class="concept-def">전문가 궤적처럼 &#x27;안전한 정답&#x27; 하나만 주어지는 학습 신호. 왜 안전한지·다른 선택은 어땠는지를 가르치지 못함.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">leverage strong reasoning capabilities</div><div class="expr-ko">강력한 추론 능력을 활용하다</div><div class="expr-example">We aim to leverage the strong reasoning capabilities of VLMs for end-to-end autonomous driving.</div><div class="expr-context">서론에서 기존 모델을 새 도메인에 도입하는 동기를 설명할 때</div></div>
+<div class="expr-card"><div class="expr-en">bridge the gap between A and B</div><div class="expr-ko">A와 B 사이의 간극을 메우다</div><div class="expr-example">Counterfactual Q&amp;A bridges the gap between planning trajectories and language-based reasoning.</div><div class="expr-context">기여 문장에서 두 분야를 연결한다는 점을 강조할 때</div></div>
+<div class="expr-card"><div class="expr-en">reflect only sparse supervision</div><div class="expr-ko">희소한 지도 신호만 제공한다</div><div class="expr-example">Expert driving actions reflect only sparse supervision, lacking decision-making rationale.</div><div class="expr-context">기존 데이터의 한계를 지적할 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">논문이 지적한 전문가 주행 데이터의 핵심 한계는 무엇인가요?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">데이터 양이 충분하지 않다</button><button class="mcq-option" data-correct="true">안전한 궤적만 담겨 있어 의사결정 과정에 대한 감독 신호가 없다</button><button class="mcq-option" data-correct="false">다중 카메라 뷰가 부족하다</button><button class="mcq-option" data-correct="false">라벨 노이즈가 너무 크다</button></div><div class="mcq-explanation">전문가 궤적은 &#x27;결과로 안전했던 한 줄짜리 정답&#x27;만 보여줄 뿐 대안에 대한 평가가 없어 sparse supervision으로 분류된다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">반사실 추론을 자율주행 데이터셋에 도입하려는 핵심 동기는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">시뮬레이터 계산 부담을 줄이기 위해</button><button class="mcq-option" data-correct="true">인간 운전자가 대안 행동을 가늠하듯, 다양한 시나리오와 결과를 함께 학습시키기 위해</button><button class="mcq-option" data-correct="false">카메라 해상도를 높이기 위해</button><button class="mcq-option" data-correct="false">라벨링 비용을 0으로 만들기 위해</button></div><div class="mcq-explanation">사람이 머릿속에서 &#x27;if-then&#x27;을 굴리듯, 모델에도 &#x27;대안 궤적의 결과&#x27;를 학습시키는 것이 동기.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">이런 반사실 데이터를 만들 때 시뮬레이터가 만든 &#x27;가짜 결과&#x27;와 실제 도로 결과의 갭은 어떻게 다뤄야 할까요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>논문의 Limitations 섹션이 다른 에이전트의 reactive 거동에 대해 뭐라고 하는지 떠올려 보세요.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>반사실 시뮬레이션은 풍부한 supervision을 만들어 주는 대가로, 다른 에이전트의 반응이 빠진 sim2real 갭을 떠안게 됩니다. 데이터 증강의 양보다 어떤 분포가 비어 있는지가 중요해요.</div>
+  </div>
+</div></div>
+<div class="nav"><span class="disabled">← 이전</span><a href="day_2.html">Day 2 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

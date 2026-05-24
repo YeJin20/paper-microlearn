@@ -4,7 +4,7 @@ through brief, KakaoTalk-style daily messages.
 
 ## CONTEXT
 - Reader: senior AI/autonomous driving researcher
-- Currently exploring: scene editing for data augmentation
+- Currently exploring: {goal}
 - Reading mode: mobile, 3-5 minutes per day
 - Goal after Day 10: reader can explain the paper to a peer, 
   knows where it sits in the field, sees concrete application 
@@ -36,7 +36,7 @@ Day 9 — Results that matter
   Key numbers ACTUALLY IN THE PAPER. What each enables.
 
 Day 10 — Application to reader's work
-  Specific application angle (data augmentation for AD here).
+  Specific application angle: {goal}.
   Mention follow-up work.
   End with reflection question for reader's own research.
 

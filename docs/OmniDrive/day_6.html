@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 6 — 데이터 파이프라인 분해</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 6</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">데이터 파이프라인 분해</h1>
+  <div class="hero-subtitle">체크리스트→GPT-4→5종 Q&amp;A 변환의 작동 원리</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 60%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">오늘은 OmniDrive의 심장인 <strong>반사실 Q&amp;A 생성 파이프라인</strong>을 분해해 봅시다. 출발점은 전체 nuScenes 궤적에서 뽑힌 200개 군집의 시뮬레이션 궤적입니다. 각 키프레임에 정지·좌회전·U턴 같은 후보 행동을 던져 보고, 결과를 두 갈래로 평가합니다.
+
+①규칙 기반 항목 — 객체 충돌, 도로 경계 충돌, 신호 위반은 nuScenes 3D 박스와 OpenLane-V2의 centerline·topology로 결정적 검증. ②규칙 외 항목 — 그 외 교통 규칙은 시뮬레이션 궤적을 &quot;lane assignment, lane-change&quot; 같은 high-level decision으로 변환한 뒤 GPT-4에 위임. 두 신호를 합쳐 &quot;이 좌회전은 안전한가?&quot; 같은 판단을 만듭니다.
+
+프롬프트는 <strong>3종 입력</strong>으로 구성됩니다: ⓐ 캡션(다중뷰 6장을 stitched 전·후 2장으로 만들어 GPT-4가 먼저 묘사), ⓑ 시뮬레이션 결정·궤적, ⓒ 전문가 결정·궤적 + close objects(궤적과 3초·10m 이내). 출력은 Scene Description / Attention / Counterfactual Reasoning / Decision making &amp; Planning / General conversation 5종 Q&amp;A입니다.
+
+핵심 트릭 하나: <strong>이미지와 장면 정보를 동시에 입력하면 GPT-4가 이미지를 무시하는 경향이 강합니다</strong>. 그래서 캡션을 먼저 강제 생성하게 만들어 OCR·롱테일 객체 인식을 보존했어요. 작은 디테일이 데이터 품질을 좌우합니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 — 3종 입력 프롬프트와 5종 응답 예시</div><a href="figures/page_4.png" target="_blank"><img src="figures/page_4.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Centerline &amp; topology (OpenLane-V2)</div><div class="concept-def">차선 중심선과 차선 간 위상 관계를 표현한 어노테이션. 도로 경계 충돌과 lane assignment 평가에 사용.</div></div>
+<div class="concept-card"><div class="concept-term">Close object</div><div class="concept-def">다음 3초 동안 ego 궤적과의 최소 거리가 10m 이내인 객체. attention/risk 항목의 자동 정의.</div></div>
+<div class="concept-card"><div class="concept-term">High-level decision</div><div class="concept-def">시뮬레이션 궤적을 &#x27;lane keep, lane change, turn left&#x27;처럼 의미 단위로 변환한 표현. GPT-4가 안전 평가하기 좋은 형태.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">draw inspiration from X</div><div class="expr-ko">X에서 영감을 얻다</div><div class="expr-example">We draw inspiration from counterfactual reasoning to structure the entire scene.</div><div class="expr-context">기존 아이디어를 출발점으로 채택할 때 격조있게 진술하는 표현</div></div>
+<div class="expr-card"><div class="expr-en">tend to overlook details</div><div class="expr-ko">세부를 놓치는 경향이 있다</div><div class="expr-example">When both the image and extensive scene information are fed in simultaneously, GPT-4 tends to overlook details in the image.</div><div class="expr-context">관찰된 약점을 조심스럽게 기술할 때</div></div>
+<div class="expr-card"><div class="expr-en">be both reliable and interpretable</div><div class="expr-ko">신뢰성과 해석 가능성을 동시에 갖춘다</div><div class="expr-example">This methodology ensures that data generation is both reliable and interpretable.</div><div class="expr-context">데이터 품질 보증 결론 문장에서</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">close object의 정의로 옳은 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">ego와 같은 차선의 모든 객체</button><button class="mcq-option" data-correct="true">다음 3초간 ego 궤적과의 최소 거리가 10m 이내인 객체</button><button class="mcq-option" data-correct="false">전방 30m 이내의 모든 객체</button><button class="mcq-option" data-correct="false">GPT-4가 위험하다고 판단한 객체</button></div><div class="mcq-explanation">논문은 &#x27;minimum distance &lt; 10m within next 3 seconds&#x27;로 close object를 정의한다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">다중뷰 이미지를 먼저 캡션으로 변환한 뒤 추가 정보를 주는 설계 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">GPT-4의 토큰 한도를 절약하기 위해</button><button class="mcq-option" data-correct="true">이미지와 장면 정보를 동시에 넣으면 GPT-4가 이미지를 무시하는 경향이 있기 때문</button><button class="mcq-option" data-correct="false">OCR 모듈이 따로 없어서</button><button class="mcq-option" data-correct="false">캡션이 더 빠르기 때문</button></div><div class="mcq-explanation">캡션 선행 → OCR·롱테일 객체 인식을 보존, 동시 입력 시 이미지 무시 문제를 회피한다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">본인 연구에서 &#x27;LLM이 이미지를 무시하는 문제&#x27;를 회피해야 한다면, 어떤 강제 절차를 끼워 넣으시겠어요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>OmniDrive가 캡션을 먼저 만들어 두는 방식을 일반화해 보세요. 두 단계 프롬프팅, 중간 표현 강제 등.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>멀티모달 입력을 한 번에 던지는 대신, 모달리티를 순차적으로 통과시키며 중간 표현을 강제하면 정보 누락이 크게 줄어듭니다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_5.html">← Day 5</a><a href="day_7.html">Day 7 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

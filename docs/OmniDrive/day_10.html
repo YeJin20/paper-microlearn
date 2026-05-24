@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 10 — Dual-System AD에 끌어다 쓰기</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 10</div>
+  <div class="hero-tag">응용</div>
+  <h1 class="hero-title">Dual-System AD에 끌어다 쓰기</h1>
+  <div class="hero-subtitle">System 2 reasoning trace 데이터·스위칭 게이트 신호로의 활용</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 100%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">이제 본인 연구 맥락으로 가져와 봅시다. <strong>dual-system AD</strong> — 빠른 System 1(DiffusionDrive·SparseDrive류 E2E policy)과 느린 System 2(AutoVLA류 VLA reasoning)가 동적으로 전환되는 구조 — 에서 OmniDrive는 어디에 꽂힐까요?
+
+가장 자연스러운 자리는 <strong>System 2 supervision 보강</strong>입니다. AutoVLA가 &quot;왜 지금 멈춰야 하는가&quot;를 자연어로 풀어쓰게 만들려면, 단일 전문가 궤적만으론 부족해요. OmniDrive의 counterfactual Q&amp;A는 &quot;가속했다면 충돌, 좌회전했다면 신호 위반&quot; 같은 대안 결과를 언어로 제공합니다. dual-system 스위처가 System 2로 hand-off할 때 학습시킬 reasoning trace 데이터로 거의 그대로 쓸 수 있어요.
+
+두 번째 각도는 <strong>스위칭 게이트의 trigger 신호</strong>. 반사실 체크리스트(충돌·신호 위반·drivable area)는 System 1이 자신 없는 시나리오를 식별하는 입력으로 재활용 가능합니다. close object 정의(<strong>3초·10m</strong>)는 그대로 risk gate의 feature가 되고, lane-change·U-turn 같은 high-level decision은 mode-switch 라벨로 활용 가능.
+
+후속 작업으로 DriveVLM, Hydra-MDP, VADv2가 closed-loop·multi-target distillation으로 확장 중입니다. OmniDrive가 명시한 한계(다른 에이전트 reactive 거동 부재)는 그쪽 closed-loop 시뮬레이터에서 보완되는 흐름이에요.
+
+머릿속 시도: 본인의 스위처에서 OmniDrive Q&amp;A 중 어떤 항목을 게이트 결정 feature로 가장 먼저 쓰시겠어요?</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 4 — counterfactual reasoning의 safety/red light/collision/drivable area 분해</div><a href="figures/page_7.png" target="_blank"><img src="figures/page_7.png" alt="Figure" loading="lazy"></a></div>
+<div class="trigger">Trigger Type C</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">System 1 / System 2 (Kahneman)</div><div class="concept-def">빠른 직관적 처리와 느린 분석적 추론을 구분하는 이중 인지 모델. dual-system AD의 이론적 토대.</div></div>
+<div class="concept-card"><div class="concept-term">Hand-off (dual-system AD)</div><div class="concept-def">System 1이 자신 없을 때 System 2로 결정권을 넘기는 전환 절차. trigger 신호 설계가 핵심.</div></div>
+<div class="concept-card"><div class="concept-term">VLA (Vision-Language-Action)</div><div class="concept-def">시각·언어·행동을 통합 학습해 reasoning과 제어 신호를 함께 출력하는 모델. AutoVLA가 대표.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">highlight the advantages of X in Y</div><div class="expr-ko">Y에서 X의 이점을 강조하다</div><div class="expr-example">Our exploration highlights the advantages of vision-language alignment in 3D spaces.</div><div class="expr-context">결론에서 핵심 기여를 단정할 때</div></div>
+<div class="expr-card"><div class="expr-en">underscore the effectiveness of X</div><div class="expr-ko">X의 효과를 명확히 보여주다</div><div class="expr-example">Pre-trained models on OmniDrive underscore the effectiveness of our dataset.</div><div class="expr-context">결과 요약 문장에서 효과를 강조할 때</div></div>
+<div class="expr-card"><div class="expr-en">we aim to use X to enhance Y</div><div class="expr-ko">X를 사용해 Y를 강화하고자 한다</div><div class="expr-example">We aim to use closed-loop results to enhance effectiveness.</div><div class="expr-context">향후 작업·로드맵을 단정할 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">dual-system AD 관점에서 OmniDrive를 활용하는 가장 자연스러운 자리는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">System 1의 latency를 줄이는 inference engine</button><button class="mcq-option" data-correct="true">System 2의 자연어 reasoning trace 학습 신호 및 스위칭 trigger feature</button><button class="mcq-option" data-correct="false">BEV feature map 압축기</button><button class="mcq-option" data-correct="false">라이다 캘리브레이션 라이브러리</button></div><div class="mcq-explanation">counterfactual Q&amp;A는 &#x27;reasoning을 언어화한 supervision&#x27;이고, 체크리스트는 게이트 trigger로 재활용 가능해 System 2 쪽과 hand-off 신호 양쪽에 맞는다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">OmniDrive의 한계로 논문이 직접 명시한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">다중 카메라 캘리브레이션 미흡</button><button class="mcq-option" data-correct="true">시뮬레이션에 다른 에이전트의 반응(reactive 거동)이 빠짐</button><button class="mcq-option" data-correct="false">nuScenes 외 데이터로 일반화 불가</button><button class="mcq-option" data-correct="false">LLM 추론 latency 과다</button></div><div class="mcq-explanation">Limitations 섹션이 &#x27;does not yet consider reactions from other agents&#x27;라고 명시한다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">본인의 dual-system 스위처에서 OmniDrive의 어떤 신호를 게이트 결정의 1순위 feature로 쓰시겠어요? 그리고 그 선택이 &#x27;다른 에이전트의 reactive 거동을 무시한다&#x27;는 한계와 어떻게 충돌할까요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>반사실 체크리스트는 &#x27;ego 궤적이 잘못된 경우&#x27;만 시뮬레이션합니다. 다른 차가 갑자기 멈추는 시나리오는 빠져 있다는 점을 짚어 보세요.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>OmniDrive의 풍부한 supervision은 &#x27;ego가 만든 결과&#x27;에 한정됩니다. dual-system 게이트가 진짜로 필요한 순간(타인의 의외 행동)에는 reactive 시나리오를 별도로 채워줄 closed-loop·multi-agent 데이터가 추가로 필요해요.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_9.html">← Day 9</a><span class="disabled">다음 →</span></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>
