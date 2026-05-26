@@ -10,6 +10,17 @@ through brief, KakaoTalk-style daily messages.
   knows where it sits in the field, sees concrete application 
   angles for their own work
 
+## DEPTH (you are writing for an expert audience)
+The reader is a senior AI/autonomous driving researcher with deep 
+ML and 3D geometry fluency. Write at PEER LEVEL:
+- Skip basic explanations (assume ML/optimization/geometry knowledge)
+- Emphasize WHY decisions were made, not just WHAT
+- Surface non-obvious trade-offs and design rationale  
+- For math, give the intuition for WHY the formulation works
+- Point out edge cases, failure modes, where it might break
+- Cross-reference related work for non-obvious connections
+- Use peer-level technical vocabulary; don't translate jargon to basics
+
 ## DAY-BY-DAY RUBRIC (follow exactly)
 
 Day 1 — Why this problem matters
@@ -41,7 +52,8 @@ Day 10 — Application to reader's work
   End with reflection question for reader's own research.
 
 ## CONSTRAINTS (apply to every day)
-- Length: 400-600 Korean characters for the main content
+- - Length: 700-1000 Korean characters for the main content 
+  (deeper than 5-min mobile read — assume the reader wants substance)
 - Tone: conversational, peer-to-peer
 - Must include: one concrete example or analogy
 - Must NOT: dry abstract; repeat across days; jargon without explanation
@@ -49,15 +61,31 @@ Day 10 — Application to reader's work
   numbers, central concepts (e.g., **4D Spherical Harmonics**, 
   **135 FPS**). 2-4 emphases per day. Don't overuse.
 
+## MATH FORMAT
+Use LaTeX delimiters for ALL math expressions:
+- Inline: $L_1$, $\mu_w = R_t \mu_o + T_t$, $\Sigma = R S S^T R^T$
+- Display (centered): $$z_{m,l}(t) = \sum_{i=0}^{k-1} f_i \cos(i\pi t / N_t)$$
+- Subscripts: $x_t$, $\mu_o$, $L_1$ — never "x_t" or "L_1" as plain text
+- Common symbols: \mu, \sigma, \Sigma, \alpha, \beta, \theta, \rightarrow, \nabla, \mathcal{L}
+- ALWAYS use $...$; don't write math as plain text
+
 ## FACT GROUNDING (CRITICAL)
 - Only use numbers explicitly in the paper.
 - If uncertain, OMIT or hedge with "약/추정/대략".
 
 ## ADDITIONAL CONTENT (every day must have these)
 
-### key_concepts (2-4 items)
-Important technical terms from this day's content.
-Each: term (original form, EN or KO), definition (1-2 plain sentences).
+### key_concepts (exactly 1-2 items, IN-DEPTH)
+Pick 1-2 of THE MOST IMPORTANT concepts from this day. Each should 
+be substantial (not a quick definition).
+Each item:
+- term: the term (original form, EN or KO mix is fine)
+- definition: 300-500 chars covering:
+  * core idea (1-2 sentences)
+  * mathematical formulation in LaTeX if relevant
+  * intuition of WHY it works (not just what it is)
+  * when/where it shows up in the literature
+  * common confusions, pitfalls, or edge cases
 
 ### english_expressions (2-3 items)
 Useful English academic writing phrases that appear (or could appear) 
@@ -82,9 +110,12 @@ ask after this day. Should make the reader think + connect to own work.
   this question, regardless of their answer. Shown after they submit.
 
 ## FIGURE SUGGESTIONS
-For each day, suggest ONE figure or table.
-suggested_figure: "Figure X — brief description" or null.
-figure_page: PDF page number (1-indexed) of that figure, or null.
+For each day, identify ONE figure or table AND describe its content.
+- suggested_figure: "Figure X — brief title" (or null)
+- figure_page: PDF page (1-indexed) where the figure appears (or null)
+- figure_description: 100-200 chars describing what the figure visually 
+  shows. Include: panels/columns layout, key visual difference, what 
+  to look for. (or null if no figure)
 
 ## THOUGHT TRIGGER (vary across days)
 Rotate among 3 types:
@@ -101,6 +132,7 @@ Each type at least 3 times across 10 days. Day 10 must be C.
     "content": "400-600 char Korean message",
     "suggested_figure": "Figure X — desc, or null",
     "figure_page": 3,
+    "figure_description": "100-200 char description of what's in figure",
     "trigger_type": "A | B | C",
     "key_concepts": [
       {"term": "...", "definition": "..."}

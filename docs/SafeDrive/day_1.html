@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 1 — 왜 E2E 자율주행의 안전성이 문제인가</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 1</div>
+  <div class="hero-tag">배경</div>
+  <h1 class="hero-title">왜 E2E 자율주행의 안전성이 문제인가</h1>
+  <div class="hero-subtitle">안전을 점수가 아닌 reasoning으로 봐야 하는 이유</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 10%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">자율주행은 본질적으로 &#x27;거의 항상 잘 됨&#x27;이 답이 되지 못하는 도메인입니다. NAVSIM 기준으로도 <strong>12,146 시나리오 중 61건(0.5%)</strong> 의 충돌이 잠재해 있는데, 양산 차량 규모로 환산하면 매일 수만 건의 위험으로 바뀝니다. End-to-End 패러다임은 perception–prediction–planning을 단일 네트워크로 합쳐 모듈 간 오류 누적은 줄였지만, &#x27;이 trajectory가 왜 안전한가&#x27;를 명시적으로 추론할 수 있는 구조는 오히려 흐릿해지기 쉽습니다.
+
+연구자 관점에서 이 문제는 <strong>sim2real, digital twin, data augmentation</strong> 어디든 직결됩니다. CARLA·NAVSIM처럼 dense BEV로 만든 시뮬레이션 장면은 풍부하지만, 모델이 <strong>장면 단위(scene-level)</strong> 점수만 학습하면 sim에서 안 보이던 instance-level 실패 모드가 real에서 그대로 터집니다. Digital twin도 단순 재현을 넘어 &#x27;어떤 에이전트가 언제 위험한가&#x27;를 표현해야 가치가 있고, augmentation은 long-tail 충돌 직전 상황을 학습 가능한 supervision으로 변환할 수 있어야 합니다.
+
+오늘 가져갈 관점은 단 하나, <strong>&#x27;safety는 점수가 아니라 reasoning이다&#x27;</strong> 입니다. trajectory를 0~1로 채점하는 게 아니라, 어느 에이전트가, 몇 초 뒤, 왜 위험한지 모델이 분해해 답할 수 있어야 한다는 것. 내일은 기존 world-model 및 trajectory-scoring 계열 연구가 이 reasoning에 어디서 실패했는지 살펴봅니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 — Dense vs Sparse / Scene-level vs Fine-grained 비교</div><a href="figures/page_1.png" target="_blank"><img src="figures/page_1.png" alt="Figure" loading="lazy"></a><div class="figure-explain">3패널 비교도. (a) Dense BEV의 future world vs Sparse instance query 기반 future world, (b) scene-level safety score vs agent·timestep 단위 fine-grained safety check, (c) SafeDrive의 sparse world + safety reasoning 통합.</div></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">PDMS / EPDMS</div><div class="concept-def">NAVSIM의 표준 safety 평가 지표. 공식은 $\mathrm{PDMS} = \left(\prod_{m \in \mathcal{P}} s_m\right) \cdot \left(\sum_{m \in \mathcal{W}} w_m s_m \big/ \sum_{m \in \mathcal{W}} w_m\right)$ 로, $\mathcal{P}=\{NC, DAC\}$ 는 곱셈 페널티(위반 시 전체 점수 0), $\mathcal{W}=\{EP, TTC, C\}$ 는 가중 평균. 의도는 &#x27;collision/lane-departure는 catastrophic, progress/comfort는 graceful&#x27;이라는 안전 도메인의 비대칭을 반영. EPDMS는 human-caused violation을 필터링하고 DDC·TLC·LK·HC·EC를 추가. 함정: scene-level NC는 평균치라 한 agent의 미세한 risk가 평탄화되어 fine-grained 평가가 필요한 동기를 만듦.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">places safety at its core</div><div class="expr-ko">안전을 핵심에 둔다</div><div class="expr-example">Autonomous driving ultimately places safety at its core, as even rare failures can lead to critical risks.</div><div class="expr-context">도메인의 본질적 제약을 강조하며 motivation을 여는 정형 표현.</div></div>
+<div class="expr-card"><div class="expr-en">error propagation between modules</div><div class="expr-ko">모듈 간 오류 전파</div><div class="expr-example">Modular pipelines often suffer from error propagation between modules, leading to unsafe behaviors.</div><div class="expr-context">modular vs end-to-end 비교에서 modular의 단점을 지적하는 표준 어휘.</div></div>
+<div class="expr-card"><div class="expr-en">remain largely implicit</div><div class="expr-ko">여전히 암묵적인 수준에 머문다</div><div class="expr-example">While these approaches assess safety at a coarse level, their reasoning remains largely implicit.</div><div class="expr-context">prior work를 비판할 때, &#x27;X는 하지만 Y는 못한다&#x27;식의 우회 비판에 자주 쓰이는 hedging 표현.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">PDMS에서 NC와 DAC 점수가 EP·TTC·Comfort와 다르게 처리되는 이유로 가장 정확한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">가중치가 더 크게 부여되어 평균에 강한 영향을 준다</button><button class="mcq-option" data-correct="true">곱셈 페널티로 동작해 위반 시 전체 PDMS가 0이 된다</button><button class="mcq-option" data-correct="false">human baseline에서만 계산되어 모델 점수에는 영향이 없다</button><button class="mcq-option" data-correct="false">comfort 메트릭이 보정 항으로 작용해 자동 상쇄된다</button></div><div class="mcq-explanation">NC/DAC는 multiplicative penalty($\mathcal{P}$ 집합)이라 위반 시 전체 점수가 0이 되며, 이는 collision·lane-departure의 catastrophic 성격을 반영한 설계.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">E2E 패러다임이 modular pipeline 대비 갖는 이점이지만 동시에 잃기 쉬운 것을 가장 잘 묘사한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">추론 속도는 빨라지지만 perception 정확도가 항상 떨어진다</button><button class="mcq-option" data-correct="false">데이터 효율은 높아지지만 LiDAR 의존도가 늘어난다</button><button class="mcq-option" data-correct="true">모듈 간 오류 누적은 줄지만 &#x27;왜 안전한가&#x27;에 대한 명시적 추론 구조가 흐려진다</button><button class="mcq-option" data-correct="false">학습 안정성은 좋아지지만 배치 크기가 줄어든다</button></div><div class="mcq-explanation">통합 학습은 error propagation을 줄이지만, 모듈 경계가 사라지면서 안전성에 대한 명시적이고 해석 가능한 reasoning은 모델 안에 implicit하게 갇히기 쉬움.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">당신의 sim2real 파이프라인에서 모델이 &#x27;scene-level 평균&#x27; 형태로만 안전 신호를 학습하고 있는지, &#x27;instance·timestep 단위&#x27;까지 받고 있는지 어떻게 진단할 수 있을까요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>Failure mode를 한 에이전트 단위로 attribute할 수 있는지 ablation으로 확인해 보세요. 같은 scene에서 한 agent만 perturb했을 때 점수가 변하는지가 좋은 probe가 됩니다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>Scene-level supervision은 &#x27;평균적으로 안전한&#x27; trajectory는 만들 수 있어도, &#x27;특정 보행자가 t+3s에 위험&#x27;같은 fine-grained 신호는 학습시키지 못한다. 진단 가능한 risk localization이 곧 sim2real 갭을 줄이는 손잡이가 된다.</div>
+  </div>
+</div></div>
+<div class="nav"><span class="disabled">← 이전</span><a href="day_2.html">Day 2 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

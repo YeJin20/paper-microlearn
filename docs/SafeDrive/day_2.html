@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 2 — 기존 연구는 왜 안전 reasoning에 실패했나</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 2</div>
+  <div class="hero-tag">배경</div>
+  <h1 class="hero-title">기존 연구는 왜 안전 reasoning에 실패했나</h1>
+  <div class="hero-subtitle">trajectory-evaluation과 dense world model의 두 갈래 한계 정리</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 20%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">기존 안전 처리는 크게 두 갈래입니다.
+
+첫째, <strong>trajectory-evaluation 계열</strong> (Hydra-MDP, DiffusionDrive, WoTE, DriveSuprim). 후보 trajectory를 NC·DAC·TTC·EP·Comfort 같은 기준으로 점수화해 가장 안전한 것을 고릅니다. 문제는 점수화가 &#x27;장면 전체 → 하나의 점수&#x27;라는 <strong>holistic</strong> 구조라는 점. 모델은 &#x27;왜 위험한가&#x27;를 명시적으로 모델링하지 않고, 그저 &#x27;global 표현 → scalar&#x27;의 implicit 매핑을 학습합니다. 그래서 미세한 trajectory deviation이 collision으로 이어지는 복잡한 interaction 시나리오에서 트레젝토리 사이의 미세 차이를 구분하지 못합니다.
+
+둘째, <strong>world-model rollout 계열</strong> (OccWorld, DriveWorld, LAW, SSR, WoTE). ego의 미래 action에 조건부로 장면이 어떻게 진화할지 시뮬레이션합니다. 그런데 이들은 dense 표현(BEV grid, 4D occupancy)을 씁니다. Grid-centric은 환경을 &#x27;셀의 점유 여부&#x27;로만 보기 때문에, &#x27;ego와 옆 차량 간의 관계적 동역학&#x27;을 표현할 명시적 메커니즘이 없습니다. 결국 &#x27;이 cell이 점유될 것 같다&#x27;까지는 알아도 &#x27;저 차가 내 차선으로 끼어들 것이다&#x27; 같은 instance-centric interaction은 흐릿하게만 잡힙니다.
+
+핵심 진단: scene-level 점수는 <strong>agent·timestep 단위 risk localization</strong> 이 없고, dense world model은 <strong>관계적 동역학</strong> 이 없다. 이 두 결핍이 합쳐지면 &#x27;거의 안전한데 종종 충돌하는&#x27; 모델이 나옵니다. 내일은 SafeDrive가 이 두 결핍을 어떻게 한 번에 끊어내는지 한 줄로 봅니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 (a), (b) — Dense world의 instance-interaction 결핍, Scene-level safety의 localization 결핍</div><a href="figures/page_1.png" target="_blank"><img src="figures/page_1.png" alt="Figure" loading="lazy"></a><div class="figure-explain">(a) 좌측: dense BEV future world (격자 점유) vs 우측: sparse instance query future world (객체별 박스). (b) 좌측: trajectory에 하나의 safety score만 부여 vs 우측: 각 agent·미래 시점마다 risk 표시.</div></div>
+<div class="trigger">Trigger Type B</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Dense World Model (BEV/Occupancy)의 한계</div><div class="concept-def">Dense world model은 환경을 BEV grid나 4D occupancy처럼 cell 단위 점유로 표현(OccWorld, DriveWorld, LAW, WoTE 계열). 장점은 unseen region까지 채우는 표현력과 geometry 일관성. 단점은 **관계적 동역학의 부재** — &#x27;ego와 i번째 agent의 pair-wise interaction&#x27;을 명시 모델링할 곳이 없어, &#x27;cell이 점유될 것 같다&#x27;까지만 알고 &#x27;저 차가 끼어들 것&#x27;같은 instance-level 인과는 흐림. 또 grid 해상도 ↔ 메모리 trade-off가 강해 long-range·high-resolution을 동시에 얻기 어려움. Sparse world는 이 한계의 거울이미지로 등장.</div></div>
+<div class="concept-card"><div class="concept-term">Scene-level Safety Scoring</div><div class="concept-def">Hydra-MDP 계열은 trajectory를 NC·DAC·TTC·EP·Comfort 5축으로 점수화하지만, 입력은 &#x27;global scene representation + trajectory&#x27;이고 출력은 5개 scalar. 즉 모델은 &#x27;safety가 trajectory와 어떻게 결합되는지&#x27; 직접 추론하지 않고 implicit하게 회귀. 결과적으로 trajectory 후보 간 미세 차이(0.5m lateral offset, 0.3s timing)가 collision risk로 어떻게 번지는지 구분하기 어려움. Figure 4가 보여주는 &#x27;ProposalNet이 collision 경로를 최고로 평가하는&#x27; 실패가 정확히 이 메커니즘에서 발생.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">fall short of</div><div class="expr-ko">~에 미치지 못한다</div><div class="expr-example">Dense scene representations fall short of capturing complex risk factors that emerge from dynamic interactions.</div><div class="expr-context">prior work의 부족함을 정중하게 지적할 때 매우 자주 쓰이는 학술적 표현.</div></div>
+<div class="expr-card"><div class="expr-en">place the burden on the model to</div><div class="expr-ko">~하는 부담을 모델에 떠넘긴다</div><div class="expr-example">Holistic approaches place the burden on the model to determine which aspects of the scene are relevant for safety.</div><div class="expr-context">모델 설계의 implicit 의존성을 비판할 때 쓰는 자주 등장하는 비판 어휘.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Dense world model 계열이 안전 reasoning에서 가장 본질적으로 막히는 지점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">BEV 해상도가 부족해 정밀한 perception이 어렵다</button><button class="mcq-option" data-correct="true">ego와 surrounding agent 사이의 관계적 동역학을 명시 모델링할 메커니즘이 없다</button><button class="mcq-option" data-correct="false">메모리 사용량이 커서 학습이 어렵다</button><button class="mcq-option" data-correct="false">occupancy 예측이 multi-modal하지 못하다</button></div><div class="mcq-explanation">Dense grid는 환경을 cell 점유로만 표현하므로, instance 간 pair-wise relational dynamics를 표현할 자리가 없다. 해상도·메모리는 부차적 문제.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">Scene-level safety scoring(예: Hydra-MDP)이 &#x27;A 후보 trajectory와 B 후보 trajectory가 0.5m만 다른데 결과는 충돌과 회피로 갈리는&#x27; 시나리오에서 약한 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">두 trajectory의 거리 차이가 너무 작아 perception이 못 잡기 때문</button><button class="mcq-option" data-correct="true">global scene representation에서 scalar로 회귀하는 implicit 매핑이라, 어디서·언제 risk가 갈리는지 분해된 신호를 학습하지 못하기 때문</button><button class="mcq-option" data-correct="false">trajectory anchor 수가 부족해 candidate set이 좁기 때문</button><button class="mcq-option" data-correct="false">comfort 항이 collision risk와 충돌하기 때문</button></div><div class="mcq-explanation">Holistic 점수화는 &#x27;A이면 0.8, B이면 0.2&#x27; 같은 결과만 학습할 뿐, &#x27;B는 t+3s에 i번째 agent와 충돌&#x27;이라는 분해 정보를 표현하지 못해 미세 차이 분별이 어렵다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">기존 prior work들의 한계 중 &#x27;관계적 동역학 부재&#x27;와 &#x27;risk localization 부재&#x27; 중 어느 쪽이 sim2real 갭에 더 크게 기여한다고 생각하시나요? 본인 경험을 비추어 보면?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>perception 단계가 견고할수록 어느 결핍이 두드러지는지 떠올려 보세요. 또 closed-loop vs open-loop 어느 평가에서 각 결핍이 더 잘 드러나는지도 단서가 됩니다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>관계적 동역학 부재는 reactive 시나리오(끼어들기, 좁은 도로 교행)에서, risk localization 부재는 long-tail collision 직전 상황에서 더 강하게 드러난다. 두 결핍은 독립적이지 않고 결합되어 실패 모드를 만든다 — SafeDrive가 둘 다 건드린 이유.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_1.html">← Day 1</a><a href="day_3.html">Day 3 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

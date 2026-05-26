@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 3 — SafeDrive의 핵심 한 줄</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 3</div>
+  <div class="hero-tag">개요</div>
+  <h1 class="hero-title">SafeDrive의 핵심 한 줄</h1>
+  <div class="hero-subtitle">한 문장 요약, analogy, 우월성 정리</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 30%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">한 문장 요약: <strong>SafeDrive는 ego trajectory에 조건부인 sparse world model을 만들어, 각 surrounding agent와 시점마다 충돌·이탈 risk를 pair-wise로 추론해 안전한 trajectory를 선택하는 E2E framework입니다.</strong>
+
+직관적 analogy 하나. 기존 dense world model이 &#x27;교실 전체 소음계&#x27;라면, SafeDrive는 &#x27;학생 한 명씩, 매 분마다 누가 떠드는지 기록&#x27;하는 방식입니다. 평균 소음만 보면 &#x27;교실이 시끄럽다&#x27;까지밖에 못 가지만, 학생·시점별 기록은 &#x27;뒷자리 김OO이 3분 뒤에 떠들 것&#x27;같은 구체적 진단이 가능하죠. 자율주행에 대입하면 &#x27;장면이 위험하다&#x27;가 아닌 <strong>&#x27;2번 보행자가 t+5 시점에 ego 경로와 접촉할 확률 0.83&#x27;</strong> 처럼 분해된 신호를 얻습니다.
+
+왜 이 접근이 이전보다 우월한가? 두 가지 분리가 동시에 일어납니다. (1) <strong>공간적 분리</strong> — dense grid가 아닌 sparse instance query로 만든 world라 ego–agent 관계가 self-attention으로 명시 모델링됨. (2) <strong>시간적 분리</strong> — per-(agent, timestep) 점수가 곱으로 결합되므로 $P_{PwNC}^j = \prod_{i,h} p^{i,j}_{pwnc}(h)$, 한 시점의 collision risk가 trajectory 전체 점수를 0에 가깝게 만들어 catastrophic event를 압축 표현. 결과적으로 같은 candidate set 안에서 &#x27;거의 비슷하지만 한 시점에서 갈리는&#x27; trajectory들을 더 정확히 구분합니다.
+
+내일은 이 접근법이 자율주행 연구 지형도에서 어디에 자리하는지 정리합니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 (c) — SafeDrive의 sparse world + safety reasoning 통합도</div><a href="figures/page_1.png" target="_blank"><img src="figures/page_1.png" alt="Figure" loading="lazy"></a><div class="figure-explain">SafeDrive 한 줄 도식. 좌측 instance query 기반 sparse world model이 ego trajectory에 조건부로 future state를 시뮬레이션하고, 우측 fine-grained safety check가 agent·시점별 risk를 분해해 최종 trajectory 선택.</div></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Trajectory-conditioned Sparse World Model</div><div class="concept-def">Ego의 후보 trajectory 하나에 조건부로, &#x27;ego query + 모든 surrounding instance query&#x27;라는 finite set만으로 미래 상태를 시뮬레이션하는 모델. Dense BEV/occupancy와 달리 격자가 없고, 객체 토큰만 들고 가므로 self-attention으로 **pair-wise interaction** 을 직접 표현 가능. 핵심 신호는 &#x27;ego가 이 trajectory를 택했을 때 i번째 agent가 어떻게 반응할지&#x27;를 한 world 내부에서 일관되게 jointly refine. 후보 trajectory마다 독립된 world를 띄우므로 &#x27;plan ↔ reactive future&#x27;가 분리되어 평가 가능. Sparse는 &#x27;정보 빈약&#x27;이 아니라 &#x27;관계 표현이 풍부&#x27; 라는 의미로 읽어야 함.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">draws inspiration from</div><div class="expr-ko">~에서 영감을 얻는다</div><div class="expr-example">We draw inspiration from how human drivers respond to potential future risks.</div><div class="expr-context">방법론 동기 설명 시 자주 쓰는 표현. &#x27;직관 ↔ 형식화&#x27;를 연결할 때 자연스럽다.</div></div>
+<div class="expr-card"><div class="expr-en">in a pair-wise manner</div><div class="expr-ko">쌍 단위로</div><div class="expr-example">We estimate collision risk in a pair-wise manner between the ego agent and each dynamic agent.</div><div class="expr-context">interaction modeling 설명에서 일반화된 holistic 처리와 대비를 강조할 때 사용.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">SafeDrive 한 줄 요약에서 &#x27;pair-wise per agent and per timestep&#x27;이 가지는 가장 본질적인 의미는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">agent 수가 많을수록 계산이 빨라지는 sparsity 이점</button><button class="mcq-option" data-correct="true">collision risk의 catastrophic 성격을 곱셈 결합으로 표현해 한 (agent, 시점) 의 위험이 전체 점수를 압축한다</button><button class="mcq-option" data-correct="false">perception score를 agent별로 평균내어 안정성을 높인다</button><button class="mcq-option" data-correct="false">trajectory anchor 수를 줄여 latency를 낮춘다</button></div><div class="mcq-explanation">$P_{PwNC} = \prod_{i,h} p^{i,j}_{pwnc}(h)$의 곱셈 결합이 collision risk의 catastrophic 성격을 그대로 표현하는 핵심 디자인 선택.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">기존 dense world model과 SafeDrive sparse world의 가장 큰 표현상 차이는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">Dense는 LiDAR만 쓰고 Sparse는 camera만 쓴다</button><button class="mcq-option" data-correct="true">Dense는 grid의 점유 여부로 환경을 표현하고, Sparse는 instance query token으로 환경을 표현해 pair-wise interaction이 self-attention에 자연 표현된다</button><button class="mcq-option" data-correct="false">Dense는 closed-loop만, Sparse는 open-loop만 평가 가능하다</button><button class="mcq-option" data-correct="false">Dense는 ego query 없이도 작동하지만 Sparse는 필요하다</button></div><div class="mcq-explanation">Sparse는 객체 토큰 집합이라 query 간 self-attention이 곧 pair-wise interaction modeling. Dense grid는 그런 자리가 구조적으로 없음.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">본인의 planning model이 trajectory를 점수화하는 방식이 &#x27;holistic scalar&#x27;에 가깝다면, sparse world 방식의 &#x27;곱셈 분해&#x27;를 도입했을 때 어디서 가장 큰 이득을 기대할 수 있을까요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>곱셈 분해는 &#x27;평균은 비슷한데 한 시점이 다른&#x27; trajectory 쌍을 잘 구분합니다. 어떤 driving 시나리오에서 이런 쌍이 자주 등장하는지 떠올려 보세요.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>Catastrophic event는 평균이 아니라 worst-(agent, timestep)에서 정의된다. 곱셈 분해는 이 worst-case를 잘 보전하므로, lane change·intersection처럼 단일 시점에서 결정적 risk가 발생하는 시나리오에서 가장 큰 이득이 난다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_2.html">← Day 2</a><a href="day_4.html">Day 4 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>
