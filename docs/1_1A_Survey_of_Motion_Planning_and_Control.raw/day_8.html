@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 2 — 왜 NeRF는 부족했나</title>
+<title>Day 8 — 경로·궤적 추종 제어</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
@@ -203,12 +203,12 @@ body {
 
 
 <div class="hero">
-  <div class="hero-meta">오늘의 학습 · DAY 2</div>
-  <div class="hero-tag">배경</div>
-  <h1 class="hero-title">왜 NeRF는 부족했나</h1>
-  <div class="hero-subtitle">NeRF 계열(Block-NeRF, compositional NeRF, EmerNeRF, point-based)의 한계를 비용 구조 관점에서 진단</div>
+  <div class="hero-meta">오늘의 학습 · DAY 8</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">경로·궤적 추종 제어</h1>
+  <div class="hero-subtitle">Pure pursuit·Stanley·후륜 피드백·MPC·LPV를 수식과 트레이드오프로 deep dive</div>
   <div class="progress-bar">
-    <div class="progress-fill" style="width: 20%"></div>
+    <div class="progress-fill" style="width: 80%"></div>
   </div>
 </div>
 
@@ -220,26 +220,26 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">어제의 요구사항(실시간 + 동적)을 NeRF 계열은 왜 충족 못 했을까요? 비용 구조를 보면 답이 보입니다.
+<div class="content">마지막 deep dive는 제어—계획된 경로/궤적을 모델오차·외란 속에서 안정적으로 추종합니다. 먼저 기구학 모델용 기하 제어부터.
 
-<strong>Block-NeRF</strong>는 대규모 장면을 블록으로 쪼개 각각을 NeRF로 모델링합니다. 사실적이지만 네트워크 파라미터가 방대해 학습이 오래 걸리고, 결정적으로 <strong>움직이는 차량을 다루지 못합니다</strong>. 자율주행에선 치명적이죠.
+<strong>Pure pursuit</strong>는 전방주시거리 $L$만큼 앞의 점을 향해 원호를 맞춥니다. 곡률 $\kappa = \tfrac{2\sin\alpha}{L}$, 지령 헤딩률 $\omega = \tfrac{2v_r\sin\alpha}{L}$. 단순·견고하지만 곡률 구간에서 정상상태 오차가 남고 고속에서 민감해져, $L$을 속도에 비례시키는 보정이 흔하죠.
 
-다음은 compositional 계열(NSG, MARS)입니다. 장면을 정적 배경 + foreground 차량으로 나누고, tracked pose로 관측 공간을 canonical 공간에 매핑한 뒤 NeRF로 차량의 geometry/appearance를 학습합니다. 합리적인 결과를 내지만, 근본 문제는 ray-marching입니다. NeRF는 광선 하나마다 수백 개 점을 MLP에 통과시켜 적분 $C(r)=\int T(t)\sigma(t)c(t)\,dt$ 를 근사합니다. compositional이면 객체마다 별도 ray-marching이 필요해 비용이 곱해지죠. 그 결과 <strong>MARS는 18시간 이상 학습에 0.68 FPS, EmerNeRF는 0.21 FPS</strong>에 머뭅니다.
+<strong>Stanley(전륜 기반)</strong>는 전륜 위치 오차로 조향을 직접 잡아 $\dot{e} = -ke$가 되게 합니다: $\delta = \arctan(-ke/v_f) - \theta_e$. 곡률 변화에도 1차 응답으로 잘 따라가지만 후진엔 불안정—주차엔 부적합합니다. 반대로 <strong>후륜 기반 피드백</strong>은 $v_r$ 부호에 무관해 후진이 가능합니다(단, $C^2$ 경로 필요).
 
-EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>instance-aware가 아니어서</strong> 개별 차량을 떼어내 편집할 수 없고, 새 timestep의 동적 영역에서 잔상이 생깁니다. point-based 렌더링은 dense point cloud가 없으면 저밀도 영역이 흐릿해집니다. 한 줄로 요약하면: NeRF로 폐루프를 돌리는 건 &#x27;프레임마다 장면 전체를 적분으로 다시 그리는&#x27; 셈이라 실시간이 원천 봉쇄됩니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 — Waymo 정량 비교 (특히 FPS 행)</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a><div class="figure-explain">Waymo에서 5개 방법의 PSNR/SSIM/LPIPS/PSNR*/FPS를 비교한 표. FPS 행에 주목: NSG 0.47, MARS 0.68, EmerNeRF 0.21로 1 FPS 미만인 반면 Ours는 135. 품질 지표와 속도의 괴리를 한눈에 보여줌.</div></div>
+고속·빙판처럼 모델이 복잡하고 제약이 빡빡하면 <strong>MPC</strong>: 짧은 지평선의 최적제어를 풀어 앞부분만 적용하고 다시 풉니다. 비선형 MPC는 강력하나 실시간이 관건—선형화로 QP를 만들면 내부점법으로 다항시간에 풀려 실차 적용이 가능해집니다. 마지막으로, 횡오차 동역학의 폐루프 극점이 속도 $v_r$에 의존하므로(식 V.30) 단일 동작점 선형화는 위험합니다—<strong>gain scheduling/LPV</strong>로 속도별 이득을 스케줄링하죠. 비유: pure pursuit는 &#x27;저 앞 한 점만 보고 핸들 꺾기&#x27;, MPC는 &#x27;몇 수 앞을 내다보고 두는 바둑&#x27;입니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure V.5 — 세 경로추종 제어기 성능 비교</div><a href="figures/page_20.png" target="_blank"><img src="figures/page_20.png" alt="Figure" loading="lazy"></a><div class="figure-explain">차선변경 기동에서 세 제어기 궤적 비교. (a) Pure pursuit: 곡률 구간에서 기준경로를 이탈. (b) 후륜 기반: 기준경로로 수렴하나 2차 응답의 오버슈트. (c) 전륜(Stanley): 1차 응답으로 곡률 구간을 매끄럽게 추종. 곡률 구간에서의 이탈/추종 차이를 보라.</div></div>
 <div class="trigger">Trigger Type B</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Volumetric ray-marching의 비용 구조</div><div class="concept-def">NeRF는 픽셀의 색을 광선을 따라 $C(r)=\int_{t_n}^{t_f} T(t)\,\sigma(t)\,c(t)\,dt$ 로 적분하며, 이를 광선당 수십~수백 개 샘플 각각에서 MLP를 질의해 근사합니다. 느린 본질적 이유가 여기 있습니다: 픽셀×샘플×(MLP forward) 만큼의 연산이 매 프레임 필요하죠. 도심처럼 광선이 멀리 뻗는 장면에선 샘플 수가 더 늘어납니다. 흔한 오해: hash grid(Instant-NGP, EmerNeRF)가 이를 완전히 해결한다는 것. 질의는 빨라지지만 광선당 다중 샘플 적분 구조 자체는 남아 실시간 폐루프엔 여전히 부족합니다.</div></div>
-<div class="concept-card"><div class="concept-term">Compositional NeRF의 observation-to-canonical 매핑</div><div class="concept-def">NSG·MARS류는 tracked pose로 움직이는 차량을 정지된 canonical 공간으로 역변환한 뒤, 그 공간에서 NeRF가 객체의 형상/외관을 학습합니다. 강체 가정 덕에 시간에 따른 객체 모델을 한 번만 학습하면 된다는 장점이 있죠. 그러나 객체마다 별도의 NeRF/ray-marching이 필요해 비용이 객체 수에 비례·중첩됩니다. 또한 tracker pose 오차가 canonical 정합을 흐트러뜨려 흐릿한 결과를 낳습니다. 보행자 같은 비강체에는 canonical 가정이 깨진다는 한계도 있습니다.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">However, significant limitations are their slow training and rendering speed.</div><div class="expr-ko">그러나 중대한 한계는 느린 학습·렌더링 속도다</div><div class="expr-example">These methods enable photo-realistic synthesis; however, significant limitations are their slow training and rendering speed.</div><div class="expr-context">선행연구의 장점을 인정한 뒤 핵심 약점을 대비시켜 제시할 때(however 전환).</div></div>
-<div class="expr-card"><div class="expr-en">are still limited to the high training cost and low rendering speed</div><div class="expr-ko">여전히 높은 학습 비용과 낮은 렌더링 속도에 발목 잡혀 있다</div><div class="expr-example">Although these methods produce reasonable results, they are still limited to the high training cost and low rendering speed.</div><div class="expr-context">기존 방법이 &#x27;되긴 하지만 결정적 제약이 남는다&#x27;는 점을 강조할 때.</div></div>
-<div class="expr-card"><div class="expr-en">cannot handle dynamic vehicles, which are crucial in ...</div><div class="expr-ko">~에서 결정적인 동적 차량을 다루지 못한다</div><div class="expr-example">Moreover, it cannot handle dynamic vehicles, which are crucial aspects in autonomous driving environment simulation.</div><div class="expr-context">한계의 &#x27;도메인 중요도&#x27;까지 덧붙여 비판의 무게를 실을 때.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Compositional NeRF(NSG/MARS)가 단일 NeRF보다 렌더링이 더 느려지는 핵심 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">이미지 해상도를 더 높이기 때문</button><button class="mcq-option" data-correct="true">객체마다 별도의 ray-marching이 필요해 적분 비용이 객체 수만큼 중첩되기 때문</button><button class="mcq-option" data-correct="false">LiDAR 입력을 추가로 처리하기 때문</button><button class="mcq-option" data-correct="false">더 큰 배치 크기를 쓰기 때문</button></div><div class="mcq-explanation">정적 배경과 각 객체를 별도 NeRF로 ray-marching하므로 비용이 곱해진다. 이것이 1 FPS 미만 속도의 구조적 원인이다.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">EmerNeRF가 자율주행 편집·시뮬레이션 용도로 부족한 점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">LiDAR를 쓰지 못한다</button><button class="mcq-option" data-correct="true">static/dynamic은 분리하지만 instance-aware가 아니어서 개별 차량을 떼어내 편집할 수 없다</button><button class="mcq-option" data-correct="false">정적 장면만 모델링할 수 있다</button><button class="mcq-option" data-correct="false">학습이 30분 안에 끝나지 않는다</button></div><div class="mcq-explanation">EmerNeRF는 self-supervision으로 정적/동적은 나누지만 인스턴스 단위 표현이 아니라서 차량 단위 편집·합성이 불가능하다.</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">기하 제어기 비교 (Pure pursuit / Stanley / 후륜)</div><div class="concept-def">기구학 모델용 경로추종 제어의 세 고전. **Pure pursuit**: 전방 점에 원호를 맞춰 곡률 $\kappa = 2\sin\alpha/L$을 지령. 단순·견고하나 무곡률·정속 가정에서 Problem V.1을 풀고, 곡률 구간엔 정상상태 오차가 남는다($L$을 속도 비례로 보정). **Stanley(전륜)**: 전륜 횡오차로 $\dot{e}=-ke$를 만들어 1차 수렴, $C^1$ 경로면 충분하나 후진 불가(스탠퍼드의 2005 DARPA 우승차에 사용). **후륜 기반**: $v_r$ 부호 무관이라 후진 가능하지만 $C^2$ 경로 필요. 직관: 어디를(전륜/후륜/전방점) 무엇으로(오차/원호) 잡느냐가 후진 가능성·곡률 추종·필요 매끄러움을 결정한다. 함정: pure pursuit는 거리&gt;L이면 정의되지 않는다.</div></div>
+<div class="concept-card"><div class="concept-term">MPC와 gain scheduling/LPV</div><div class="concept-def">MPC는 매 주기 짧은 지평선의 제약 최적제어를 풀어 앞부분만 적용하고 다시 푸는 receding-horizon 기법. 비용·제약이 2차·다면체이고 모델이 선형이면 QP가 되어 내부점법으로 다항시간에 풀린다—그래서 복잡 모델은 흔히 기준궤적 주위로 선형화(LTV)된다. 한계: 비선형 MPC는 실시간성이 큰 장벽이다. 한편 횡오차 동역학을 동작점 주위로 선형화하면 폐루프 극점이 $\big(-k_d \pm \sqrt{k_d^2 - 4k_p v_r}\big)/2$처럼 속도 $v_r$에 의존한다. 그래서 단일 이득은 저속·고속을 동시에 못 잡고, $k_p$를 $v_r$의 함수로 두는 **gain scheduling**(LPV 제어의 고전적 형태)이 표준 해법이 된다. 직관: 속도가 바뀌면 &#x27;차의 응답 성격&#x27;이 바뀌므로 이득도 따라 변해야 한다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">is suitable for ...</div><div class="expr-ko">~에 적합하다</div><div class="expr-example">The kinematic models are suitable for planning paths at low speeds where inertial effects are small.</div><div class="expr-context">방법의 적용 영역을 명확히 한정해 제시할 때</div></div>
+<div class="expr-card"><div class="expr-en">A drawback to this controller is that ...</div><div class="expr-ko">이 제어기의 단점은 ~이다</div><div class="expr-example">A drawback to this controller is that it is not stable in reverse, making it unsuitable for parking.</div><div class="expr-context">제어기/방법의 약점과 그로 인한 적용 제한을 서술할 때</div></div>
+<div class="expr-card"><div class="expr-en">a very intuitive and widely used remedy is ...</div><div class="expr-ko">매우 직관적이고 널리 쓰이는 해결책은 ~이다</div><div class="expr-example">A very intuitive and widely used remedy to this challenge is gain scheduling.</div><div class="expr-context">잘 알려진 문제에 대한 표준 해법을 제안할 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Stanley(전륜 기반) 제어기가 주차에 부적합한 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">계산량이 너무 많아서</button><button class="mcq-option" data-correct="true">후진 시 불안정하기 때문</button><button class="mcq-option" data-correct="false">$C^2$ 경로가 필요해서</button><button class="mcq-option" data-correct="false">곡률 구간에서 항상 발산해서</button></div><div class="mcq-explanation">전륜 기반 제어는 전진 추종엔 우수하지만 후진에서 불안정하다. 후진이 필요한 주차엔 $v_r$ 부호 무관한 후륜 기반 제어가 적합하다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">횡오차 동역학에서 gain scheduling이 필요한 근본 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">장애물이 동적으로 움직이기 때문</button><button class="mcq-option" data-correct="true">폐루프 극점이 차속 $v_r$에 의존해 단일 이득으로 전 속도역을 못 잡기 때문</button><button class="mcq-option" data-correct="false">타이어 마찰계수가 비선형이기 때문</button><button class="mcq-option" data-correct="false">MPC가 실시간으로 못 돌기 때문</button></div><div class="mcq-explanation">선형화된 횡오차 동역학의 극점은 $v_r$에 의존한다. 고정 이득은 고속에서 진동하거나 저속에서 둔해지므로, 속도별로 이득을 스케줄링(LPV)한다.</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">만약 우리 파이프라인이 이미 정확한 3D tracker를 갖고 있다면, NeRF 기반 compositional 표현의 비용 문제 중 어떤 부분은 여전히 남고 어떤 부분은 완화될까?</div>
+  <div class="oq-question">우리는 pure pursuit로 충분하다고 보는데, 언제 MPC로 넘어가야 하며 그 비용은 무엇인가?</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -247,14 +247,14 @@ EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>ins
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>tracker가 좋아지면 &#x27;pose 정합 오차로 인한 흐림&#x27;은 줄어듭니다. 하지만 렌더링 속도를 결정하는 건 pose 품질이 아니라 무엇이었는지 다시 생각해 보세요.</div>
+    <div>제약(장애물·타이어 포화), 고속, 고충실 모델 필요성을 한쪽에, 실시간 QP 계산예산과 모델링·튜닝 노력을 다른 쪽에 놓아보라.</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>tracker 품질은 &#x27;정합 정확도&#x27; 문제를 완화할 뿐, 느린 속도의 근본 원인인 광선당 다중 샘플 적분(ray-marching)은 그대로 남는다. 표현(representation) 자체를 바꾸지 않으면 실시간은 오지 않는다.</div>
+    <div>MPC는 명시적 제약 처리, 고속·한계조작, 고충실 모델이 필요해질 때 정당화된다. 그러나 실시간 QP 계산예산과 모델링 비용이 따르고, 계획기-제어기 호환성까지 함께 봐야 한다.</div>
   </div>
 </div></div>
-<div class="nav"><a href="day_1.html">← Day 1</a><a href="day_3.html">Day 3 →</a></div>
+<div class="nav"><a href="day_7.html">← Day 7</a><a href="day_9.html">Day 9 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
 <script>
 document.querySelectorAll('.tab').forEach(tab => {

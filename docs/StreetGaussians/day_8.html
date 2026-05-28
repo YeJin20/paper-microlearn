@@ -3,7 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 8 — 트래킹 포즈도 학습한다</title>
+<title>Day 8 — 딥다이브 ③: 렌더·초기화·손실</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -72,6 +82,11 @@ body {
 .figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
 .figure-box .desc { margin-bottom: 10px; }
 .figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
 .trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
 
 /* CONCEPTS */
@@ -169,6 +184,19 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
 </style>
 </head>
 <body>
@@ -177,8 +205,8 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 8</div>
   <div class="hero-tag">방법론</div>
-  <h1 class="hero-title">트래킹 포즈도 학습한다</h1>
-  <div class="hero-subtitle">노이지 박스를 흡수하는 ΔR·ΔT의 의미와 효과</div>
+  <h1 class="hero-title">딥다이브 ③: 렌더·초기화·손실</h1>
+  <div class="hero-subtitle">투영·α-blending·하늘 cubemap·LiDAR 초기화·다항 손실 등 나머지 핵심 부품을 통합 정리</div>
   <div class="progress-bar">
     <div class="progress-fill" style="width: 80%"></div>
   </div>
@@ -192,40 +220,28 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">마지막 deep dive — <strong>트래킹 포즈도 학습한다</strong>.
+<div class="content">마지막 딥다이브는 &#x27;나머지를 떠받치는 엔지니어링&#x27;입니다.
 
-객체 Gaussian의 world 위치/회전은 (R_t, T_t)에 직접 곱해집니다(Eq.2). 그런데 off-the-shelf 트래커가 뽑은 박스는 <strong>노이즈가 큽니다</strong> — yaw가 도 단위로 떨리고 중심도 흔들리죠. 노이지 포즈로 그대로 학습하면 점들이 평균 위치에 뭉개져 텍스처가 흐려져요.
+<strong>투영·합성</strong>: 합쳐진 점군을 카메라 외부 $W$·내부 $K$로 2D에 투영합니다(EWA splatting): $\mu&#x27; = K W \mu$, $\Sigma&#x27; = J W \Sigma W^T J^T$ ($J$는 $K$의 Jacobian). 이어 픽셀별 $\alpha$-blending: $$C = \sum_{i \in N} c_i \alpha_i \prod_{j=1}^{i-1}(1-\alpha_j)$$ 색 $c$를 semantic logit $\beta$로 바꾸면 같은 식으로 semantic map이 나옵니다 — 표현의 재사용성이죠.
 
-해법은 simple but elegant. 각 프레임 t의 포즈에 <strong>학습 가능한 보정</strong> (ΔR_t, ΔT_t)을 곱해주자 (Eq.6):
+<strong>하늘</strong>: 무한히 먼 하늘은 Euclidean 가우시안에 안 맞아서, 시점 방향을 색으로 매핑하는 고해상도 <strong>cubemap</strong>(해상도 1024)으로 따로 그린 뒤 $C = C_g + (1-O_g)\,C_{sky}$ 로 합성합니다.
 
-R_t&#x27; = R_t · ΔR_t,   T_t&#x27; = T_t + ΔT_t
+<strong>초기화</strong>: 객체 중심용 SfM 점군은 도심의 미관측·무텍스처 영역에 약합니다. 그래서 ego 차량의 <strong>aggregated LiDAR 점군</strong>으로 초기화하고, LiDAR가 못 덮는 먼 영역은 SfM으로 보완합니다. 객체에 LiDAR 점이 2K 미만이면 박스 안에서 8K개를 무작위 샘플링합니다.
 
-ΔT_t는 3D 벡터, ΔR_t는 <strong>yaw 보정 각도 Δθ_t 하나</strong>로 충분(도시 거리는 pitch/roll ≈ 0). gradient는 chain rule로 그냥 흐릅니다 — 추가 implicit 모듈 없이.
-
-학습 스케줄: ΔT_t lr 5e-3 → 5e-5, ΔR_t lr 1e-3 → 1e-5로 exponential decay.
-
-ablation (Waymo, PSNR\*):
-- pose opt 없음: <strong>28.24</strong>
-- GT pose 사용: 29.84
-- pose opt + 트래커 박스: <strong>30.23</strong>
-
-*트래커 박스 + 보정*이 GT 박스보다 좋다는 거예요. 저자 해석: GT 어노테이션 자체에도 노이즈가 있다.
-
-시사점: 라벨이 완벽하지 않아도 *공동 최적화*가 흡수해줍니다. 내일은 숫자 총정리.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 5 — pose opt 유무·GT pose 비교(차량 후면 디테일·로고 복원 차이)</div><a href="figures/page_12.png" target="_blank"><img src="figures/page_12.png" alt="Figure" loading="lazy"></a></div>
+<strong>손실</strong>: $$\mathcal{L} = \mathcal{L}_{color} + \lambda_1 \mathcal{L}_{depth} + \lambda_2 \mathcal{L}_{sky} + \lambda_3 \mathcal{L}_{sem} + \lambda_4 \mathcal{L}_{reg}$$ 색(L1+D-SSIM), 깊이(LiDAR L1, 오차 작은 95% 픽셀만), 하늘(BCE), semantic(softmax-CE, 옵션), 그리고 floater 제거용 정규화입니다. $\mathcal{L}_{reg}$는 전경 alpha의 entropy 손실로, 분해를 깔끔하게 만드는 숨은 영웅입니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 6 — LiDAR 초기화 ablation (이미지 &amp; depth)</div><a href="figures/page_12.png" target="_blank"><img src="figures/page_12.png" alt="Figure" loading="lazy"></a><div class="figure-explain">LiDAR 사용/미사용 시의 렌더 이미지와 depth를 비교. LiDAR를 쓰면 도로 등 근거리 기하가 정확하고 흐림이 줄며 depth가 매끈함. 미사용 시 geometry가 부정확. 이미지뿐 아니라 depth 맵의 노이즈 차이를 함께 볼 것.</div></div>
 <div class="trigger">Trigger Type B</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Pose residual (ΔR_t, ΔT_t)</div><div class="concept-def">트래커가 제공한 포즈에 곱하거나 더하는 학습 가능한 보정. 노이즈 흡수 + 어노테이션 한계를 넘어서는 미세 정합.</div></div>
-<div class="concept-card"><div class="concept-term">Yaw-only rotation parameterization</div><div class="concept-def">도시 거리에서 차량 회전을 z축 yaw 한 자유도로 제한. 자유도 축소가 정규화 효과로 작용.</div></div>
-<div class="concept-card"><div class="concept-term">Joint optimization</div><div class="concept-def">장면 표현·skybox·트래킹 포즈를 단일 손실로 동시 학습. 부분 라벨 노이즈를 학습 단계에서 흡수하는 일반적 패턴.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">We treat X as Y</div><div class="expr-ko">우리는 X를 Y로 (다룬다/취급한다)</div><div class="expr-example">We treat the tracked vehicle poses as learnable parameters.</div><div class="expr-context">모델링 결정 — 무엇을 고정으로 두고 무엇을 학습 변수로 둘지 — 을 한 줄로 선언할 때.</div></div>
-<div class="expr-card"><div class="expr-en">leads to degradation in</div><div class="expr-ko">~에 있어 성능 저하를 초래한다</div><div class="expr-example">Directly using noisy bounding boxes to optimize our scene representation leads to degradation in rendering quality.</div><div class="expr-context">특정 설계의 결과로 발생하는 부정적 효과를 인과로 진술할 때.</div></div>
-<div class="expr-card"><div class="expr-en">a plausible explanation is</div><div class="expr-ko">그럴듯한 해석은 ~이다</div><div class="expr-example">It is interesting to notice that our model outperforms the GT-pose version; a plausible explanation is that there still exists noise in GT annotations.</div><div class="expr-context">예상과 다른 실험 결과에 대한 가설적 해석을 제시할 때의 학술적 헷지 표현.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">ΔR_t를 full 3DoF 회전이 아니라 *yaw 각도 하나*로 잡은 이유로 가장 적절한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">학습 속도를 높이기 위해</button><button class="mcq-option" data-correct="true">도시 거리에서 차량 pitch/roll은 거의 0이라 자유도 축소가 정규화·안정화 효과를 줌</button><button class="mcq-option" data-correct="false">GPU 메모리를 줄이기 위해</button><button class="mcq-option" data-correct="false">트래커가 yaw만 출력하기 때문</button></div><div class="mcq-explanation">차량은 도로 평면 운동 가정. 사용하지 않을 자유도를 빼면 잘못된 방향으로의 발산을 막는다.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">&#x27;pose opt + 트래커 박스&#x27;가 &#x27;GT 박스&#x27;보다 PSNR*이 높다는 결과의 가장 합리적 해석은?</div><div class="mcq-options"><button class="mcq-option" data-correct="true">GT 어노테이션 자체에도 노이즈가 존재한다</button><button class="mcq-option" data-correct="false">트래커가 본질적으로 GT보다 정확하다</button><button class="mcq-option" data-correct="false">테스트 셋을 외운 결과(overfitting)다</button><button class="mcq-option" data-correct="false">메트릭 계산 버그다</button></div><div class="mcq-explanation">저자 본문이 직접 제시하는 해석. GT라고 라벨이 완벽하지 않으며, 학습 가능한 보정이 GT의 미세 오차도 보완한다.</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">EWA splatting 투영과 α-blending</div><div class="concept-def">3D 가우시안을 2D로 투영할 때 비선형 투영을 1차 근사한 Jacobian $J$로 공분산을 변환합니다: $\Sigma&#x27; = J W \Sigma W^T J^T$, $\mu&#x27; = K W \mu$. 그 뒤 깊이 순으로 정렬된 가우시안을 $C=\sum_i c_i \alpha_i \prod_{j&lt;i}(1-\alpha_j)$ 로 합성하죠($\alpha_i$는 opacity×2D 가우시안 확률). 직관: ray-marching의 적분을 &#x27;정렬된 splat들의 누적 합성&#x27;으로 대체해 미분 가능하면서도 빠릅니다. 핵심 이점은 색 $c$를 semantic logit이나 depth로 바꾸면 동일 식으로 다른 모달리티를 렌더링한다는 점입니다. 함정: $J$가 1차 근사라 시야 가장자리·큰 가우시안에서 투영 왜곡이 생길 수 있습니다.</div></div>
+<div class="concept-card"><div class="concept-term">정규화 손실 $\mathcal{L}_{reg}$ (분해 품질의 숨은 영웅)</div><div class="concept-def">분해된 전경 객체의 누적 alpha $O_{obj}$에 대한 엔트로피 손실 $\mathcal{L}_{reg}=-\sum(O_{obj}\log O_{obj} + (1-O_{obj})\log(1-O_{obj}))$ 입니다. alpha를 0 또는 1로 밀어 전경/배경을 이진적으로 분리하도록 유도하죠. 왜 중요한가: 이 항이 없으면 차량 주위에 반투명 &#x27;floater&#x27;와 ghosty artifact가 남아 깨끗한 객체 분해가 안 됩니다(Figure 11). adaptive control 이후에 추가하며 $\lambda_4=0.1$. 편집·swap 같은 다운스트림 응용의 품질이 사실상 이 정규화에 달려 있습니다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">it is inappropriate for ... to model ...</div><div class="expr-ko">~이 ~을 모델링하기에는 부적절하다</div><div class="expr-example">Since 3D Gaussians are defined in Euclidean space, it is inappropriate for them to model distant regions like the sky.</div><div class="expr-context">특정 표현의 적용 한계를 명시하고 대안(cubemap)을 도입하는 근거로 쓸 때.</div></div>
+<div class="expr-card"><div class="expr-en">We instead use ... as initialization</div><div class="expr-ko">우리는 대신 ~을 초기화로 사용한다</div><div class="expr-example">We instead use the aggregated LiDAR point cloud captured by the ego vehicle as initialization.</div><div class="expr-context">기본 관행(SfM 초기화)을 대체하는 설계 선택을 &#x27;instead&#x27;로 대비시켜 제시할 때.</div></div>
+<div class="expr-card"><div class="expr-en">to prevent ... from influencing ...</div><div class="expr-ko">~이 ~에 영향을 미치지 않도록 하기 위해</div><div class="expr-example">We only backpropagate to semantic logits to prevent noisy input labels from influencing the scene geometry.</div><div class="expr-context">특정 손실의 gradient 흐름을 제한한 설계 의도를 설명할 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">하늘을 3D 가우시안이 아니라 별도 cubemap으로 처리하는 이유로 가장 적절한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">cubemap이 더 적은 메모리를 쓰기 때문</button><button class="mcq-option" data-correct="true">무한히 먼 하늘은 Euclidean 공간의 가우시안으로 표현하기 부적절해 시점 방향→색 매핑으로 분리하는 것이 자연스럽기 때문</button><button class="mcq-option" data-correct="false">semantic 분할을 위해서</button><button class="mcq-option" data-correct="false">LiDAR가 하늘을 측정하지 못해서</button></div><div class="mcq-explanation">하늘은 사실상 무한 거리라 Euclidean 가우시안으로 두기 부적절하다. 방향만 입력받아 색을 내는 cubemap이 속도 저하 없이 디테일을 살린다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">도심 장면에서 SfM 대신 aggregated LiDAR 점군으로 초기화하고 SfM을 보완재로만 쓰는 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">LiDAR가 색 정보를 제공해서</button><button class="mcq-option" data-correct="true">SfM은 미관측·무텍스처 영역에 약한 반면 LiDAR가 근거리 기하를 안정적으로 채우고, LiDAR가 못 덮는 먼 영역을 SfM이 보완하기 때문</button><button class="mcq-option" data-correct="false">LiDAR 점이 항상 전체 장면을 덮기 때문</button><button class="mcq-option" data-correct="false">SfM이 동적 객체를 더 잘 잡기 때문</button></div><div class="mcq-explanation">둘은 상호 보완적이다. LiDAR는 근거리 기하에 강하지만 먼 곳을 못 덮고, SfM은 그 먼 영역을 채운다. 그래서 둘을 결합한다.</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">&#x27;노이지 라벨에 학습 가능한 보정을 붙인다&#x27;는 아이디어를, perception 파이프라인의 다른 모듈(detection·tracking·prediction)에 어떻게 옮길 수 있을까요?</div>
+  <div class="oq-question">우리 차량 센서 구성이 LiDAR 없이 카메라만이라면, 이 파이프라인의 어느 부품이 가장 먼저 흔들리고 무엇으로 대체할 수 있을까?</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -233,11 +249,11 @@ ablation (Waymo, PSNR\*):
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>라벨의 일부를 latent로 두고 task loss와 함께 공동 최적화하는 패턴을 떠올려보세요.</div>
+    <div>초기화(LiDAR 점군)와 깊이 손실($\mathcal{L}_{depth}$)이 LiDAR에 의존합니다. ablation의 &#x27;w/o LiDAR&#x27; 결과가 그래도 baseline보다 강했다는 점도 떠올려 보세요.</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>노이지 라벨 → 학습 가능 보정 변수의 도입은 *re-labeling 없이* 표현 학습이 라벨 노이즈를 흡수하게 하는 일반화 가능한 트릭이다 — 본 논문은 6DoF 포즈에 적용했을 뿐.</div>
+    <div>LiDAR는 초기화와 깊이 감독에서 기하를 안정화하지만 필수는 아니다 — 논문의 w/o LiDAR 변형도 여전히 SOTA를 웃돈다. 카메라-only라면 SfM/MVS 깊이나 단안 깊이 사전지식으로 그 역할을 부분 대체하되, 근거리 기하 품질 저하를 감수해야 한다.</div>
   </div>
 </div></div>
 <div class="nav"><a href="day_7.html">← Day 7</a><a href="day_9.html">Day 9 →</a></div>

@@ -3,7 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 5 — 전체 파이프라인 지도</title>
+<title>Day 5 — 전체 파이프라인 조망</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -72,6 +82,11 @@ body {
 .figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
 .figure-box .desc { margin-bottom: 10px; }
 .figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
 .trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
 
 /* CONCEPTS */
@@ -169,6 +184,19 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
 </style>
 </head>
 <body>
@@ -177,8 +205,8 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 5</div>
   <div class="hero-tag">방법론</div>
-  <h1 class="hero-title">전체 파이프라인 지도</h1>
-  <div class="hero-subtitle">분해→외형→합성→학습 4단계로 큰 그림 잡기</div>
+  <h1 class="hero-title">전체 파이프라인 조망</h1>
+  <div class="hero-subtitle">깊이 들어가기 전, 표현→합성→렌더링→학습으로 이어지는 전체 지도를 큰 그림으로 제시</div>
   <div class="progress-bar">
     <div class="progress-fill" style="width: 50%"></div>
   </div>
@@ -192,31 +220,27 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">오늘은 method 큰 그림. 파이프라인을 4단계로 보면:
+<div class="content">딥다이브 전에 &#x27;지도&#x27;를 먼저 펼칩니다. Street Gaussians의 파이프라인은 네 토막으로 읽으면 됩니다.
 
-<strong>① 분해 (Decomposition)</strong> — 한 시퀀스를 &#x27;정적 배경 포인트클라우드 1개&#x27; + &#x27;차량 N개의 포인트클라우드 N개&#x27;로 쪼갭니다. 각 점은 3D Gaussian(위치·공분산·opacity·SH·semantic)을 들고 있어요.
+<strong>1) 표현(Representation)</strong>: 장면 = 배경 점군 1개 + 객체 점군 N개. 모든 점은 공통 속성을 가집니다 — 위치 $\mu$, 불투명도 $\alpha$, 스케일 $S$, 회전 $R$(공분산), 색을 내는 SH 계수, 그리고 semantic logit. 배경은 여기까지. 객체 점군은 두 가지를 더 얹습니다: 최적화 가능한 tracked pose와 시간 의존 외관을 내는 <strong>4D SH</strong>.
 
-<strong>② 외형 (Appearance)</strong> — 배경 점에는 표준 <strong>Spherical Harmonics</strong>. 차량 점에는 <strong>4D SH</strong> — 시간에 따라 SH 계수가 변하도록 Fourier 계수로 펼친 모델(차가 움직이면 빛·반사가 바뀌니까).
+<strong>2) 합성(Composition)</strong>: 렌더 시각 $t$에서 4D SH로 그 순간의 색을 복원하고($z_{m,l}(t)$), 객체 점군을 tracked pose로 world 좌표계로 변환($\mu_w = R_t \mu_o + T_t$)한 뒤, 배경 점군과 <strong>그냥 이어 붙입니다(concatenate)</strong>. NeRF처럼 복잡한 합성 ray-marching이 필요 없다는 게 핵심 우아함이죠.
 
-<strong>③ 합성 + 렌더</strong> — 시점 t에서 객체 점을 (R_t, T_t)로 world 좌표계로 옮기고 배경과 concat. 2D 평면에 <strong>EWA splatting</strong>으로 투영(Eq.4)해 α-blending(Eq.5). 멀리 있는 하늘은 별도 <strong>cubemap</strong>(1024 해상도)으로 채웁니다.
+<strong>3) 렌더링(Rendering)</strong>: 합쳐진 점군을 2D로 투영해 $\alpha$-blending. 색 대신 semantic logit을 넣으면 semantic map도, 깊이도 같은 틀로 나옵니다. 먼 하늘은 Euclidean 가우시안으로 부적합해 별도 <strong>cubemap</strong>으로 처리해 합성합니다.
 
-<strong>④ 학습 (Training)</strong> — 30000 iter, Adam, <strong>RTX 4090 한 장</strong>. color · depth(LiDAR) · sky · semantic · reg loss 동시 최적화(Eq.7). 트래킹 포즈도 학습 가능한 ΔR·ΔT로 잡아 노이즈를 흡수.
-
-내일부터 3일간 deep dive: ① 점·Gaussian 모델, ② 4D SH, ③ pose optimization.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 2 — 전체 개요도(배경/객체 분해 → 외형 모델 → 합성 → 점-기반 렌더링)</div><a href="figures/page_5.png" target="_blank"><img src="figures/page_5.png" alt="Figure" loading="lazy"></a></div>
-<div class="trigger">Trigger Type A</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">EWA splatting</div><div class="concept-def">3D Gaussian을 2D 이미지 평면에 투영할 때 사용하는 anisotropic 가우시안 필터 근사. 점 단위 differentiable rasterization을 가능케 한다.</div></div>
-<div class="concept-card"><div class="concept-term">α-blending</div><div class="concept-def">정렬된 점들을 앞→뒤로 누적해 색을 합성하는 컴포지션 규칙. C = Σ c_i α_i ∏(1 − α_j).</div></div>
-<div class="concept-card"><div class="concept-term">Sky cubemap</div><div class="concept-def">무한히 먼 하늘을 별도의 6면 큐브맵 텍스처로 학습. 유클리드 공간에 정의된 3D Gaussian이 다루기 어려운 distant region을 보완.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">As shown in Figure X</div><div class="expr-ko">그림 X에 보이듯이</div><div class="expr-example">As shown in the Figure 2, we represent a dynamic urban scene as a set of point clouds.</div><div class="expr-context">본문에서 그림을 참조해 설명을 이어갈 때 가장 흔한 정형구.</div></div>
-<div class="expr-card"><div class="expr-en">In the following</div><div class="expr-ko">이어서 / 이하에서는</div><div class="expr-example">In the following, we will first focus on the background model, elaborating on common attributes shared with the object model.</div><div class="expr-context">섹션·문단 사이에서 다음에 다룰 내용을 예고할 때.</div></div>
-<div class="expr-card"><div class="expr-en">More details can be found in the supplementary</div><div class="expr-ko">자세한 내용은 보충 자료에 있다</div><div class="expr-example">The final rendering color is obtained by blending the cubemap and the Gaussian color. More details can be found in the supplementary.</div><div class="expr-context">본문 분량을 지키면서 세부를 미루는 방어적 클로징.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Street Gaussians가 *하늘* 영역만 별도 cubemap으로 처리하는 핵심 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">학습 속도를 높이기 위해</button><button class="mcq-option" data-correct="true">3D Gaussian은 유클리드 공간에 정의되어 무한히 먼 영역엔 부적합하기 때문</button><button class="mcq-option" data-correct="false">GPU 메모리를 줄이기 위해</button><button class="mcq-option" data-correct="false">시멘틱 라벨이 부족해서</button></div><div class="mcq-explanation">Gaussian은 유한 위치에 정의됨 — 무한대 거리의 하늘을 점으로 채우는 건 비효율적이고 부정확하다.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">한 렌더링 스텝에서 &#x27;객체 점을 world 좌표계로 옮기는&#x27; 작업과 &#x27;2D 평면으로 투영하는&#x27; 작업의 순서는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">먼저 2D 투영, 그 다음 트래킹 포즈로 world로 이동</button><button class="mcq-option" data-correct="true">트래킹 포즈로 world로 옮기고 배경과 합친 뒤 2D 투영</button><button class="mcq-option" data-correct="false">동시에 진행 (순서 무관)</button><button class="mcq-option" data-correct="false">트래킹 포즈는 학습 시에만 사용, 추론 시 생략</button></div><div class="mcq-explanation">Eq.2로 world 좌표계 합성 → 배경과 concat → Eq.4로 2D 투영 → Eq.5로 α-blending.</div></div>
+<strong>4) 학습(Training)</strong>: 가우시안 + 하늘 cubemap + tracked pose를 색·깊이·하늘·semantic·정규화 다항 손실로 동시 최적화하고, LiDAR 점군으로 초기화합니다. 오늘은 이 4토막의 연결만 머리에 넣어두세요. 내일부터 토막을 하나씩 해부합니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 2 — Street Gaussians 전체 개요도</div><a href="figures/page_5.png" target="_blank"><img src="figures/page_5.png" alt="Figure" loading="lazy"></a><div class="figure-explain">scene representation(배경+객체 모델, geometry: position/rotation/opacity/scale, dynamic appearance: Fourier coeff×time basis×SH basis) → composition → point-based rendering → decomposition으로 이어지는 데이터 흐름 도식. 객체만 dynamic appearance를 갖는 비대칭 구조에 주목.</div></div>
+<div class="trigger">Trigger Type B</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">배경 모델 vs 객체 모델의 비대칭 설계</div><div class="concept-def">두 모델은 $\alpha$, $S$, opacity 등 다수 속성을 공유하지만 세 곳에서 갈립니다. (1) 좌표계: 배경은 world, 객체는 local 좌표에 $\mu_o, R_o$를 두고 tracked pose로 world로 변환($\mu_w=R_t\mu_o+T_t,\ R_w=R_tR_o$). (2) 외관: 배경은 정적 SH, 객체는 시간 의존 4D SH. (3) semantic: 배경은 $M$차원 logit 벡터 $\beta_b$, 객체는 차량 클래스를 나타내는 1차원 스칼라 $\beta_o$. 왜 비대칭인가: 움직이는 건 차량뿐이므로 &#x27;동역학 비용&#x27;을 객체에만 부과해 효율을 챙기는 설계입니다.</div></div>
+<div class="concept-card"><div class="concept-term">Concatenation 기반 합성(rendering by composition)</div><div class="concept-def">기존 compositional NeRF가 객체별 ray-marching을 합성해야 했던 것과 달리, Street Gaussians는 객체 점군을 world로 변환한 뒤 배경 점군과 단순히 이어 붙여 하나의 점군으로 만들고 한 번에 splatting 합니다. 이 단순함이 곧 속도이자 편집성입니다: 점군을 더하고 빼는 집합 연산만으로 객체 삽입·삭제·교체가 됩니다. 주의할 점: 올바른 가시성(depth ordering)과 $\alpha$-blending이 합쳐진 점군 전체에서 일관되게 처리되어야 자연스러운 가림이 나옵니다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">As shown in Figure 2, we represent ... as ...</div><div class="expr-ko">Figure 2에서 보듯, 우리는 ~을 ~으로 표현한다</div><div class="expr-example">As shown in Figure 2, we represent a dynamic urban scene as a set of point clouds.</div><div class="expr-context">개요 그림을 가리키며 전체 표현 방식을 한 문장으로 소개할 때.</div></div>
+<div class="expr-card"><div class="expr-en">we will first focus on ..., and subsequently delve into ...</div><div class="expr-ko">먼저 ~에 집중하고, 이후 ~을 깊이 다룬다</div><div class="expr-example">We will first focus on the background model, and subsequently delve into the dynamic aspects of the object model.</div><div class="expr-context">방법 섹션의 서술 순서를 독자에게 미리 안내(로드맵)할 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Street Gaussians의 합성이 compositional NeRF보다 단순한 본질적 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">객체 수가 항상 1개로 고정되어서</button><button class="mcq-option" data-correct="true">world로 변환한 객체 점군을 배경 점군과 단순 concatenate한 뒤 한 번에 splatting하기 때문</button><button class="mcq-option" data-correct="false">semantic을 렌더링하지 않기 때문</button><button class="mcq-option" data-correct="false">하늘을 별도로 처리하지 않기 때문</button></div><div class="mcq-explanation">explicit 점군이라 객체를 world로 옮겨 이어 붙이는 집합 연산만으로 합성이 끝난다. 객체별 ray-marching 합성이 필요 없다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">배경 모델과 객체 모델이 다르게 설계된 항목으로 옳은 조합은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">불투명도와 스케일</button><button class="mcq-option" data-correct="true">좌표계, 시간 의존 외관(4D SH), semantic 표현 차원</button><button class="mcq-option" data-correct="false">투영 행렬과 카메라 내부 파라미터</button><button class="mcq-option" data-correct="false">손실 함수의 종류</button></div><div class="mcq-explanation">객체는 local 좌표+tracked pose, 4D SH, 1차원 semantic 스칼라를 쓰고 배경은 world 좌표, 정적 SH, M차원 logit을 쓴다. 동역학 비용을 객체에만 부과한 비대칭 설계다.</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">이 4단계 파이프라인을 회사 데이터(트래커가 노이지하고, LiDAR 일부 누락)에 옮긴다면, 가장 먼저 다듬어야 할 단계는 어디일까요?</div>
+  <div class="oq-question">동적 비용을 &#x27;객체에만&#x27; 부과하는 이 비대칭 설계는, 우리가 다루는 장면(예: 흔들리는 가로수, 펄럭이는 현수막)에서 언제 깨질 위험이 있을까?</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -224,11 +248,11 @@ body {
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>초기화·외형·포즈·렌더 중 어느 단계가 입력 품질에 가장 민감한지, 그리고 어디서 노이즈를 흡수할 수 있는지.</div>
+    <div>이 설계는 &#x27;배경은 정적, 움직이는 건 추적된 강체 차량뿐&#x27;이라는 가정 위에 서 있습니다. 그 가정을 벗어나는 동적 요소를 떠올려 보세요.</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>파이프라인의 각 단계는 *특정 입력 결함을 떠안는 위치*다 — 노이즈가 어디에서 발생해 어디서 흡수되는지 그려보면, 사내 데이터 적응 전략이 명확해진다.</div>
+    <div>비대칭 설계의 효율은 &#x27;배경=정적&#x27; 가정에 의존한다. tracker로 잡지 않는 비강체·미세 동적 요소(나무, 깃발, 보행자)는 배경에 흡수되며 잔상이나 흐림으로 새어 나온다 — 적용 도메인에서 이 가정의 성립 여부를 먼저 점검해야 한다.</div>
   </div>
 </div></div>
 <div class="nav"><a href="day_4.html">← Day 4</a><a href="day_6.html">Day 6 →</a></div>

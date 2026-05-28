@@ -1,717 +1,658 @@
 {
+  "_meta": {
+    "goal": "applying this paper to autonomous driving research",
+    "generated_at": "2026-05-27T22:32:18.661191",
+    "source_pdf": "papers/StreetGaussians.pdf",
+    "paper_title": "Street Gaussians: 동적 도심 장면 모델링"
+  },
   "day_1": {
-    "title": "왜 동적 도시 거리 복원인가",
-    "intent": "Sim2real·digital twin·data aug 관점에서 문제 정의",
-    "content": "자율주행 연구의 영원한 숙제 — **데이터**. 특히 코너 케이스. 실차를 또 굴리자니 단가가 만만치 않고, **CARLA·AirSim** 같은 합성 시뮬은 'sim-to-real gap' 때문에 perception 모델이 실세계로 가면 무너지죠.\n\n그래서 요즘 다들 **digital twin** 쪽에 베팅합니다. 실제 거리 한 시퀀스를 통째로 3D로 복원해놓고, 시점·차량 위치·궤적을 자유롭게 바꿔가며 무한히 새 데이터를 뽑는 거예요. 시뮬 비용 ↓, 도메인 갭 ↓, **data augmentation** 효과까지 한 번에.\n\n다만 closed-loop 시뮬은 '실시간'이라는 또 하나의 벽을 가져옵니다 — ego 차량이 새 궤적을 그릴 때마다 카메라 시점 영상이 즉시 나와야 의미가 있죠. 결국 우리한테 필요한 건 *고품질 + 실시간 + 편집 가능*한 동적 도시 거리 표현. 오늘은 여기까지. 내일은 'NeRF 계열이 왜 이걸 못 풀었는가'를 봅니다.",
-    "suggested_figure": "Figure 1 — Waymo 렌더 결과 + 학습/렌더 속도 비교(논문이 무엇을 해결하려는지 한눈에)",
+    "title": "왜 동적 도심 장면인가",
+    "intent": "자율주행 시뮬레이션·디지털 트윈 관점에서 문제의 동기를 제시 (방법은 아직 언급하지 않음)",
+    "content": "자율주행 연구에서 가장 비싼 자원은 '실제 도로 주행 마일리지'입니다. 컷인, 무단횡단, 급정거 같은 코너 케이스는 드물게 나타나지만 안전성 검증에는 필수죠. 여기서 **디지털 트윈**이 등장합니다. 실제 주행 로그로 도심 거리를 3D로 재구성해 두면, 그 장면 안에서 ego 차량의 궤적을 바꿔가며 무한히 재생할 수 있습니다.\n\n핵심 요구사항은 두 가지입니다. 첫째는 **실시간 렌더링**입니다. 폐루프(closed-loop) 시뮬레이션에서는 플래너가 새 궤적을 내놓을 때마다 그 시점의 이미지를 즉시 생성해 인지 모듈에 다시 먹여야 합니다. 오프라인 데이터셋 재생이 아니라 진짜 '센서 시뮬레이터'가 되려면 속도가 생명이죠. 둘째는 **동적 객체** 처리입니다. 도심 장면의 본질은 움직이는 차량들인데, 정적 배경만 복원해선 의미가 없습니다.\n\n여기에 sim2real 관점이 더해집니다. CARLA 같은 수작업 엔진은 수작업 비용이 크고 현실감이 부족해 도메인 갭이 크지만, 실제 로그 기반 재구성은 픽셀 수준 사실성을 그대로 가져옵니다. 즉 이 문제는 단순한 view synthesis가 아니라 '데이터 증강 + 폐루프 검증 + 희귀 시나리오 합성'을 한꺼번에 푸는 열쇠입니다. 오늘은 방법론은 미뤄두고, 왜 이게 본질적으로 어려운 문제인지에만 집중해 보세요.",
+    "suggested_figure": "Figure 1 — Waymo 렌더링 결과 비교",
     "figure_page": 2,
+    "figure_description": "세 방법(Ours, EmerNeRF, MARS)의 Waymo 렌더링 결과를 가로로 나란히 배치. 각 패널 하단에 학습시간/FPS가 표기됨(Ours 30min·135FPS vs EmerNeRF 2.5h·0.21FPS vs MARS >18h·0.68FPS). 화질은 비슷해 보여도 비용 차이가 100배 이상임에 주목.",
     "trigger_type": "A",
     "key_concepts": [
       {
-        "term": "Digital twin",
-        "definition": "실제 도시·환경을 센서 데이터로부터 3D 복원해 만든 가상 쌍둥이. 자율주행에선 시뮬레이션 환경의 토대로 활용된다."
+        "term": "디지털 트윈 기반 폐루프 시뮬레이션",
+        "definition": "실제 주행 로그로 도심 거리를 3D로 재구성해 자율주행 시뮬레이션 환경으로 쓰는 패러다임입니다. 핵심 직관은, 장면을 '재생'하는 게 아니라 '재구성'해 두면 ego 시점·궤적을 바꿔도 동일 장면을 새 시점에서 렌더링할 수 있어 인지→계획→제어 루프를 닫을 수 있다는 점입니다. UniSim, MARS 같은 NeRF 기반 센서 시뮬레이터 계열에서 등장합니다. 흔한 혼동: open-loop 데이터셋 재생과 동일시하는 것. 폐루프는 학습 분포 밖 시점(extrapolation)을 요구하므로 난도가 본질적으로 다릅니다."
       },
       {
-        "term": "Sim-to-real gap",
-        "definition": "합성 시뮬 데이터에서 학습한 모델이 실세계 데이터로 옮겨갈 때 성능이 떨어지는 분포 격차."
-      },
-      {
-        "term": "Closed-loop simulation",
-        "definition": "ego 정책의 행동이 환경에 영향을 주고, 환경이 다시 정책에 새 관측을 돌려주는 양방향 시뮬. 매 스텝 새 시점 영상이 필요해 실시간 렌더가 필수."
+        "term": "Novel View Synthesis (신규 시점 합성)",
+        "definition": "입력 이미지 집합으로부터, 관측하지 않은 카메라 시점의 이미지를 생성하는 문제입니다. 자율주행에서는 차선 변경처럼 입력 궤적에서 크게 벗어난 시점(외삽)까지 요구된다는 점이 일반 객체 중심 NVS와 다릅니다. NeRF·3D Gaussian Splatting이 대표 해법이죠. 함정: 다수 NVS 기법이 정적 장면을 가정해 두기 때문에 움직이는 차량 위에 ghosting(잔상)이 생기고, 입력 시점에서 멀어질수록 품질이 급격히 떨어집니다."
       }
     ],
     "english_expressions": [
       {
-        "expression": "aims to tackle the problem of",
-        "korean": "~문제를 다루는 것을 목표로 한다",
+        "expression": "This paper aims to tackle the problem of ...",
+        "korean": "본 논문은 ~ 문제를 다루는 것을 목표로 한다",
         "example": "This paper aims to tackle the problem of modeling dynamic urban streets for autonomous driving scenes.",
-        "context": "논문 도입부 첫 문장에서 연구 목표를 진술할 때 흔히 쓰는 정형구."
+        "context": "논문 서두(Abstract/Intro)에서 연구 목표를 한 문장으로 선언할 때."
       },
       {
-        "expression": "has many important applications, such as",
-        "korean": "~같은 많은 중요한 응용이 있다",
-        "example": "Modeling dynamic 3D streets has many important applications, such as city simulation, autonomous driving, and gaming.",
-        "context": "Introduction 첫 문단에서 문제의 실용적 가치를 열거할 때."
+        "expression": "has many important applications, such as ...",
+        "korean": "~와 같은 많은 중요한 응용이 있다",
+        "example": "Modeling dynamic 3D streets from images has many important applications, such as city simulation, autonomous driving, and gaming.",
+        "context": "동기(motivation) 문단에서 연구의 활용처를 열거해 중요성을 부각할 때."
       },
       {
-        "expression": "reduce the training and test cost",
-        "korean": "학습·테스트 비용을 줄이다",
-        "example": "The digital twin of city streets can be used as the simulation environment, thereby reducing the training and test costs.",
-        "context": "동기 부여 단락에서 산업적 가치를 강조할 때."
+        "expression": "thereby reducing the training and test costs",
+        "korean": "그렇게 함으로써 학습·검증 비용을 줄인다",
+        "example": "The digital twin of city streets can be used as the simulation environment for self-driving vehicles, thereby reducing the training and test costs.",
+        "context": "제안 기술이 가져오는 실질적 이득을 결과절(thereby/thus)로 강조할 때."
       }
     ],
     "mcq": [
       {
-        "question": "자율주행 시뮬에서 digital twin이 CARLA·AirSim 같은 합성 시뮬레이터 대비 매력적인 핵심 이유는?",
+        "question": "폐루프 시뮬레이션이 단순 오프라인 데이터셋 재생보다 본질적으로 어려운 이유로 가장 적절한 것은?",
         "options": [
-          "오픈소스이고 무료로 공개되어 있어서",
-          "실제 거리 캡처에서 출발하므로 sim-to-real gap이 작다",
-          "차량 동역학을 더 정확히 시뮬레이션하기 때문",
-          "라이선스 비용이 들지 않아서"
+          "더 많은 GPU 메모리가 필요하기 때문",
+          "플래너가 만든 새 궤적의 시점은 입력에 없으므로 외삽(extrapolation) 렌더링이 필요하기 때문",
+          "센서 노이즈가 재생보다 크기 때문",
+          "라벨링 비용이 더 높기 때문"
         ],
         "correct": 1,
-        "explanation": "CARLA류는 수작업 환경 + 합성 외형이라 도메인 갭이 큼. digital twin은 실측 거리에서 출발해 외형 사실성이 본질적으로 높다."
+        "explanation": "폐루프에서는 ego가 입력 궤적을 벗어나므로 학습에서 보지 못한 시점을 합성해야 한다. 보간이 아니라 외삽 문제라는 점이 난도를 결정한다."
       },
       {
-        "question": "AD closed-loop 시뮬레이션에서 '실시간 렌더링'이 필수인 이유는?",
+        "question": "이 문제 설정에서 '실시간 렌더링'이 편의가 아니라 필수 요건인 이유는?",
         "options": [
-          "학습 데이터 저장 공간을 줄이기 위해",
-          "ego 차량이 매 스텝 새 궤적을 그릴 때마다 새 시점 영상이 필요하기 때문",
-          "라벨링 비용을 줄이기 위해",
-          "모델 파라미터 수를 줄이기 위해"
+          "논문의 주 평가지표가 FPS이기 때문",
+          "폐루프에서 인지-계획 루프를 돌리려면 매 스텝 이미지를 즉시 생성해 인지 모듈에 공급해야 하기 때문",
+          "학습 시간을 줄이기 위해서",
+          "디스플레이 주사율을 맞추기 위해서"
         ],
         "correct": 1,
-        "explanation": "closed-loop은 정책 출력에 따라 환경이 응답해야 하므로, 매 스텝 새 시점이 즉시 렌더링되어야 함."
+        "explanation": "시뮬레이터가 매 스텝 프레임을 실시간으로 인지 모듈에 공급해야 폐루프가 성립한다. 속도가 곧 사용 가능성이다."
       }
     ],
     "open_question": {
-      "question": "당신의 perception 모델에서 가장 비용이 큰 코너 케이스 한 가지를 떠올려보세요. 그걸 실차 운행으로 다시 모으는 게 정말 현실적인가요? 안 된다면 그 빈자리를 어떻게 채워왔나요?",
-      "hint": "라벨 1장당 비용, 안전 이슈, 자연 발생 빈도 세 축에서 생각해보세요.",
-      "key_takeaway": "Digital twin이 매력적인 진짜 이유는 '실차로는 모을 수 없는 분포'를 합성으로 메울 수 있다는 가능성이지, 단순한 데이터 양 증가가 아니다."
+      "question": "우리 팀의 코너 케이스 검증에 이런 재구성 시뮬레이터를 도입한다면, 가장 먼저 어떤 종류의 시나리오에서 가치를 볼 수 있을까?",
+      "hint": "실제로 한 번 수집됐지만 변형해 반복 재생하고 싶은 상황, 혹은 ego 궤적을 조금만 바꿔도 위험도가 크게 달라지는 상황을 떠올려 보세요.",
+      "key_takeaway": "재구성 기반 시뮬레이터의 진짜 가치는 '새 데이터 수집'이 아니라 '이미 수집한 위험 장면을 ego 시점·궤적만 바꿔 무한 변주'하는 데 있다. 실측 사실성과 편집 가능성의 결합이 핵심이다."
     }
   },
   "day_2": {
-    "title": "NeRF 계열은 왜 막혔나",
-    "intent": "Block-NeRF·NSG·MARS·EmerNeRF의 한계 정리",
-    "content": "어제 정리한 세 조건 — *고품질·실시간·편집* — 을 NeRF 계열이 왜 다 못 잡았을까요.\n\n**Block-NeRF**는 도시를 블록으로 쪼개 각 블록에 NeRF MLP를 붙입니다. 정적인 거리는 잘 그리지만 **MLP 파라미터가 워낙 무거워** 학습이 며칠 단위, 무엇보다 *움직이는 차*를 다루지 못합니다. AD 시뮬엔 치명적이죠.\n\n**NSG·MARS** 같은 compositional NeRF는 차마다 latent를 두고 트래커가 준 박스로 canonical 공간에 매핑해 동적 차를 처리합니다. 컨셉은 맞지만 — Waymo에서 MARS 학습 **18시간 초과**, 렌더 **0.68 FPS**. **EmerNeRF**는 2.5시간 학습에 **0.21 FPS**. 픽셀당 광선을 따라 수십 샘플을 평가하는 ray marching이 근본 원인이에요.\n\n**3D Gaussian Splatting**이 점-기반 splatting으로 속도 문제를 풀어주는 듯 했지만 정적 씬 가정이어서, 거리 위 차들이 ghosting으로 무너집니다.\n\n요약: NeRF 계열은 *속도*에서, 3D GS는 *동역학*에서 발이 묶였다. 내일은 Street Gaussians가 이 둘을 어떻게 동시에 푸는지 한 문장으로 정리합니다.",
-    "suggested_figure": "Figure 1 — 학습/렌더 시간 비교(EmerNeRF 2.5h@0.21FPS, MARS >18h@0.68FPS vs Ours 30min@135FPS)",
-    "figure_page": 2,
+    "title": "왜 NeRF는 부족했나",
+    "intent": "NeRF 계열(Block-NeRF, compositional NeRF, EmerNeRF, point-based)의 한계를 비용 구조 관점에서 진단",
+    "content": "어제의 요구사항(실시간 + 동적)을 NeRF 계열은 왜 충족 못 했을까요? 비용 구조를 보면 답이 보입니다.\n\n**Block-NeRF**는 대규모 장면을 블록으로 쪼개 각각을 NeRF로 모델링합니다. 사실적이지만 네트워크 파라미터가 방대해 학습이 오래 걸리고, 결정적으로 **움직이는 차량을 다루지 못합니다**. 자율주행에선 치명적이죠.\n\n다음은 compositional 계열(NSG, MARS)입니다. 장면을 정적 배경 + foreground 차량으로 나누고, tracked pose로 관측 공간을 canonical 공간에 매핑한 뒤 NeRF로 차량의 geometry/appearance를 학습합니다. 합리적인 결과를 내지만, 근본 문제는 ray-marching입니다. NeRF는 광선 하나마다 수백 개 점을 MLP에 통과시켜 적분 $C(r)=\\int T(t)\\sigma(t)c(t)\\,dt$ 를 근사합니다. compositional이면 객체마다 별도 ray-marching이 필요해 비용이 곱해지죠. 그 결과 **MARS는 18시간 이상 학습에 0.68 FPS, EmerNeRF는 0.21 FPS**에 머뭅니다.\n\nEmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 **instance-aware가 아니어서** 개별 차량을 떼어내 편집할 수 없고, 새 timestep의 동적 영역에서 잔상이 생깁니다. point-based 렌더링은 dense point cloud가 없으면 저밀도 영역이 흐릿해집니다. 한 줄로 요약하면: NeRF로 폐루프를 돌리는 건 '프레임마다 장면 전체를 적분으로 다시 그리는' 셈이라 실시간이 원천 봉쇄됩니다.",
+    "suggested_figure": "Table 1 — Waymo 정량 비교 (특히 FPS 행)",
+    "figure_page": 10,
+    "figure_description": "Waymo에서 5개 방법의 PSNR/SSIM/LPIPS/PSNR*/FPS를 비교한 표. FPS 행에 주목: NSG 0.47, MARS 0.68, EmerNeRF 0.21로 1 FPS 미만인 반면 Ours는 135. 품질 지표와 속도의 괴리를 한눈에 보여줌.",
     "trigger_type": "B",
     "key_concepts": [
       {
-        "term": "Compositional NeRF",
-        "definition": "장면을 '배경 + 객체별' 신경 필드로 분리해 합성 렌더링하는 구조. NSG·MARS·UniSim이 대표적."
+        "term": "Volumetric ray-marching의 비용 구조",
+        "definition": "NeRF는 픽셀의 색을 광선을 따라 $C(r)=\\int_{t_n}^{t_f} T(t)\\,\\sigma(t)\\,c(t)\\,dt$ 로 적분하며, 이를 광선당 수십~수백 개 샘플 각각에서 MLP를 질의해 근사합니다. 느린 본질적 이유가 여기 있습니다: 픽셀×샘플×(MLP forward) 만큼의 연산이 매 프레임 필요하죠. 도심처럼 광선이 멀리 뻗는 장면에선 샘플 수가 더 늘어납니다. 흔한 오해: hash grid(Instant-NGP, EmerNeRF)가 이를 완전히 해결한다는 것. 질의는 빨라지지만 광선당 다중 샘플 적분 구조 자체는 남아 실시간 폐루프엔 여전히 부족합니다."
       },
       {
-        "term": "Ray marching",
-        "definition": "픽셀마다 광선을 따라 다수의 샘플 위치에서 신경망을 평가해 색·밀도를 적분하는 NeRF의 렌더 방식. 픽셀당 비용이 크다."
-      },
-      {
-        "term": "Ghosting artifact",
-        "definition": "정적 씬 가정 모델이 움직이는 객체를 평균화해 잔상·이중상으로 그려내는 현상."
+        "term": "Compositional NeRF의 observation-to-canonical 매핑",
+        "definition": "NSG·MARS류는 tracked pose로 움직이는 차량을 정지된 canonical 공간으로 역변환한 뒤, 그 공간에서 NeRF가 객체의 형상/외관을 학습합니다. 강체 가정 덕에 시간에 따른 객체 모델을 한 번만 학습하면 된다는 장점이 있죠. 그러나 객체마다 별도의 NeRF/ray-marching이 필요해 비용이 객체 수에 비례·중첩됩니다. 또한 tracker pose 오차가 canonical 정합을 흐트러뜨려 흐릿한 결과를 낳습니다. 보행자 같은 비강체에는 canonical 가정이 깨진다는 한계도 있습니다."
       }
     ],
     "english_expressions": [
       {
-        "expression": "suffer from",
-        "korean": "~로 인해 어려움을 겪다",
-        "example": "Block-NeRF suffers from long training time due to the large amount of network parameters.",
-        "context": "기존 방법의 한계를 지적할 때 가장 흔히 쓰이는 동사구."
+        "expression": "However, significant limitations are their slow training and rendering speed.",
+        "korean": "그러나 중대한 한계는 느린 학습·렌더링 속도다",
+        "example": "These methods enable photo-realistic synthesis; however, significant limitations are their slow training and rendering speed.",
+        "context": "선행연구의 장점을 인정한 뒤 핵심 약점을 대비시켜 제시할 때(however 전환)."
       },
       {
-        "expression": "are still limited to",
-        "korean": "여전히 ~에 제한된다",
-        "example": "These methods produce reasonable results, but are still limited to the high training cost and low rendering speed.",
-        "context": "선행 연구가 일부 성공을 거뒀음을 인정하면서도 잔여 한계를 짚을 때."
+        "expression": "are still limited to the high training cost and low rendering speed",
+        "korean": "여전히 높은 학습 비용과 낮은 렌더링 속도에 발목 잡혀 있다",
+        "example": "Although these methods produce reasonable results, they are still limited to the high training cost and low rendering speed.",
+        "context": "기존 방법이 '되긴 하지만 결정적 제약이 남는다'는 점을 강조할 때."
       },
       {
-        "expression": "cannot handle",
-        "korean": "~을 다루지 못한다",
-        "example": "Block-NeRF cannot handle dynamic vehicles on the street.",
-        "context": "특정 기능 부재를 직접적으로 명시할 때."
+        "expression": "cannot handle dynamic vehicles, which are crucial in ...",
+        "korean": "~에서 결정적인 동적 차량을 다루지 못한다",
+        "example": "Moreover, it cannot handle dynamic vehicles, which are crucial aspects in autonomous driving environment simulation.",
+        "context": "한계의 '도메인 중요도'까지 덧붙여 비판의 무게를 실을 때."
       }
     ],
     "mcq": [
       {
-        "question": "Block-NeRF가 동적 거리를 다루지 못하는 가장 근본적인 이유는?",
+        "question": "Compositional NeRF(NSG/MARS)가 단일 NeRF보다 렌더링이 더 느려지는 핵심 이유는?",
         "options": [
-          "학습 데이터가 부족하기 때문",
-          "정적 NeRF 표현이라 시간 변동을 입력으로 받지 않기 때문",
-          "카메라 캘리브레이션이 어려워서",
-          "GPU 메모리가 부족해서"
+          "이미지 해상도를 더 높이기 때문",
+          "객체마다 별도의 ray-marching이 필요해 적분 비용이 객체 수만큼 중첩되기 때문",
+          "LiDAR 입력을 추가로 처리하기 때문",
+          "더 큰 배치 크기를 쓰기 때문"
         ],
         "correct": 1,
-        "explanation": "Block-NeRF는 시간 입력이 없는 정적 NeRF의 블록 분할 확장. 동적 객체를 위한 메커니즘 자체가 없다."
+        "explanation": "정적 배경과 각 객체를 별도 NeRF로 ray-marching하므로 비용이 곱해진다. 이것이 1 FPS 미만 속도의 구조적 원인이다."
       },
       {
-        "question": "MARS·NSG처럼 '배경 + 객체별 NeRF' 구조가 실시간 렌더링에 도달하지 못하는 핵심 원인은?",
+        "question": "EmerNeRF가 자율주행 편집·시뮬레이션 용도로 부족한 점은?",
         "options": [
-          "객체 박스가 너무 많아서",
-          "ray marching이 픽셀마다 다수 샘플의 MLP 평가를 요구하기 때문",
-          "학습 epoch가 부족해서",
-          "트래킹 노이즈 때문에"
+          "LiDAR를 쓰지 못한다",
+          "static/dynamic은 분리하지만 instance-aware가 아니어서 개별 차량을 떼어내 편집할 수 없다",
+          "정적 장면만 모델링할 수 있다",
+          "학습이 30분 안에 끝나지 않는다"
         ],
         "correct": 1,
-        "explanation": "NeRF의 볼륨 적분은 광선당 수십~수백 번의 신경망 호출을 요구함 — 실시간(>30 FPS)의 근본 병목."
+        "explanation": "EmerNeRF는 self-supervision으로 정적/동적은 나누지만 인스턴스 단위 표현이 아니라서 차량 단위 편집·합성이 불가능하다."
       }
     ],
     "open_question": {
-      "question": "NeRF 기반 시뮬레이터 위에서 perception 데이터 합성을 한다면, 가장 먼저 부딪힐 병목은 무엇이고 그 비용은 결국 누구의 시간/예산으로 전가될까요?",
-      "hint": "학습/렌더 시간을 '시퀀스 수 × GPU 시간 × 단가'로 환산해보세요. 실험 1회의 비용이 얼마인지.",
-      "key_takeaway": "'좋은 품질'과 '실험 가능'은 다른 차원의 제약이다 — 속도는 곧 가설 검증의 횟수이고, 연구 속도 자체가 결과 품질의 상한이 된다."
+      "question": "만약 우리 파이프라인이 이미 정확한 3D tracker를 갖고 있다면, NeRF 기반 compositional 표현의 비용 문제 중 어떤 부분은 여전히 남고 어떤 부분은 완화될까?",
+      "hint": "tracker가 좋아지면 'pose 정합 오차로 인한 흐림'은 줄어듭니다. 하지만 렌더링 속도를 결정하는 건 pose 품질이 아니라 무엇이었는지 다시 생각해 보세요.",
+      "key_takeaway": "tracker 품질은 '정합 정확도' 문제를 완화할 뿐, 느린 속도의 근본 원인인 광선당 다중 샘플 적분(ray-marching)은 그대로 남는다. 표현(representation) 자체를 바꾸지 않으면 실시간은 오지 않는다."
     }
   },
   "day_3": {
-    "title": "한 문장 핵심 아이디어",
-    "intent": "Street Gaussians의 본질을 한 문장 + 한 직관으로",
-    "content": "한 문장으로: **'도시 거리 = 배경 포인트클라우드 + 차량별 포인트클라우드, 모두 3D Gaussian으로 표현하고 트래킹 포즈로 합성한다'**. 차량은 자기 local 좌표계에서 살다가 학습 가능한 (R_t, T_t)로 world 좌표계에 끌어와 합쳐집니다.\n\n직관: 영화 세트장을 생각해보세요. 배경 세트(static)는 한 번 지어놓고, 자동차는 각자 별도 모형으로 만든 뒤 필요한 위치에 *옮겨 놓습니다*. NeRF는 이 전체를 한 덩어리 함수로 외우려 했고, Street Gaussians는 *세트와 소품을 분리*해 다룹니다.\n\n왜 이게 더 나은가:\n1. **명시적 표현**이라 컴포지션이 그냥 '점 합치기 + splatting'. NeRF의 무거운 ray marching이 사라집니다.\n2. 분리 덕분에 차 하나만 회전·교체하는 *편집*이 자연스럽고요.\n3. 3D GS의 빠른 splatting을 그대로 쓰면서 동적 객체까지 다룬다 — **30분 학습, 135 FPS**.\n\n내일은 NSG·MARS·DrivingGaussian 같은 '경쟁자'들과 어떻게 다른지 지도를 그려봅니다.",
-    "suggested_figure": "Figure 2 — Street Gaussians 전체 개요(배경 모델 + 객체 모델 + 합성 + 렌더)",
+    "title": "한 문장으로 핵심",
+    "intent": "핵심 아이디어를 한 문장 요약 + 직관/비유 + 기존 대비 우월성으로 압축 전달",
+    "content": "**한 문장 요약**: 동적 도심 장면을 정적 배경과 움직이는 차량들로 분해하고, 각각을 명시적(explicit) 3D Gaussian 점군으로 표현하되, 차량은 최적화 가능한 tracked pose와 **4D Spherical Harmonics**로 시간에 따른 위치·외관 변화를 흡수한다.\n\n**직관/비유**: NeRF가 장면을 'MLP라는 함수에 통째로 암기'시킨다면, 3D Gaussian Splatting은 수백만 개의 반투명 색유리 조각(가우시안)을 공간에 흩뿌려 놓고 카메라 쪽으로 투영·합성하는 방식입니다. 결정적 차이는 '명시적'이라는 점이에요. 함수 안에 녹아 있는 게 아니라 조각 하나하나가 좌표를 갖고 실재하므로, 특정 차량에 속한 조각들을 집어서 옮기거나 빼낼 수 있습니다.\n\n**왜 더 나은가**: explicit 표현이라서 (1) ray-marching 없이 rasterization으로 투영해 **135 FPS**가 나오고, (2) 객체를 점군 단위로 떼어내 편집·분해가 자유롭고, (3) tracked pose에 대한 gradient가 implicit 함수를 거치지 않고 곧장 흐르기 때문에 노이즈 섞인 tracker pose를 학습으로 보정하기 쉽습니다. 핵심은 '암기 vs 배치'의 차이입니다 — 배치는 만질 수 있으니까요. 잠깐 눈을 감고, 도로 위 차량 한 대가 '점군 덩어리'로 떠 있고 그걸 손으로 옆 차선으로 미는 장면을 상상해 보세요. 그게 바로 이 표현이 주는 자유도입니다.",
+    "suggested_figure": "Figure 2 — Street Gaussians 개요도",
     "figure_page": 5,
-    "trigger_type": "A",
+    "figure_description": "왼쪽에 scene representation(배경 모델 + 객체 모델, optimizable tracked boxes), 가운데에 composition→point-based rendering, 오른쪽에 decomposition으로 분리된 객체. 각 점이 position/rotation/scale/opacity와 (dynamic) SH를 갖는 구조가 도식화됨.",
+    "trigger_type": "C",
     "key_concepts": [
       {
-        "term": "Explicit scene representation",
-        "definition": "장면을 직접 다룰 수 있는 기하 원소(점·메쉬·복셀)로 표현하는 방식. NeRF 같은 'implicit' 함수 기반과 대조됨."
-      },
-      {
-        "term": "3D Gaussian",
-        "definition": "위치·공분산·opacity·색(SH)로 정의되는 anisotropic 가우시안. 점-기반 differentiable rasterization의 단위."
-      },
-      {
-        "term": "Tracked pose",
-        "definition": "각 프레임에서 차량의 6DoF 자세 (R_t, T_t). 외부 트래커가 제공하고, 본 논문은 이를 학습 가능한 파라미터로 둔다."
+        "term": "3D Gaussian Splatting (명시적 장면 표현)",
+        "definition": "장면을 위치 $\\mu$, 공분산 $\\Sigma$, 불투명도 $\\alpha$, 색(SH 계수)을 가진 비등방(anisotropic) 3D 가우시안 집합으로 표현합니다. 공분산은 수치 안정성을 위해 회전 $R$과 스케일 $S$로 분해해 $\\Sigma = R S S^T R^T$ 로 복원합니다($S$는 대각, $R$은 단위 쿼터니언). 렌더링은 가우시안을 2D로 투영(splat)해 $\\alpha$-blending 하는 rasterization이라 NeRF의 ray-marching보다 훨씬 빠릅니다. 비등방 형태 덕에 적은 점으로도 면·엣지를 잘 표현하죠. 함정: 본래 정적 장면 가정이라 그대로는 움직이는 차량을 못 다룹니다 — 이 논문이 메우는 지점입니다."
       }
     ],
     "english_expressions": [
       {
-        "expression": "We propose a novel",
-        "korean": "우리는 새로운 ~을 제안한다",
-        "example": "We propose a novel explicit scene representation for reconstructing dynamic 3D street scenes.",
-        "context": "Introduction 말미 또는 abstract에서 기여를 선언할 때의 정형구."
+        "expression": "The basic idea is to utilize ... which significantly increases ...",
+        "korean": "기본 아이디어는 ~을 활용하는 것이며, 이는 ~을 크게 높인다",
+        "example": "The basic idea is to utilize point clouds to build dynamic scenes, which significantly increases the training and rendering efficiency.",
+        "context": "핵심 아이디어를 한 문장으로 던지고 곧바로 그 효과를 관계절로 연결할 때."
       },
       {
-        "expression": "The basic idea is",
-        "korean": "기본 아이디어는 ~이다",
-        "example": "The basic idea is utilizing point clouds to build dynamic scenes, which significantly increases efficiency.",
-        "context": "방법 섹션 진입부에서 핵심 통찰을 한 문장으로 제시할 때."
-      },
-      {
-        "expression": "allows easy composition of",
-        "korean": "~의 손쉬운 합성을 가능케 한다",
-        "example": "The explicit representation allows easy composition of object vehicles and background.",
-        "context": "표현/구조의 이점을 결과 측면에서 강조할 때."
+        "expression": "The explicit representation allows easy composition of ...",
+        "korean": "명시적 표현은 ~의 손쉬운 합성을 가능하게 한다",
+        "example": "The explicit representation allows easy composition of object vehicles and background, which in turn allows for scene editing.",
+        "context": "표현 방식의 선택이 어떤 기능적 이점으로 이어지는지 인과로 서술할 때."
       }
     ],
     "mcq": [
       {
-        "question": "Street Gaussians를 가장 정확하게 한 문장으로 요약한 것은?",
+        "question": "이 논문이 3D Gaussian의 '명시적(explicit)' 성질로부터 직접 얻는 이점이 아닌 것은?",
         "options": [
-          "하나의 거대한 NeRF로 거리 전체를 인코딩",
-          "배경/차량을 각각 점-기반 3D Gaussian으로 분리 표현 후 트래킹 포즈로 합성",
-          "학습 가능한 메쉬 + 텍스처로 거리 모델링",
-          "GAN으로 거리 영상을 직접 생성"
+          "객체별 점군을 떼어내 편집·합성할 수 있다",
+          "rasterization으로 실시간 렌더링이 가능하다",
+          "tracked pose로의 gradient가 직접 전파되어 pose 보정이 쉽다",
+          "비강체 보행자의 변형까지 자연스럽게 모델링된다"
         ],
-        "correct": 1,
-        "explanation": "분리된 포인트클라우드 + 3D Gaussian + 학습 가능한 tracked pose의 합성이 핵심."
+        "correct": 3,
+        "explanation": "비강체 객체(보행자)는 이 논문의 명시적 강체 표현으로 다루지 못한다(저자가 명시한 한계). 나머지 셋은 explicit 표현의 직접적 이점이다."
       },
       {
-        "question": "명시적(explicit) 표현이 NeRF 같은 암시적 표현 대비 *편집*에서 갖는 본질적 이점은?",
+        "question": "3D Gaussian의 공분산을 $\\Sigma = R S S^T R^T$ 로 분해해 표현하는 주된 이유는?",
         "options": [
-          "정확도가 항상 더 높다",
-          "객체 점들에 변환 행렬을 그대로 적용하면 편집이 자연스럽게 된다",
-          "GPU 없이 학습이 가능하다",
-          "학습 데이터가 적게 필요하다"
+          "메모리를 절반으로 줄이려고",
+          "최적화 중 공분산이 유효한(양의 준정부호) 행렬로 유지되도록 보장하려고",
+          "렌더링 FPS를 높이려고",
+          "LiDAR와 정렬하려고"
         ],
         "correct": 1,
-        "explanation": "명시적 점은 좌표 변환 자체가 편집 — implicit 함수의 latent 조작과 달리 직접적·해석 가능하다."
+        "explanation": "회전 R(쿼터니언)과 스케일 S로 분해하면 최적화 과정에서 무효한 공분산이 나오는 것을 막아 양의 준정부호성을 보장할 수 있다."
       }
     ],
     "open_question": {
-      "question": "'세트장 + 소품 분리' 직관은, 실제 차량 외관(반사·그림자)이 시간에 따라 변하는 문제를 어떻게 다뤄야 한다고 암시하나요?",
-      "hint": "소품 모형 자체의 색이 위치에 따라 변해야 한다면, 모형에 무엇이 더 붙어야 할까요?",
-      "key_takeaway": "객체의 *외형도 시간 함수*가 되어야 한다 — 이게 7일차에 등장할 4D SH의 동기이고, 단순한 SH로는 부족한 이유다."
+      "question": "'암기(implicit)'가 아니라 '배치(explicit)'라는 차이가, 편집 가능성 외에 우리 연구의 어떤 실무 측면(디버깅·검증·자산화)에 영향을 줄까?",
+      "hint": "함수 가중치를 들여다보는 것과, 좌표를 가진 점군을 직접 시각화·수정·저장하는 것의 차이를 생각해 보세요.",
+      "key_takeaway": "explicit 표현은 점군을 직접 검사·수정·재사용(자산화)할 수 있게 해, 시뮬레이션 장면을 디버깅하고 객체를 라이브러리화하는 엔지니어링 워크플로 자체를 단순하게 만든다."
     }
   },
   "day_4": {
-    "title": "동적 거리 표현 지도",
-    "intent": "Street Gaussians가 관련 연구 지도에서 어디에 위치하는가",
-    "content": "동적 도시 표현은 크게 세 그룹으로 갈립니다.\n\n**(1) Implicit · compositional NeRF** — **NSG, MARS, UniSim**. 배경 NeRF + 차량별 NeRF를 트래킹 포즈로 합성. 품질은 OK지만 ray marching 때문에 ~1 FPS. 편집은 가능해도 *느려서* closed-loop 시뮬이 어려움.\n\n**(2) Implicit · self-supervised 분해** — **EmerNeRF, SUDS**. optical flow나 ViT feature로 동적/정적을 알아서 가른다. 박스 annotation이 필요 없는 장점은 크지만 **instance-aware가 아니라** '저 차만 회전'은 불가능. AD 편집 시뮬엔 결정적 약점.\n\n**(3) Explicit · 포인트 기반** — 정적 **3D GS**는 빠르지만 동역학을 못 다룸. 동시기 작업 **DrivingGaussian**(점진적 정적 + 동적 그래프), **PVG**(Periodic Vibration Gaussian)가 함께 등장. Street Gaussians는 *명시적 인스턴스 분리 + 4D SH 외형 + 학습 가능한 트래킹 포즈*의 조합으로 자리잡습니다.\n\n트레이드오프 한 줄: instance-aware를 포기하면 박스 라벨이 필요 없어지지만 *편집을 잃습니다*. Street Gaussians는 '박스 필요 + 편집 자유'를 택한 쪽. 내일부터 method 본론으로.",
-    "suggested_figure": "Table 1 — Waymo 정량 비교(3D GS·NSG·MARS·EmerNeRF·Ours, PSNR/PSNR*/SSIM/LPIPS/FPS)",
+    "title": "지형도: 경쟁 기법 비교",
+    "intent": "Block-NeRF/compositional NeRF/EmerNeRF/vanilla 3DGS/concurrent Gaussian 기법들과 비교해 본 논문의 위치와 트레이드오프를 정렬",
+    "content": "오늘은 이 논문을 지형도 위에 놓아봅니다. 축을 둘로 잡으면 깔끔합니다: (1) explicit vs implicit, (2) instance-aware vs not.\n\n**vanilla 3D GS**는 explicit이고 무려 **205 FPS**로 본 논문보다도 빠릅니다. 하지만 정적 장면 전용이라 움직이는 차량의 PSNR*가 21.25로 무너집니다. 속도는 공짜로 얻지만 동역학을 포기한 셈이죠.\n\n**NSG·MARS**는 implicit + instance-aware입니다. 차량 단위 편집은 되지만 ray-marching 비용으로 1 FPS 미만입니다. **EmerNeRF**는 implicit인데 self-supervision으로 동적 분리는 하되 instance-aware가 아니라 차량 단위 편집·swap이 불가능합니다.\n\n동시기 Gaussian 연구들도 흥미롭습니다. **DrivingGaussian**은 Incremental 3D Static Gaussians와 Composite Dynamic Gaussian Graphs를 쓰고, **PVG**는 Periodic Vibration Gaussian으로 주기적 진동을 부여해 tracker 없이 동역학을 흡수합니다. PVG의 매력은 tracklet 의존성이 없다는 점이지만, 그 대가로 인스턴스 분리가 약해 'swap' 같은 편집은 어렵습니다.\n\nStreet Gaussians의 자리: **explicit + instance-aware**를 둘 다 취해, 차량을 떼어내 편집하면서도 135 FPS를 냅니다. 대신 tracker pose가 필요하고(노이즈는 학습으로 보정), 강체 차량에 국한된다는 트레이드오프를 안습니다. '편집 자유도'와 'tracker 독립성'은 이 분야의 핵심 긴장 관계입니다.",
+    "suggested_figure": "Figure 4 — Waymo 정성 비교",
     "figure_page": 10,
-    "trigger_type": "C",
+    "figure_description": "한 장면에 대해 Ours/3D GS/NSG/MARS/EmerNeRF/Ground Truth를 가로로 비교. NSG·MARS는 흐림·왜곡, 3D GS·EmerNeRF는 움직이는 객체 영역의 ghosting이 보이고, Ours가 선명함. 동적 영역(차량 주변)을 집중해서 볼 것.",
+    "trigger_type": "A",
     "key_concepts": [
       {
-        "term": "Instance-aware representation",
-        "definition": "장면 내 각 객체를 식별 가능한 단위로 분리해 표현. 객체 단위 편집·라벨 전파에 필수."
+        "term": "Instance-aware vs. self-supervised 동적 분리",
+        "definition": "동적 장면 분리에는 두 갈래가 있습니다. (1) instance-aware: tracker가 준 객체 박스로 차량별 모델을 명시적으로 두는 방식(NSG, MARS, 본 논문). 차량 단위 편집·swap·궤적 변경이 가능합니다. (2) self-supervised: optical flow나 ViT feature 감독으로 static/dynamic을 분리(EmerNeRF, SUDS). tracker가 필요 없지만 '저 차량'을 개별 객체로 지칭할 수 없어 편집이 어렵습니다. 트레이드오프의 핵심: tracker 의존성을 줄이면 편집 자유도가 떨어지고, 편집 자유도를 높이면 tracker 품질·recall에 묶입니다."
       },
       {
-        "term": "Self-supervised decomposition",
-        "definition": "박스 라벨 없이 광학 흐름·feature 일관성 등으로 정적/동적 영역을 분리 학습하는 접근. EmerNeRF·SUDS 계열."
-      },
-      {
-        "term": "DrivingGaussian / PVG",
-        "definition": "본 논문과 동시기에 등장한 3D Gaussian 기반 동적 도시 모델링 연구. 각각 점진적 정적 + 동적 그래프, 주기 진동 가우시안 사용."
+        "term": "동시기 Gaussian 도심 기법 (DrivingGaussian, PVG)",
+        "definition": "본 논문과 같은 시기에 3D Gaussian을 도심에 적용한 연구들입니다. DrivingGaussian은 Incremental 3D Static Gaussians로 배경을 점진 구축하고 Composite Dynamic Gaussian Graphs로 동적 객체를 합성합니다. PVG(Periodic Vibration Gaussian)는 각 가우시안에 주기적 진동 항을 부여해 tracklet 없이 동역학을 표현하죠. 비교 포인트: Street Gaussians는 tracker 기반 instance 분해로 편집성을 극대화한 반면, PVG는 tracker-free라 편집성은 약하지만 라벨 의존이 적습니다. '어디에 사전지식을 넣을 것인가'의 설계 선택 차이입니다."
       }
     ],
     "english_expressions": [
       {
-        "expression": "is most similar to ours",
-        "korean": "우리와 가장 유사하다",
-        "example": "Another line of works model the scene as the composition of moving object models and a background model, which is most similar to ours.",
-        "context": "Related Work에서 자기 방법과 가장 가까운 비교군을 명시할 때."
+        "expression": "which is most similar to us",
+        "korean": "우리 방법과 가장 유사한",
+        "example": "Another line of works model the scene as a composition of object models and a background model, which is most similar to us.",
+        "context": "관련연구 중 자기 방법과 가장 가까운 계열을 짚어 비교의 기준선을 세울 때."
       },
       {
-        "expression": "In contrast",
-        "korean": "이와 대조적으로",
+        "expression": "In contrast, our method focuses on ...",
+        "korean": "이와 대조적으로, 우리 방법은 ~에 초점을 둔다",
         "example": "In contrast, our method focuses on performing real-time rendering of dynamic urban scenes.",
-        "context": "선행 연구의 한계를 짚은 직후 본인 방법의 차별점을 제시할 때 단락 첫머리에 자주 등장."
+        "context": "선행연구 한계를 나열한 직후 자기 기여의 차별점을 대비로 선언할 때."
       },
       {
-        "expression": "Another line of works",
-        "korean": "또 다른 갈래의 연구들은",
-        "example": "Another line of works model the scene as the composition of moving object models and a background model.",
-        "context": "Related Work에서 여러 접근을 카테고리화할 때 카테고리 전환 신호어로 사용."
+        "expression": "some concurrent works also explore ...",
+        "korean": "몇몇 동시기 연구들도 ~을 탐구한다",
+        "example": "More recently, some concurrent works also explore 3D Gaussians in urban street scenes.",
+        "context": "우선권을 주장하지 않으면서 동시기 유사 연구를 공정하게 인정할 때."
       }
     ],
     "mcq": [
       {
-        "question": "EmerNeRF처럼 박스 라벨 없이 동적/정적을 자기지도로 가르는 방식이 *AD 편집 시뮬*에 부족한 이유는?",
+        "question": "vanilla 3D GS가 Street Gaussians보다 FPS는 높지만(205 vs 135) 도심 시뮬레이션에 부적합한 이유는?",
         "options": [
-          "학습 속도가 너무 빠르기 때문",
-          "instance-aware가 아니어서 특정 차량만 골라 편집할 수 없음",
-          "도시 거리에 적용 불가",
-          "LiDAR가 필수이기 때문"
+          "LiDAR를 지원하지 않아서",
+          "정적 장면 전용이라 움직이는 객체에서 품질(PSNR*)이 크게 떨어져서",
+          "instance-aware라 메모리를 많이 써서",
+          "tracker pose가 필요해서"
         ],
         "correct": 1,
-        "explanation": "EmerNeRF는 동적 영역을 분해는 하지만 인스턴스 단위 식별이 없음 → '저 차만 회전'식 편집 불가."
+        "explanation": "vanilla 3D GS는 정적 가정이라 동적 차량을 모델링 못 하고 PSNR*가 21.25로 무너진다. 속도는 빠르나 동역학을 포기한 결과다."
       },
       {
-        "question": "동시기 작업 DrivingGaussian과 Street Gaussians의 핵심 공통점은?",
+        "question": "PVG(Periodic Vibration Gaussian)와 비교했을 때 Street Gaussians가 갖는 차별적 강점과 그 대가는?",
         "options": [
-          "둘 다 NeRF MLP를 그대로 사용한다",
-          "둘 다 명시적 점-기반 3D Gaussian으로 동적 도시 거리를 모델링한다",
-          "둘 다 LiDAR 없이 작동한다",
-          "둘 다 트래킹 포즈를 사용하지 않는다"
+          "tracker가 필요 없으면서도 더 빠르다",
+          "instance-aware 편집(swap 등)이 가능하지만 tracker pose에 의존한다",
+          "비강체 보행자까지 모델링하지만 학습이 느리다",
+          "LiDAR 없이도 동작하지만 FPS가 낮다"
         ],
         "correct": 1,
-        "explanation": "두 작업 모두 3D Gaussian 계열의 명시적 표현으로 동적 도시를 다룸 (세부 구조는 다름)."
+        "explanation": "Street Gaussians는 tracker 기반 instance 분해로 차량 단위 편집을 얻는 대신 tracker pose·recall에 의존한다. PVG는 그 반대 트레이드오프다."
       }
     ],
     "open_question": {
-      "question": "박스 어노테이션이 부정확하거나 부분적으로만 있는 사내 데이터에 instance-aware 방법을 적용한다면, 어떤 절충을 받아들여야 할까요?",
-      "hint": "트래킹 포즈 자체가 학습 가능하다는 사실이 이 문제를 어디까지 흡수할 수 있을지 떠올려보세요.",
-      "key_takeaway": "AD 데이터의 라벨 노이즈는 *표현 학습 단계에서* 흡수될 수 있다 — 이 가능성이 8일차에서 다룰 pose optimization의 가치를 설명한다."
+      "question": "우리 조직의 데이터 파이프라인에서 'tracker가 이미 잘 갖춰져 있는가'가 instance-aware(Street Gaussians) vs self-supervised(EmerNeRF/PVG) 선택을 어떻게 가를까?",
+      "hint": "편집·swap 같은 시나리오 생성이 목표인지, 아니면 라벨 없이도 동적 장면을 재현하는 게 목표인지에 따라 비용 대비 효용이 달라집니다.",
+      "key_takeaway": "사전지식(tracker 라벨)을 넣을 수 있으면 instance-aware로 편집 자유도를 극대화하는 게 유리하고, 라벨 확보가 비싸거나 recall이 낮으면 self-supervised/tracker-free 쪽 트레이드오프가 합리적이다. 정답은 데이터 자산 상태가 결정한다."
     }
   },
   "day_5": {
-    "title": "전체 파이프라인 지도",
-    "intent": "분해→외형→합성→학습 4단계로 큰 그림 잡기",
-    "content": "오늘은 method 큰 그림. 파이프라인을 4단계로 보면:\n\n**① 분해 (Decomposition)** — 한 시퀀스를 '정적 배경 포인트클라우드 1개' + '차량 N개의 포인트클라우드 N개'로 쪼갭니다. 각 점은 3D Gaussian(위치·공분산·opacity·SH·semantic)을 들고 있어요.\n\n**② 외형 (Appearance)** — 배경 점에는 표준 **Spherical Harmonics**. 차량 점에는 **4D SH** — 시간에 따라 SH 계수가 변하도록 Fourier 계수로 펼친 모델(차가 움직이면 빛·반사가 바뀌니까).\n\n**③ 합성 + 렌더** — 시점 t에서 객체 점을 (R_t, T_t)로 world 좌표계로 옮기고 배경과 concat. 2D 평면에 **EWA splatting**으로 투영(Eq.4)해 α-blending(Eq.5). 멀리 있는 하늘은 별도 **cubemap**(1024 해상도)으로 채웁니다.\n\n**④ 학습 (Training)** — 30000 iter, Adam, **RTX 4090 한 장**. color · depth(LiDAR) · sky · semantic · reg loss 동시 최적화(Eq.7). 트래킹 포즈도 학습 가능한 ΔR·ΔT로 잡아 노이즈를 흡수.\n\n내일부터 3일간 deep dive: ① 점·Gaussian 모델, ② 4D SH, ③ pose optimization.",
-    "suggested_figure": "Figure 2 — 전체 개요도(배경/객체 분해 → 외형 모델 → 합성 → 점-기반 렌더링)",
+    "title": "전체 파이프라인 조망",
+    "intent": "깊이 들어가기 전, 표현→합성→렌더링→학습으로 이어지는 전체 지도를 큰 그림으로 제시",
+    "content": "딥다이브 전에 '지도'를 먼저 펼칩니다. Street Gaussians의 파이프라인은 네 토막으로 읽으면 됩니다.\n\n**1) 표현(Representation)**: 장면 = 배경 점군 1개 + 객체 점군 N개. 모든 점은 공통 속성을 가집니다 — 위치 $\\mu$, 불투명도 $\\alpha$, 스케일 $S$, 회전 $R$(공분산), 색을 내는 SH 계수, 그리고 semantic logit. 배경은 여기까지. 객체 점군은 두 가지를 더 얹습니다: 최적화 가능한 tracked pose와 시간 의존 외관을 내는 **4D SH**.\n\n**2) 합성(Composition)**: 렌더 시각 $t$에서 4D SH로 그 순간의 색을 복원하고($z_{m,l}(t)$), 객체 점군을 tracked pose로 world 좌표계로 변환($\\mu_w = R_t \\mu_o + T_t$)한 뒤, 배경 점군과 **그냥 이어 붙입니다(concatenate)**. NeRF처럼 복잡한 합성 ray-marching이 필요 없다는 게 핵심 우아함이죠.\n\n**3) 렌더링(Rendering)**: 합쳐진 점군을 2D로 투영해 $\\alpha$-blending. 색 대신 semantic logit을 넣으면 semantic map도, 깊이도 같은 틀로 나옵니다. 먼 하늘은 Euclidean 가우시안으로 부적합해 별도 **cubemap**으로 처리해 합성합니다.\n\n**4) 학습(Training)**: 가우시안 + 하늘 cubemap + tracked pose를 색·깊이·하늘·semantic·정규화 다항 손실로 동시 최적화하고, LiDAR 점군으로 초기화합니다. 오늘은 이 4토막의 연결만 머리에 넣어두세요. 내일부터 토막을 하나씩 해부합니다.",
+    "suggested_figure": "Figure 2 — Street Gaussians 전체 개요도",
     "figure_page": 5,
-    "trigger_type": "A",
+    "figure_description": "scene representation(배경+객체 모델, geometry: position/rotation/opacity/scale, dynamic appearance: Fourier coeff×time basis×SH basis) → composition → point-based rendering → decomposition으로 이어지는 데이터 흐름 도식. 객체만 dynamic appearance를 갖는 비대칭 구조에 주목.",
+    "trigger_type": "B",
     "key_concepts": [
       {
-        "term": "EWA splatting",
-        "definition": "3D Gaussian을 2D 이미지 평면에 투영할 때 사용하는 anisotropic 가우시안 필터 근사. 점 단위 differentiable rasterization을 가능케 한다."
+        "term": "배경 모델 vs 객체 모델의 비대칭 설계",
+        "definition": "두 모델은 $\\alpha$, $S$, opacity 등 다수 속성을 공유하지만 세 곳에서 갈립니다. (1) 좌표계: 배경은 world, 객체는 local 좌표에 $\\mu_o, R_o$를 두고 tracked pose로 world로 변환($\\mu_w=R_t\\mu_o+T_t,\\ R_w=R_tR_o$). (2) 외관: 배경은 정적 SH, 객체는 시간 의존 4D SH. (3) semantic: 배경은 $M$차원 logit 벡터 $\\beta_b$, 객체는 차량 클래스를 나타내는 1차원 스칼라 $\\beta_o$. 왜 비대칭인가: 움직이는 건 차량뿐이므로 '동역학 비용'을 객체에만 부과해 효율을 챙기는 설계입니다."
       },
       {
-        "term": "α-blending",
-        "definition": "정렬된 점들을 앞→뒤로 누적해 색을 합성하는 컴포지션 규칙. C = Σ c_i α_i ∏(1 − α_j)."
-      },
-      {
-        "term": "Sky cubemap",
-        "definition": "무한히 먼 하늘을 별도의 6면 큐브맵 텍스처로 학습. 유클리드 공간에 정의된 3D Gaussian이 다루기 어려운 distant region을 보완."
+        "term": "Concatenation 기반 합성(rendering by composition)",
+        "definition": "기존 compositional NeRF가 객체별 ray-marching을 합성해야 했던 것과 달리, Street Gaussians는 객체 점군을 world로 변환한 뒤 배경 점군과 단순히 이어 붙여 하나의 점군으로 만들고 한 번에 splatting 합니다. 이 단순함이 곧 속도이자 편집성입니다: 점군을 더하고 빼는 집합 연산만으로 객체 삽입·삭제·교체가 됩니다. 주의할 점: 올바른 가시성(depth ordering)과 $\\alpha$-blending이 합쳐진 점군 전체에서 일관되게 처리되어야 자연스러운 가림이 나옵니다."
       }
     ],
     "english_expressions": [
       {
-        "expression": "As shown in Figure X",
-        "korean": "그림 X에 보이듯이",
-        "example": "As shown in the Figure 2, we represent a dynamic urban scene as a set of point clouds.",
-        "context": "본문에서 그림을 참조해 설명을 이어갈 때 가장 흔한 정형구."
+        "expression": "As shown in Figure 2, we represent ... as ...",
+        "korean": "Figure 2에서 보듯, 우리는 ~을 ~으로 표현한다",
+        "example": "As shown in Figure 2, we represent a dynamic urban scene as a set of point clouds.",
+        "context": "개요 그림을 가리키며 전체 표현 방식을 한 문장으로 소개할 때."
       },
       {
-        "expression": "In the following",
-        "korean": "이어서 / 이하에서는",
-        "example": "In the following, we will first focus on the background model, elaborating on common attributes shared with the object model.",
-        "context": "섹션·문단 사이에서 다음에 다룰 내용을 예고할 때."
-      },
-      {
-        "expression": "More details can be found in the supplementary",
-        "korean": "자세한 내용은 보충 자료에 있다",
-        "example": "The final rendering color is obtained by blending the cubemap and the Gaussian color. More details can be found in the supplementary.",
-        "context": "본문 분량을 지키면서 세부를 미루는 방어적 클로징."
+        "expression": "we will first focus on ..., and subsequently delve into ...",
+        "korean": "먼저 ~에 집중하고, 이후 ~을 깊이 다룬다",
+        "example": "We will first focus on the background model, and subsequently delve into the dynamic aspects of the object model.",
+        "context": "방법 섹션의 서술 순서를 독자에게 미리 안내(로드맵)할 때."
       }
     ],
     "mcq": [
       {
-        "question": "Street Gaussians가 *하늘* 영역만 별도 cubemap으로 처리하는 핵심 이유는?",
+        "question": "Street Gaussians의 합성이 compositional NeRF보다 단순한 본질적 이유는?",
         "options": [
-          "학습 속도를 높이기 위해",
-          "3D Gaussian은 유클리드 공간에 정의되어 무한히 먼 영역엔 부적합하기 때문",
-          "GPU 메모리를 줄이기 위해",
-          "시멘틱 라벨이 부족해서"
+          "객체 수가 항상 1개로 고정되어서",
+          "world로 변환한 객체 점군을 배경 점군과 단순 concatenate한 뒤 한 번에 splatting하기 때문",
+          "semantic을 렌더링하지 않기 때문",
+          "하늘을 별도로 처리하지 않기 때문"
         ],
         "correct": 1,
-        "explanation": "Gaussian은 유한 위치에 정의됨 — 무한대 거리의 하늘을 점으로 채우는 건 비효율적이고 부정확하다."
+        "explanation": "explicit 점군이라 객체를 world로 옮겨 이어 붙이는 집합 연산만으로 합성이 끝난다. 객체별 ray-marching 합성이 필요 없다."
       },
       {
-        "question": "한 렌더링 스텝에서 '객체 점을 world 좌표계로 옮기는' 작업과 '2D 평면으로 투영하는' 작업의 순서는?",
+        "question": "배경 모델과 객체 모델이 다르게 설계된 항목으로 옳은 조합은?",
         "options": [
-          "먼저 2D 투영, 그 다음 트래킹 포즈로 world로 이동",
-          "트래킹 포즈로 world로 옮기고 배경과 합친 뒤 2D 투영",
-          "동시에 진행 (순서 무관)",
-          "트래킹 포즈는 학습 시에만 사용, 추론 시 생략"
+          "불투명도와 스케일",
+          "좌표계, 시간 의존 외관(4D SH), semantic 표현 차원",
+          "투영 행렬과 카메라 내부 파라미터",
+          "손실 함수의 종류"
         ],
         "correct": 1,
-        "explanation": "Eq.2로 world 좌표계 합성 → 배경과 concat → Eq.4로 2D 투영 → Eq.5로 α-blending."
+        "explanation": "객체는 local 좌표+tracked pose, 4D SH, 1차원 semantic 스칼라를 쓰고 배경은 world 좌표, 정적 SH, M차원 logit을 쓴다. 동역학 비용을 객체에만 부과한 비대칭 설계다."
       }
     ],
     "open_question": {
-      "question": "이 4단계 파이프라인을 회사 데이터(트래커가 노이지하고, LiDAR 일부 누락)에 옮긴다면, 가장 먼저 다듬어야 할 단계는 어디일까요?",
-      "hint": "초기화·외형·포즈·렌더 중 어느 단계가 입력 품질에 가장 민감한지, 그리고 어디서 노이즈를 흡수할 수 있는지.",
-      "key_takeaway": "파이프라인의 각 단계는 *특정 입력 결함을 떠안는 위치*다 — 노이즈가 어디에서 발생해 어디서 흡수되는지 그려보면, 사내 데이터 적응 전략이 명확해진다."
+      "question": "동적 비용을 '객체에만' 부과하는 이 비대칭 설계는, 우리가 다루는 장면(예: 흔들리는 가로수, 펄럭이는 현수막)에서 언제 깨질 위험이 있을까?",
+      "hint": "이 설계는 '배경은 정적, 움직이는 건 추적된 강체 차량뿐'이라는 가정 위에 서 있습니다. 그 가정을 벗어나는 동적 요소를 떠올려 보세요.",
+      "key_takeaway": "비대칭 설계의 효율은 '배경=정적' 가정에 의존한다. tracker로 잡지 않는 비강체·미세 동적 요소(나무, 깃발, 보행자)는 배경에 흡수되며 잔상이나 흐림으로 새어 나온다 — 적용 도메인에서 이 가정의 성립 여부를 먼저 점검해야 한다."
     }
   },
   "day_6": {
-    "title": "점·Gaussian·초기화",
-    "intent": "기하 모델(배경+객체)과 LiDAR 기반 초기화 깊이 보기",
-    "content": "첫 번째 deep dive — **점·Gaussian 기하 모델**.\n\n각 점은 3D Gaussian 1개. 파라미터는 평균 μ, 회전 R, 스케일 S, opacity α, SH 계수, semantic logit. 공분산은 Σ = R·S·Sᵀ·Rᵀ (Eq.1) — R은 **unit quaternion**, S는 대각 성분만. 이렇게 분해하는 이유는 임의 행렬이 *유효한 공분산*이 되지 못할 위험을 막기 위해서.\n\n**배경 모델**: μ_b, R_b를 world 좌표계에서 직접 학습. semantic은 M차원 logit β_b.\n\n**객체 모델**: μ_o, R_o는 차량 *local 좌표계*에 살다가, 매 프레임 트래킹 포즈 (R_t, T_t)로 world로 변환 (Eq.2): μ_w = R_t·μ_o + T_t, R_w = R_t·R_o. semantic은 1차원 scalar(차량 클래스 id) — 렌더 시 one-hot으로 펼쳐 배경과 합쳐요.\n\n**초기화**가 결정적입니다. 3D GS의 SfM 점은 텍스처 없는 도시 거리에 무력. 대신 **ego LiDAR 누적 점**을 쓰고 이미지에 투영해 색을 입힙니다. 객체 박스 안 LiDAR 점이 **2K 미만**이면 박스 안 **8K 점 랜덤 샘플링**으로 대체.\n\n학습 중 박스 *바깥*으로 자라난 객체 Gaussian은 가지치기 — occlusion 영역으로의 누설 차단. 내일은 외형: 4D SH로.",
-    "suggested_figure": "Figure 2 — 객체/배경 표현 도식(geometry + appearance + semantic)",
-    "figure_page": 5,
-    "trigger_type": "B",
+    "title": "딥다이브 ①: 4D SH",
+    "intent": "시간 의존 외관을 Fourier 기반으로 압축하는 4D Spherical Harmonics를 수식·직관·근거로 해부",
+    "content": "오늘은 이 논문에서 가장 영리한 부품, **4D Spherical Harmonics**입니다.\n\n문제 상황부터. 움직이는 차량은 위치가 바뀌며 받는 조명·그림자가 달라집니다. 정적 SH 계수 하나로는 이 시간 변화를 못 담아 차체에 noisy한 artifact가 생깁니다(Figure 3). 가장 단순한 해법은 '매 timestep마다 별도 SH'지만, 프레임 수만큼 저장 비용이 폭증하죠.\n\n저자의 해법은 우아합니다. 각 SH 계수 $z_{m,l}$을 시간에 대한 **Fourier 계수 집합** $f \\in \\mathbb{R}^k$ 로 치환하고, 임의 시각 $t$에서 실수값 역이산푸리에변환(IDFT)으로 복원합니다:\n\n$$z_{m,l}(t) = \\sum_{i=0}^{k-1} f_i \\cos\\!\\left(\\frac{i\\pi}{N_t} t\\right)$$\n\n직관: 차량 외관의 시간 변화는 대부분 **저주파**입니다(조명이 갑자기 점멸하지 않죠). 그래서 낮은 차수 코사인 몇 개면 충분합니다. 실제로 $k=5$로 두는 것만으로 성능과 저장 비용의 균형을 잡습니다. 즉 'timestep마다 통째 저장'을 '소수의 주파수 성분'으로 압축한 셈입니다.\n\n또 하나의 설계 디테일: 도심 장면은 시점 의존 효과(반사 등)가 객체 중심 데이터셋보다 약해서, **SH 차수를 1로 낮춰** overfitting을 막습니다. 효과는 ablation에서 분명합니다 — 4D SH를 빼면 PSNR*가 30.23에서 29.27로 떨어집니다. 잠시 상상해 보세요: 한 대의 차가 그늘을 통과하며 차체 색이 매끈하게 변하는 그 곡선을, 코사인 다섯 개의 합으로 그린다는 것을요.",
+    "suggested_figure": "Figure 3 — 4D SH 유무 비교",
+    "figure_page": 7,
+    "figure_description": "상단 행은 외관이 변하는 입력 시퀀스, 하단 행은 4D SH 적용/미적용 렌더링과 GT. 4D SH가 없으면 차체에 뚜렷한 artifact(얼룩·잡음)가 나타나고, 적용 시 매끈한 그림자가 재현됨. 차체 표면의 매끄러움 차이를 볼 것.",
+    "trigger_type": "C",
     "key_concepts": [
       {
-        "term": "Covariance decomposition Σ = RSSᵀRᵀ",
-        "definition": "공분산을 회전·스케일로 분해. 임의 행렬이 비-positive-definite가 되는 걸 막아 학습 안정성 확보."
-      },
-      {
-        "term": "LiDAR initialization",
-        "definition": "ego 차량 LiDAR 점을 시퀀스 전체에 걸쳐 누적해 점-기반 표현의 초기 위치로 사용. 텍스처 없는 영역에 강함."
-      },
-      {
-        "term": "Adaptive density control",
-        "definition": "3D GS에서 가져온 학습 중 점 분할·복제·제거 기법. 본 논문은 객체 박스 밖 점을 추가로 가지치기."
+        "term": "4D Spherical Harmonics (Fourier 기반 시간 의존 외관)",
+        "definition": "각 SH 계수를 시간 함수로 만들되, 그 함수를 Fourier 계수 $f\\in\\mathbb{R}^k$로 파라미터화해 $z_{m,l}(t)=\\sum_{i=0}^{k-1} f_i \\cos(i\\pi t / N_t)$ 로 복원합니다($N_t$는 프레임 수, $k=5$). 핵심 직관: 움직이는 차량의 외관 변화는 저주파 신호이므로 소수의 코사인 기저로 압축 가능하다는 것. timestep별 SH를 따로 저장하는 naive 방식 대비 저장 비용을 극적으로 줄입니다. 함정: $k$가 너무 작으면 빠른 조명 변화를 못 따라가고, 너무 크면 저장 비용·overfitting이 늘어 균형점($k=5$)이 중요합니다. SH 차수도 도심에선 1로 낮춰 시점 의존 과적합을 억제합니다."
       }
     ],
     "english_expressions": [
       {
-        "expression": "consist of",
-        "korean": "~으로 구성된다",
-        "example": "The Gaussian parameters consist of a covariance matrix and a position vector.",
-        "context": "수식·구조의 구성 요소를 열거할 때 표준 표현."
+        "expression": "is insufficient for modeling ..., because ...",
+        "korean": "~을 모델링하기에 불충분하다, 왜냐하면 ~",
+        "example": "Simply representing object appearance with SH coefficients is insufficient for modeling moving vehicles, because the appearance is influenced by its position in the global scene.",
+        "context": "단순 baseline의 부족함을 짚고 그 이유를 명시해 개선의 필요성을 세울 때."
       },
       {
-        "expression": "is assigned with",
-        "korean": "~이 할당된다",
-        "example": "Each point is assigned with a 3D Gaussian to softly represent the continuous scene geometry and color.",
-        "context": "데이터 구조의 단위 요소가 어떤 속성을 갖는지 정의할 때."
+        "expression": "One straightforward solution is ...; however, ...",
+        "korean": "한 가지 직관적 해법은 ~이지만, ~",
+        "example": "One straightforward solution is to use separate SH for each timestep; however, this significantly increases the storage cost.",
+        "context": "naive 해법을 먼저 제시해 기각한 뒤 자기 방법의 동기를 부각할 때."
       },
       {
-        "expression": "to avoid invalid value during optimization",
-        "korean": "최적화 중 비유효 값을 막기 위해",
-        "example": "To avoid invalid value during optimization, each covariance matrix is further reduced to a scaling matrix and a rotation matrix.",
-        "context": "설계 결정의 동기를 *수치 안정성* 관점에서 정당화할 때."
+        "expression": "to maintain a balance between performance and storage cost",
+        "korean": "성능과 저장 비용 사이의 균형을 유지하기 위해",
+        "example": "We set the number of Fourier coefficients k to 5 to maintain a balance between performance and storage cost.",
+        "context": "하이퍼파라미터 선택의 근거를 트레이드오프로 정당화할 때."
       }
     ],
     "mcq": [
       {
-        "question": "공분산 Σ를 직접 학습하지 않고 R·S·Sᵀ·Rᵀ로 분해해 R, S만 학습하는 이유는?",
+        "question": "4D SH가 'timestep마다 별도 SH 저장' 방식보다 선호되는 핵심 이유는?",
         "options": [
-          "메모리를 줄이기 위해",
-          "임의 행렬이 비-positive-definite(유효 공분산이 아닌) 값으로 가는 것을 방지하기 위해",
-          "GPU에서 더 빠르기 때문",
-          "SH 계수와 차원을 맞추기 위해"
+          "더 높은 시점 의존 반사를 표현하려고",
+          "외관의 시간 변화가 저주파라 소수 Fourier 계수로 압축해 저장 비용을 크게 줄일 수 있어서",
+          "tracker pose 없이 동작하려고",
+          "semantic 분할 성능을 높이려고"
         ],
         "correct": 1,
-        "explanation": "임의 행렬은 유효 공분산이 아닐 수 있음. 회전(quaternion)·스케일로 분해하면 항상 유효 공분산이 보장된다."
+        "explanation": "차량 외관의 시간 변화는 저주파이므로 k=5개의 코사인 기저로 충분히 근사되며, timestep별 저장 대비 메모리를 크게 절약한다."
       },
       {
-        "question": "박스 안 LiDAR 점이 2K 미만일 때 박스 안 *8K 점을 랜덤 샘플링*해 초기화하는 이유는?",
+        "question": "도심 장면에서 SH 차수를 1로 낮춘 이유로 가장 적절한 것은?",
         "options": [
-          "데이터 누수를 막기 위해",
-          "학습 초기 단계에 충분한 점이 필요하고, 박스 안은 객체일 가능성이 높은 신뢰 영역이기 때문",
-          "라벨링이 더 빠르기 때문",
-          "박스 자체가 학습 대상이라서"
+          "FPS를 135로 맞추려고",
+          "객체 중심 데이터셋보다 시점 의존 효과가 약해 고차 SH가 overfitting을 유발하기 때문",
+          "LiDAR 점이 부족해서",
+          "하늘 cubemap과 호환되도록"
         ],
         "correct": 1,
-        "explanation": "점이 부족하면 splatting 품질이 무너짐. 박스라는 강한 prior로 안전한 위치에 초기 점을 뿌리는 셈."
+        "explanation": "도심은 강한 반사 등 view-dependent 효과가 상대적으로 약하므로, 고차 SH는 불필요한 자유도가 되어 overfitting 위험을 키운다."
       }
     ],
     "open_question": {
-      "question": "당신 데이터에 텍스처 없는 영역(야간·터널·흰 벽)이 많다면, LiDAR 초기화만으로 충분할까요? 그렇지 않다면 어떤 보강 소스를 고려하시겠어요?",
-      "hint": "논문은 LiDAR + SfM을 보완적으로 사용합니다. 다른 가능한 소스로는?",
-      "key_takeaway": "초기화는 '학습이 자력으로 도달할 수 없는 영역을 미리 채우는' 작업이다 — 데이터셋 특성에 맞춰 *다중 소스 점 합치기*는 거의 항상 합리적이다."
+      "question": "우리 데이터에 야간 점멸하는 신호등이나 깜빡이는 브레이크등처럼 '고주파' 외관 변화가 많다면, 4D SH의 $k$나 기저 선택을 어떻게 다시 생각해야 할까?",
+      "hint": "코사인 기저의 최고 주파수는 $k$가 좌우합니다. 신호의 변화 속도(Nyquist 관점)와 $k$, 그리고 저장 비용의 관계를 떠올려 보세요.",
+      "key_takeaway": "4D SH는 '외관 변화가 저주파'라는 가정에 최적화돼 있다. 점멸등 같은 고주파 현상이 중요하면 $k$를 키우거나(저장 비용↑) 이벤트성 외관을 위한 별도 모델링이 필요하다 — 가정과 데이터 특성의 정합을 먼저 확인해야 한다."
     }
   },
   "day_7": {
-    "title": "4D SH — 시간 의존 외형",
-    "intent": "왜 Fourier로 SH 시간 함수를 펼치는가",
-    "content": "오늘 deep dive: **4D Spherical Harmonics**.\n\n문제 정의부터. 차가 거리를 움직이면 가로등·건물·반사·그림자가 시시각각 변합니다. 그런데 보통 SH는 *시점 방향만* 받고 *시간*은 못 받아요. 정적 SH 하나로 차를 표현하면 **그림자가 텍스처에 박혀버립니다** (Figure 3 참고).\n\n순진한 해법: 프레임마다 SH 계수 세트를 따로 둔다 — 저장량이 N_t배로 폭발.\n\n논문의 해법은 **Fourier 분해**. 각 SH 계수 z_{m,l}을 시간 함수로 보고 k개의 Fourier 계수 f_i로 펼칩니다(Eq.3):\n\nz_{m,l}(t) = Σ_{i=0}^{k−1} f_i · cos(iπ·t / N_t)\n\n학습은 f_i들을 직접 최적화. 추론 시점 t에서는 실수값 Inverse DFT 한 번이면 그 순간의 SH 계수가 복원됩니다. 코사인 베이시스 하나의 의미는 **'이 SH 채널이 시퀀스 동안 몇 번 진동하는가'** — 저주파면 전체 색 변화, 고주파면 짧은 하이라이트.\n\n효과 (Waymo ablation): PSNR 34.36 → **34.61**, *움직이는 차 PSNR\\* 29.27 → 30.23*. 평균 PSNR 변화는 작아도 *동적 영역에서 큰 차이*. 시각적으로 차체 그림자가 매끄럽게 살아납니다.\n\n내일: 트래킹 포즈도 학습한다는 의미.",
-    "suggested_figure": "Figure 3 — 4D SH 유무 비교(없으면 차체 그림자가 노이즈로 박힘)",
-    "figure_page": 7,
-    "trigger_type": "C",
-    "key_concepts": [
-      {
-        "term": "Spherical Harmonics (SH)",
-        "definition": "구면 위의 함수를 직교 기저로 전개하는 방식. NeRF/3D GS 계열에서 view-dependent 색을 저장하는 표준."
-      },
-      {
-        "term": "4D SH",
-        "definition": "SH 계수 자체를 시간 함수로 확장. 본 논문은 시간축을 Fourier 코사인 기저 k개로 분해해 저장량을 압축한다."
-      },
-      {
-        "term": "Real Inverse DFT",
-        "definition": "Fourier 계수 f_i로부터 시점 t에서의 실수값 함수를 복원하는 역변환. 본 논문의 z_{m,l}(t) 복원에 사용."
-      }
-    ],
-    "english_expressions": [
-      {
-        "expression": "to address this issue",
-        "korean": "이 문제를 해결하기 위해",
-        "example": "To address this issue, we introduce the 4D spherical harmonics model.",
-        "context": "문제 진술 직후 해법으로 넘어가는 정형 전환구."
-      },
-      {
-        "expression": "Instead, we introduce",
-        "korean": "대신, 우리는 ~을 도입한다",
-        "example": "Instead, we introduce the 4D spherical harmonics model by replacing each SH coefficient with Fourier coefficients.",
-        "context": "순진한 대안을 짚은 뒤 본인의 해법을 제시하는 흐름."
-      },
-      {
-        "expression": "is insufficient for",
-        "korean": "~에 부족하다",
-        "example": "Simply representing object appearance with spherical harmonics coefficients is insufficient for modeling moving vehicles.",
-        "context": "기존/단순 방식의 한계를 정확히 지목할 때."
-      }
-    ],
-    "mcq": [
-      {
-        "question": "4D SH가 '프레임마다 SH를 따로 두기'보다 좋은 핵심 이유는?",
-        "options": [
-          "화질이 무조건 더 좋아서",
-          "Fourier 기저로 표현해 시퀀스 길이 N_t와 무관하게 k개 계수만 저장하면 되기 때문",
-          "학습률을 더 키울 수 있어서",
-          "시멘틱 정보를 추가로 받기 때문"
-        ],
-        "correct": 1,
-        "explanation": "프레임별 SH는 저장량이 O(N_t)로 폭발. Fourier 분해는 O(k) (k ≪ N_t)로 압축하면서도 시간 의존성을 매끄럽게 표현."
-      },
-      {
-        "question": "Eq.3의 cos(iπt/N_t)에서 i가 클수록 의미하는 바는?",
-        "options": [
-          "색이 더 진해진다",
-          "시간축 더 고주파 변화 — 짧은 하이라이트·그림자 변화",
-          "공간 해상도가 높아진다",
-          "학습이 빨라진다"
-        ],
-        "correct": 1,
-        "explanation": "Fourier 기저의 i는 주파수 인덱스. 큰 i는 시간상 빠른 진동(국소적 외형 변화)을 표현한다."
-      }
-    ],
-    "open_question": {
-      "question": "당신 시뮬에서 차량이 *야간 가로등 아래를 지나며 깜빡이는 반사*를 표현하려면 k(Fourier 계수 개수)를 어떻게 잡으시겠어요? 너무 크면 어떤 위험이 있고, 너무 작으면 어떤 표현이 사라질까요?",
-      "hint": "너무 작으면 빠른 변화를 못 잡고, 너무 크면 측정 노이즈에 과적합. 시퀀스 길이와의 비율도 생각해보세요.",
-      "key_takeaway": "시간 베이시스의 해상도는 *표현하려는 외형 변화의 시간 주파수*에 맞춰야 한다 — 모든 시간 의존 모델에서 동일한 트레이드오프가 반복된다."
-    }
-  },
-  "day_8": {
-    "title": "트래킹 포즈도 학습한다",
-    "intent": "노이지 박스를 흡수하는 ΔR·ΔT의 의미와 효과",
-    "content": "마지막 deep dive — **트래킹 포즈도 학습한다**.\n\n객체 Gaussian의 world 위치/회전은 (R_t, T_t)에 직접 곱해집니다(Eq.2). 그런데 off-the-shelf 트래커가 뽑은 박스는 **노이즈가 큽니다** — yaw가 도 단위로 떨리고 중심도 흔들리죠. 노이지 포즈로 그대로 학습하면 점들이 평균 위치에 뭉개져 텍스처가 흐려져요.\n\n해법은 simple but elegant. 각 프레임 t의 포즈에 **학습 가능한 보정** (ΔR_t, ΔT_t)을 곱해주자 (Eq.6):\n\nR_t' = R_t · ΔR_t,   T_t' = T_t + ΔT_t\n\nΔT_t는 3D 벡터, ΔR_t는 **yaw 보정 각도 Δθ_t 하나**로 충분(도시 거리는 pitch/roll ≈ 0). gradient는 chain rule로 그냥 흐릅니다 — 추가 implicit 모듈 없이.\n\n학습 스케줄: ΔT_t lr 5e-3 → 5e-5, ΔR_t lr 1e-3 → 1e-5로 exponential decay.\n\nablation (Waymo, PSNR\\*):\n- pose opt 없음: **28.24**\n- GT pose 사용: 29.84\n- pose opt + 트래커 박스: **30.23**\n\n*트래커 박스 + 보정*이 GT 박스보다 좋다는 거예요. 저자 해석: GT 어노테이션 자체에도 노이즈가 있다.\n\n시사점: 라벨이 완벽하지 않아도 *공동 최적화*가 흡수해줍니다. 내일은 숫자 총정리.",
-    "suggested_figure": "Figure 5 — pose opt 유무·GT pose 비교(차량 후면 디테일·로고 복원 차이)",
+    "title": "딥다이브 ②: pose 최적화",
+    "intent": "객체 좌표 변환과 tracked pose를 학습 파라미터로 보정하는 전략, 그리고 explicit 표현이 왜 유리한지 해부",
+    "content": "오늘은 동역학의 두 번째 축, **tracked pose 최적화**입니다.\n\n먼저 변환. 객체 가우시안은 local 좌표에 $\\mu_o, R_o$로 정의되고, 프레임별 tracked pose $(R_t, T_t)$로 world 좌표로 옮겨집니다:\n\n$$\\mu_w = R_t \\mu_o + T_t, \\quad R_w = R_t R_o$$\n\n문제는 off-the-shelf tracker의 박스가 **noisy**하다는 것. 이를 그대로 쓰면 객체가 미세하게 어긋나 렌더링이 흐려집니다. 저자의 처방은 pose 자체를 학습 파라미터로 푸는 것입니다. 각 변환에 학습 가능한 보정을 더합니다:\n\n$$R_t' = R_t \\Delta R_t, \\quad T_t' = T_t + \\Delta T_t$$\n\n여기서 $\\Delta T_t$는 3D 벡터, $\\Delta R_t$는 **yaw 오프셋 $\\Delta\\theta_t$** 하나에서 만든 회전입니다. 왜 yaw만? 차량은 지면 위를 구르므로 roll·pitch는 거의 고정, 자유도는 사실상 heading입니다 — 불필요한 자유도를 잘라 최적화를 안정화한 셈이죠.\n\n결정적 통찰: explicit 표현이라 pose로의 gradient가 implicit 함수나 중간 과정을 거치지 않고 **곧장** 흐릅니다. 그래서 별도 역전파 비용 없이 pose가 잘 학습됩니다. 압권은 ablation입니다 — 보정된 pose 모델이 PSNR* 30.23으로, **GT pose를 쓴 모델(29.84)보다 오히려 높습니다.** 해석은? GT 주석에도 노이즈가 남아 있다는 것. 측정값을 맹신하지 말라는 교훈이죠. 점유 영역 밖으로 가우시안이 새지 않도록, 박스 밖 점을 가진 가우시안은 prune합니다.",
+    "suggested_figure": "Figure 5 — pose 최적화 ablation",
     "figure_page": 12,
-    "trigger_type": "B",
-    "key_concepts": [
-      {
-        "term": "Pose residual (ΔR_t, ΔT_t)",
-        "definition": "트래커가 제공한 포즈에 곱하거나 더하는 학습 가능한 보정. 노이즈 흡수 + 어노테이션 한계를 넘어서는 미세 정합."
-      },
-      {
-        "term": "Yaw-only rotation parameterization",
-        "definition": "도시 거리에서 차량 회전을 z축 yaw 한 자유도로 제한. 자유도 축소가 정규화 효과로 작용."
-      },
-      {
-        "term": "Joint optimization",
-        "definition": "장면 표현·skybox·트래킹 포즈를 단일 손실로 동시 학습. 부분 라벨 노이즈를 학습 단계에서 흡수하는 일반적 패턴."
-      }
-    ],
-    "english_expressions": [
-      {
-        "expression": "We treat X as Y",
-        "korean": "우리는 X를 Y로 (다룬다/취급한다)",
-        "example": "We treat the tracked vehicle poses as learnable parameters.",
-        "context": "모델링 결정 — 무엇을 고정으로 두고 무엇을 학습 변수로 둘지 — 을 한 줄로 선언할 때."
-      },
-      {
-        "expression": "leads to degradation in",
-        "korean": "~에 있어 성능 저하를 초래한다",
-        "example": "Directly using noisy bounding boxes to optimize our scene representation leads to degradation in rendering quality.",
-        "context": "특정 설계의 결과로 발생하는 부정적 효과를 인과로 진술할 때."
-      },
-      {
-        "expression": "a plausible explanation is",
-        "korean": "그럴듯한 해석은 ~이다",
-        "example": "It is interesting to notice that our model outperforms the GT-pose version; a plausible explanation is that there still exists noise in GT annotations.",
-        "context": "예상과 다른 실험 결과에 대한 가설적 해석을 제시할 때의 학술적 헷지 표현."
-      }
-    ],
-    "mcq": [
-      {
-        "question": "ΔR_t를 full 3DoF 회전이 아니라 *yaw 각도 하나*로 잡은 이유로 가장 적절한 것은?",
-        "options": [
-          "학습 속도를 높이기 위해",
-          "도시 거리에서 차량 pitch/roll은 거의 0이라 자유도 축소가 정규화·안정화 효과를 줌",
-          "GPU 메모리를 줄이기 위해",
-          "트래커가 yaw만 출력하기 때문"
-        ],
-        "correct": 1,
-        "explanation": "차량은 도로 평면 운동 가정. 사용하지 않을 자유도를 빼면 잘못된 방향으로의 발산을 막는다."
-      },
-      {
-        "question": "'pose opt + 트래커 박스'가 'GT 박스'보다 PSNR*이 높다는 결과의 가장 합리적 해석은?",
-        "options": [
-          "GT 어노테이션 자체에도 노이즈가 존재한다",
-          "트래커가 본질적으로 GT보다 정확하다",
-          "테스트 셋을 외운 결과(overfitting)다",
-          "메트릭 계산 버그다"
-        ],
-        "correct": 0,
-        "explanation": "저자 본문이 직접 제시하는 해석. GT라고 라벨이 완벽하지 않으며, 학습 가능한 보정이 GT의 미세 오차도 보완한다."
-      }
-    ],
-    "open_question": {
-      "question": "'노이지 라벨에 학습 가능한 보정을 붙인다'는 아이디어를, perception 파이프라인의 다른 모듈(detection·tracking·prediction)에 어떻게 옮길 수 있을까요?",
-      "hint": "라벨의 일부를 latent로 두고 task loss와 함께 공동 최적화하는 패턴을 떠올려보세요.",
-      "key_takeaway": "노이지 라벨 → 학습 가능 보정 변수의 도입은 *re-labeling 없이* 표현 학습이 라벨 노이즈를 흡수하게 하는 일반화 가능한 트릭이다 — 본 논문은 6DoF 포즈에 적용했을 뿐."
-    }
-  },
-  "day_9": {
-    "title": "숫자가 말하는 것",
-    "intent": "Waymo·KITTI·VKITTI2·ablation·응용 핵심 수치 정리",
-    "content": "숫자 정리. Waymo Open 8개 시퀀스, **1066×1600** 해상도.\n\n**렌더 품질** (Table 1):\n- PSNR: **34.61** (Ours) vs 30.87 (EmerNeRF), 29.75 (MARS), 28.31 (NSG)\n- *움직이는 차만* 떼어 본 PSNR\\*: **30.23** vs 26.54 (MARS) — 가장 어려운 영역에서 격차가 가장 큼\n- LPIPS: 0.079 vs 0.133 (EmerNeRF)\n\n저자 보고치: PSNR **+12.1%**, PSNR\\* **+13.9%**.\n\n**속도**:\n- 학습 **30분** vs MARS 18시간+, EmerNeRF 2.5시간\n- 렌더 **135 FPS** vs 0.68 / 0.21 — 두 자릿수가 아니라 *세 자릿수* 빠릅니다 (RTX 4090 1장).\n\n**KITTI/VKITTI2**도 25/50/75% train 분할 모두에서 MARS·NSG·3D GS를 일관되게 상회 (KITTI-75%: 25.79 vs 24.23).\n\n**Ablation** (Waymo PSNR\\*): LiDAR init 빼면 29.53, 4D SH 빼면 29.27, pose opt 빼면 28.24 — 셋 다 유의미.\n\n**응용 검증**: 회전·이동·차량 swap 편집이 자연스럽고(Fig.7), semantic seg **mIoU 58.81**로 Video K-Net의 GT 입력 결과(57.94)를 *오히려 넘깁니다*.\n\n내일: 이걸 당신의 perception 데이터 증강에 어떻게 꽂을 것인가.",
-    "suggested_figure": "Table 1 — Waymo 종합 비교(PSNR/PSNR*/SSIM/LPIPS/FPS)",
-    "figure_page": 10,
+    "figure_description": "한 장면을 GT / w/o pose opt. / Ours / w/ GT poses 네 버전으로 비교. pose 최적화 없는 버전은 차량 후미·로고가 흐릿하고 artifact가 있는 반면, 최적화 버전은 텍스처 디테일이 살아남. 차량 뒷면 글자·로고의 선명도 차이를 볼 것.",
     "trigger_type": "A",
     "key_concepts": [
       {
-        "term": "PSNR*",
-        "definition": "전체 이미지가 아닌 *3D 박스가 2D로 투영된 영역*에서만 계산한 PSNR. 동적 객체 복원 품질의 직접 지표."
+        "term": "Tracked pose를 학습 파라미터로 (yaw-only 보정)",
+        "definition": "tracker가 준 강체 변환 $(R_t,T_t)$에 학습 가능한 보정 $\\Delta R_t,\\Delta T_t$를 더해 $R_t'=R_t\\Delta R_t,\\ T_t'=T_t+\\Delta T_t$로 정제합니다. $\\Delta T_t$는 3D 벡터, $\\Delta R_t$는 yaw 오프셋 $\\Delta\\theta_t$ 하나로 생성 — 지면 위 차량은 heading 자유도가 지배적이라는 사전지식을 반영해 자유도를 줄였습니다. 직관: 노이즈 라벨을 고정 진실로 두지 않고 재구성 손실로 함께 정렬하면 더 선명해집니다. 흥미로운 함정: GT pose조차 노이즈가 있어, 학습된 pose가 GT 사용 모델보다 PSNR*에서 앞서기도 합니다. 단, tracker가 차량을 아예 놓치면(recall 실패) 이 보정으로 복구 불가합니다."
       },
       {
-        "term": "Ablation study",
-        "definition": "구성요소를 하나씩 제거해 각 요소의 기여를 정량 검증하는 실험. 본 논문은 LiDAR init·4D SH·pose opt를 검증."
-      },
-      {
-        "term": "mIoU 58.81 vs 57.94",
-        "definition": "KITTI semantic segmentation에서 Street Gaussians의 렌더 기반 결과가 Video K-Net의 GT 입력 결과를 능가 — 3D 일관성이 2D 분할까지 개선."
+        "term": "Explicit 표현에서의 직접 gradient 전파",
+        "definition": "객체 위치·공분산이 $\\mu_w=R_t\\mu_o+T_t$처럼 pose와 닫힌 형태의 대수적 관계로 연결되어, 재구성 손실의 gradient가 implicit 함수(MLP)나 ray-marching을 거치지 않고 pose 파라미터로 직접 흐릅니다. 별도 계산 없이 역전파 한 번에 보정량을 얻죠. 논문의 보충 실험(Table 5)은 같은 pose 최적화 전략을 implicit 표현(MARS)에 붙여도 GT pose와의 격차가 남는 반면, explicit 표현은 그 격차를 거의 메운다는 점을 보여줍니다. 즉 'explicit이라 pose 최적화가 잘 된다'는 인과를 실험으로 분리해 입증한 셈입니다."
       }
     ],
     "english_expressions": [
       {
-        "expression": "consistently outperforms",
-        "korean": "일관되게 능가한다",
-        "example": "Our method consistently outperforms state-of-the-art methods across all datasets.",
-        "context": "여러 벤치마크에 걸친 우수성을 한 문장으로 요약할 때, abstract와 결과 섹션 첫 문장에서 자주 등장."
+        "expression": "we treat ... as learnable parameters",
+        "korean": "우리는 ~을 학습 가능한 파라미터로 취급한다",
+        "example": "To address the noisy poses, we treat the tracked vehicle poses as learnable parameters.",
+        "context": "고정 입력으로 쓰이던 값을 최적화 대상으로 승격시키는 설계를 선언할 때."
       },
       {
-        "expression": "by a large margin",
-        "korean": "큰 폭으로",
-        "example": "Our complete model outperforms the model without tracking pose optimization by a large margin.",
-        "context": "ablation 결과의 차이가 통계적·실용적으로 분명할 때 강조 표현."
-      },
-      {
-        "expression": "two magnitudes faster than",
-        "korean": "~보다 두 자릿수만큼 빠른",
-        "example": "Our method renders two magnitudes faster than NeRF-based methods.",
-        "context": "속도 우위를 정량적으로 강조할 때. 'orders of magnitude'와 거의 동의어."
+        "expression": "a plausible explanation is that ...",
+        "korean": "그럴듯한 설명은 ~라는 것이다",
+        "example": "Our model is even better than the one trained with GT poses; a plausible explanation is that there still exists noise in GT annotations.",
+        "context": "예상 밖 결과를 단정 대신 가설로 신중하게 해석할 때."
       }
     ],
     "mcq": [
       {
-        "question": "Waymo Open Dataset에서 Street Gaussians의 *움직이는 차에 대한 PSNR\\**가 MARS 대비 얼마나 향상되었나? (저자 보고치)",
+        "question": "$\\Delta R_t$를 전체 3자유도 회전이 아니라 yaw 오프셋 $\\Delta\\theta_t$ 하나로만 둔 이유로 가장 적절한 것은?",
         "options": [
-          "약 2%",
-          "약 13.9%",
-          "약 50%",
-          "차이 없음"
+          "GPU 메모리 한계 때문",
+          "지면 위를 주행하는 차량은 heading(yaw)이 지배적 자유도라 roll·pitch 보정은 불필요한 자유도이기 때문",
+          "쿼터니언을 쓸 수 없어서",
+          "tracker가 yaw만 제공해서"
         ],
         "correct": 1,
-        "explanation": "PSNR* +13.9% (30.23 vs 26.54). 동적 영역에서 가장 큰 격차가 난 것이 핵심 결과 중 하나."
+        "explanation": "차량은 지면 위 강체라 roll·pitch 변화가 거의 없다. yaw로 제한하면 자유도를 줄여 최적화가 안정되고 과적합을 막는다."
       },
       {
-        "question": "ablation에서 *pose optimization 제거* 시 평균 PSNR(34.61→34.18)보다 PSNR\\*(30.23→28.24) 하락 폭이 훨씬 큰 이유는?",
+        "question": "보정된 pose 모델이 GT pose 모델보다 PSNR*가 높게 나온 결과의 함의는?",
         "options": [
-          "메트릭 계산 오류",
-          "pose opt는 주로 객체 좌표계 정합을 개선하므로 그 효과가 동적 영역에 집중되어 나타나기 때문",
-          "학습이 덜 됐기 때문",
-          "데이터가 부족해서"
+          "tracker가 GT보다 항상 정확하다",
+          "GT 주석에도 노이즈가 남아 있어, 재구성 손실로 함께 정렬하면 더 일관된 정합이 가능하다",
+          "pose 최적화가 과적합을 일으켰다",
+          "PSNR* 지표가 잘못 정의되었다"
         ],
         "correct": 1,
-        "explanation": "pose는 객체 점의 world 위치를 결정. 정적 배경 PSNR에는 영향이 적고, 차량 영역(PSNR*)에서 큰 차이로 드러난다."
+        "explanation": "GT 라벨도 완벽하지 않으며, explicit 표현에서 pose를 재구성 손실과 공동 최적화하면 라벨 노이즈를 넘어 더 잘 정렬될 수 있다."
       }
     ],
     "open_question": {
-      "question": "PSNR·LPIPS 같은 렌더 품질 지표 외에, 당신의 perception 모델 학습용 합성 데이터의 *실제 유용성*을 측정하려면 어떤 지표를 추가해야 할까요?",
-      "hint": "'예쁜 영상'과 '학습에 도움되는 영상'은 같지 않습니다 — downstream task 측면에서.",
-      "key_takeaway": "PSNR은 *시각적 충실도*만 측정한다 — data augmentation의 진짜 가치는 *downstream perception 성능 향상*으로만 검증된다. 합성 데이터 평가는 perception 메트릭과 동반되어야 한다."
+      "question": "이 pose 최적화는 tracker가 잡은 차량은 다듬을 수 있지만 '놓친 차량'은 복구하지 못합니다. 우리 운영 환경에서 이 recall 의존성은 어떤 실패 모드로 나타날까?",
+      "hint": "원거리·가림·드문 클래스 객체에서 tracker recall이 떨어질 때, 그 객체는 재구성 장면에서 어떻게 표현될지 생각해 보세요.",
+      "key_takeaway": "pose 최적화는 '정합 정제'이지 '검출 복구'가 아니다. tracker가 놓친 객체는 장면에서 통째로 누락되거나 배경에 잘못 흡수된다 — 시뮬레이션 신뢰성은 결국 tracker의 recall 상한에 묶인다."
+    }
+  },
+  "day_8": {
+    "title": "딥다이브 ③: 렌더·초기화·손실",
+    "intent": "투영·α-blending·하늘 cubemap·LiDAR 초기화·다항 손실 등 나머지 핵심 부품을 통합 정리",
+    "content": "마지막 딥다이브는 '나머지를 떠받치는 엔지니어링'입니다.\n\n**투영·합성**: 합쳐진 점군을 카메라 외부 $W$·내부 $K$로 2D에 투영합니다(EWA splatting): $\\mu' = K W \\mu$, $\\Sigma' = J W \\Sigma W^T J^T$ ($J$는 $K$의 Jacobian). 이어 픽셀별 $\\alpha$-blending: $$C = \\sum_{i \\in N} c_i \\alpha_i \\prod_{j=1}^{i-1}(1-\\alpha_j)$$ 색 $c$를 semantic logit $\\beta$로 바꾸면 같은 식으로 semantic map이 나옵니다 — 표현의 재사용성이죠.\n\n**하늘**: 무한히 먼 하늘은 Euclidean 가우시안에 안 맞아서, 시점 방향을 색으로 매핑하는 고해상도 **cubemap**(해상도 1024)으로 따로 그린 뒤 $C = C_g + (1-O_g)\\,C_{sky}$ 로 합성합니다.\n\n**초기화**: 객체 중심용 SfM 점군은 도심의 미관측·무텍스처 영역에 약합니다. 그래서 ego 차량의 **aggregated LiDAR 점군**으로 초기화하고, LiDAR가 못 덮는 먼 영역은 SfM으로 보완합니다. 객체에 LiDAR 점이 2K 미만이면 박스 안에서 8K개를 무작위 샘플링합니다.\n\n**손실**: $$\\mathcal{L} = \\mathcal{L}_{color} + \\lambda_1 \\mathcal{L}_{depth} + \\lambda_2 \\mathcal{L}_{sky} + \\lambda_3 \\mathcal{L}_{sem} + \\lambda_4 \\mathcal{L}_{reg}$$ 색(L1+D-SSIM), 깊이(LiDAR L1, 오차 작은 95% 픽셀만), 하늘(BCE), semantic(softmax-CE, 옵션), 그리고 floater 제거용 정규화입니다. $\\mathcal{L}_{reg}$는 전경 alpha의 entropy 손실로, 분해를 깔끔하게 만드는 숨은 영웅입니다.",
+    "suggested_figure": "Figure 6 — LiDAR 초기화 ablation (이미지 & depth)",
+    "figure_page": 12,
+    "figure_description": "LiDAR 사용/미사용 시의 렌더 이미지와 depth를 비교. LiDAR를 쓰면 도로 등 근거리 기하가 정확하고 흐림이 줄며 depth가 매끈함. 미사용 시 geometry가 부정확. 이미지뿐 아니라 depth 맵의 노이즈 차이를 함께 볼 것.",
+    "trigger_type": "B",
+    "key_concepts": [
+      {
+        "term": "EWA splatting 투영과 α-blending",
+        "definition": "3D 가우시안을 2D로 투영할 때 비선형 투영을 1차 근사한 Jacobian $J$로 공분산을 변환합니다: $\\Sigma' = J W \\Sigma W^T J^T$, $\\mu' = K W \\mu$. 그 뒤 깊이 순으로 정렬된 가우시안을 $C=\\sum_i c_i \\alpha_i \\prod_{j<i}(1-\\alpha_j)$ 로 합성하죠($\\alpha_i$는 opacity×2D 가우시안 확률). 직관: ray-marching의 적분을 '정렬된 splat들의 누적 합성'으로 대체해 미분 가능하면서도 빠릅니다. 핵심 이점은 색 $c$를 semantic logit이나 depth로 바꾸면 동일 식으로 다른 모달리티를 렌더링한다는 점입니다. 함정: $J$가 1차 근사라 시야 가장자리·큰 가우시안에서 투영 왜곡이 생길 수 있습니다."
+      },
+      {
+        "term": "정규화 손실 $\\mathcal{L}_{reg}$ (분해 품질의 숨은 영웅)",
+        "definition": "분해된 전경 객체의 누적 alpha $O_{obj}$에 대한 엔트로피 손실 $\\mathcal{L}_{reg}=-\\sum(O_{obj}\\log O_{obj} + (1-O_{obj})\\log(1-O_{obj}))$ 입니다. alpha를 0 또는 1로 밀어 전경/배경을 이진적으로 분리하도록 유도하죠. 왜 중요한가: 이 항이 없으면 차량 주위에 반투명 'floater'와 ghosty artifact가 남아 깨끗한 객체 분해가 안 됩니다(Figure 11). adaptive control 이후에 추가하며 $\\lambda_4=0.1$. 편집·swap 같은 다운스트림 응용의 품질이 사실상 이 정규화에 달려 있습니다."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "it is inappropriate for ... to model ...",
+        "korean": "~이 ~을 모델링하기에는 부적절하다",
+        "example": "Since 3D Gaussians are defined in Euclidean space, it is inappropriate for them to model distant regions like the sky.",
+        "context": "특정 표현의 적용 한계를 명시하고 대안(cubemap)을 도입하는 근거로 쓸 때."
+      },
+      {
+        "expression": "We instead use ... as initialization",
+        "korean": "우리는 대신 ~을 초기화로 사용한다",
+        "example": "We instead use the aggregated LiDAR point cloud captured by the ego vehicle as initialization.",
+        "context": "기본 관행(SfM 초기화)을 대체하는 설계 선택을 'instead'로 대비시켜 제시할 때."
+      },
+      {
+        "expression": "to prevent ... from influencing ...",
+        "korean": "~이 ~에 영향을 미치지 않도록 하기 위해",
+        "example": "We only backpropagate to semantic logits to prevent noisy input labels from influencing the scene geometry.",
+        "context": "특정 손실의 gradient 흐름을 제한한 설계 의도를 설명할 때."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "하늘을 3D 가우시안이 아니라 별도 cubemap으로 처리하는 이유로 가장 적절한 것은?",
+        "options": [
+          "cubemap이 더 적은 메모리를 쓰기 때문",
+          "무한히 먼 하늘은 Euclidean 공간의 가우시안으로 표현하기 부적절해 시점 방향→색 매핑으로 분리하는 것이 자연스럽기 때문",
+          "semantic 분할을 위해서",
+          "LiDAR가 하늘을 측정하지 못해서"
+        ],
+        "correct": 1,
+        "explanation": "하늘은 사실상 무한 거리라 Euclidean 가우시안으로 두기 부적절하다. 방향만 입력받아 색을 내는 cubemap이 속도 저하 없이 디테일을 살린다."
+      },
+      {
+        "question": "도심 장면에서 SfM 대신 aggregated LiDAR 점군으로 초기화하고 SfM을 보완재로만 쓰는 이유는?",
+        "options": [
+          "LiDAR가 색 정보를 제공해서",
+          "SfM은 미관측·무텍스처 영역에 약한 반면 LiDAR가 근거리 기하를 안정적으로 채우고, LiDAR가 못 덮는 먼 영역을 SfM이 보완하기 때문",
+          "LiDAR 점이 항상 전체 장면을 덮기 때문",
+          "SfM이 동적 객체를 더 잘 잡기 때문"
+        ],
+        "correct": 1,
+        "explanation": "둘은 상호 보완적이다. LiDAR는 근거리 기하에 강하지만 먼 곳을 못 덮고, SfM은 그 먼 영역을 채운다. 그래서 둘을 결합한다."
+      }
+    ],
+    "open_question": {
+      "question": "우리 차량 센서 구성이 LiDAR 없이 카메라만이라면, 이 파이프라인의 어느 부품이 가장 먼저 흔들리고 무엇으로 대체할 수 있을까?",
+      "hint": "초기화(LiDAR 점군)와 깊이 손실($\\mathcal{L}_{depth}$)이 LiDAR에 의존합니다. ablation의 'w/o LiDAR' 결과가 그래도 baseline보다 강했다는 점도 떠올려 보세요.",
+      "key_takeaway": "LiDAR는 초기화와 깊이 감독에서 기하를 안정화하지만 필수는 아니다 — 논문의 w/o LiDAR 변형도 여전히 SOTA를 웃돈다. 카메라-only라면 SfM/MVS 깊이나 단안 깊이 사전지식으로 그 역할을 부분 대체하되, 근거리 기하 품질 저하를 감수해야 한다."
+    }
+  },
+  "day_9": {
+    "title": "의미 있는 결과들",
+    "intent": "논문에 실제로 등장하는 핵심 수치와 ablation, 그리고 각 수치가 무엇을 가능케 하는지 해석",
+    "content": "오늘은 숫자입니다. 단, 각 숫자가 '무엇을 가능케 하는지'와 함께요.\n\n**품질 + 속도의 동시 달성**: Waymo에서 PSNR **34.61**(EmerNeRF 30.87 대비 +12.1%), 움직이는 객체만 평가하는 PSNR*는 **30.23**(+13.9%), SSIM 0.938, LPIPS 0.079로 전 지표 1위입니다. 동시에 **135 FPS** — NeRF 계열(0.21~0.68 FPS)보다 두 자릿수 배 빠릅니다. vanilla 3D GS가 205 FPS로 더 빠르지만 동적 객체에서 PSNR* 21.25로 무너지는 것과 대조적이죠. 이 조합이 곧 '실시간 폐루프 + 동적 차량'을 둘 다 준다는 뜻입니다.\n\n**효율**: 단일 **RTX 4090** 한 장으로 **30분** 학습. MARS(>18h)·EmerNeRF(2.5h) 대비 운영 비용이 차원이 다릅니다. 일반화: KITTI 75%에서 25.79(MARS 24.23), VKITTI2 75%에서 30.10(MARS 29.79)으로 데이터셋을 넘어 일관됩니다.\n\n**ablation이 말하는 것**(Table 3, complete 34.61/30.23): pose opt 제거 시 PSNR* 28.24로 급락 — 동적 품질의 최대 기여자입니다. 4D SH 제거 시 29.27, LiDAR 제거 시 29.53.\n\n**가장 흥미로운 결과**: KITTI semantic 분할에서 우리 렌더 결과의 mIoU **58.81**이, 교사 모델(Video K-Net)을 **GT 이미지**에 돌린 57.94보다 높습니다. 3D에서 semantic을 융합해 단일 이미지 예측의 노이즈를 평균해 낸 효과 — 그림자·모호 영역에서 특히 강합니다. 자동 라벨링의 단서가 여기 있습니다.",
+    "suggested_figure": "Table 3 — Waymo ablation 연구",
+    "figure_page": 11,
+    "figure_description": "complete model 대비 w/o LiDAR, w/o 4DSH, w/o pose opt., w/ GT pose 변형의 PSNR/PSNR*/SSIM/LPIPS 표. PSNR* 열을 볼 것: complete 30.23 vs w/o pose opt. 28.24로 가장 큰 낙폭 → pose 최적화가 동적 품질의 핵심 기여자임을 시사.",
+    "trigger_type": "A",
+    "key_concepts": [
+      {
+        "term": "PSNR* (움직이는 객체 전용 화질 지표)",
+        "definition": "전체 PSNR은 정적 배경 픽셀이 다수라 동적 영역의 품질 저하를 가려버립니다. 그래서 저자는 3D tracked box를 2D로 투영한 마스크 내부 픽셀에서만 MSE를 계산해 PSNR*를 정의합니다. 박스가 객체를 완전히 덮도록 길이·폭을 1.5배 확장하죠. 왜 중요한가: 자율주행 시뮬레이션의 가치는 '움직이는 차량을 얼마나 잘 그리는가'에 있으므로, 전체 PSNR보다 PSNR*가 방법의 핵심 역량을 더 정직하게 드러냅니다. 함정: 박스 확장 비율·tracker 마스크 품질에 따라 값이 흔들릴 수 있어 공정 비교 시 동일 마스크를 써야 합니다."
+      },
+      {
+        "term": "렌더된 semantic이 교사를 능가하는 현상 (3D 융합 노이즈 제거)",
+        "definition": "Street Gaussians의 렌더 semantic map mIoU(58.81)가, 교사 Video K-Net을 GT 이미지에 적용한 결과(57.94)와 렌더 이미지에 적용한 결과(53.81)를 모두 웃돕니다. 원리: 2D 예측은 프레임마다 독립이라 노이즈가 크지만, semantic logit을 3D 가우시안에 얹어 다중 시점으로 융합·최적화하면 시간·공간 일관성이 강제되어 단일 프레임 노이즈가 평균화됩니다. 특히 그림자·경계 같은 모호 영역에서 이득이 큽니다. 시사점: 재구성을 통한 'auto-labeling/label denoising'의 가능성을 보여주는 결과로, 직접적 응용 가치가 큽니다."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "our model achieves the best performance among all the methods with a X% increase in ...",
+        "korean": "우리 모델은 모든 방법 중 최고 성능을 달성하며 ~에서 X% 향상을 보인다",
+        "example": "Our model achieves the best performance among all the methods with a 12.1% increase in PSNR.",
+        "context": "정량 우위를 구체적 향상폭(%)과 함께 단정적으로 보고할 때."
+      },
+      {
+        "expression": "renders two magnitudes faster than ...",
+        "korean": "~보다 두 자릿수(약 100배) 빠르게 렌더링한다",
+        "example": "Our method renders two magnitudes faster than NeRF-based methods.",
+        "context": "속도 우위를 자릿수(order of magnitude) 단위로 강조할 때."
+      },
+      {
+        "expression": "It is interesting to notice that ...",
+        "korean": "~라는 점은 흥미롭다",
+        "example": "It is interesting to notice that our result is even better than the model trained with ground-truth poses.",
+        "context": "직관에 반하는 결과를 독자의 주의를 끌어 부각할 때."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "ablation(Table 3)에서 '동적 객체 품질(PSNR*)'에 가장 크게 기여한 구성요소는?",
+        "options": [
+          "LiDAR 초기화 (제거 시 29.53)",
+          "4D SH (제거 시 29.27)",
+          "tracked pose 최적화 (제거 시 28.24)",
+          "하늘 cubemap"
+        ],
+        "correct": 2,
+        "explanation": "pose opt 제거 시 PSNR*가 30.23→28.24로 가장 크게 떨어진다. 노이즈 pose 보정이 동적 품질의 최대 기여자임을 보여준다."
+      },
+      {
+        "question": "렌더된 semantic map의 mIoU(58.81)가 GT 이미지에 교사를 돌린 값(57.94)보다 높은 이유로 가장 적절한 것은?",
+        "options": [
+          "렌더 이미지가 GT보다 고해상도라서",
+          "semantic을 3D 가우시안에 융합해 다중 시점으로 최적화하면 단일 프레임 예측 노이즈가 평균화되기 때문",
+          "교사 모델이 KITTI에 과적합되어서",
+          "PSNR*로 평가했기 때문"
+        ],
+        "correct": 1,
+        "explanation": "3D에 라벨을 얹어 다중 시점으로 융합하면 시공간 일관성이 강제되어 프레임별 2D 예측의 노이즈가 줄어든다 — label denoising 효과다."
+      }
+    ],
+    "open_question": {
+      "question": "렌더 semantic이 교사를 능가한다는 이 결과를, 우리 인지팀의 데이터 라벨링 비용 절감 파이프라인에 어떻게 끼워 넣을 수 있을까?",
+      "hint": "재구성으로 얻은 3D 일관 라벨을 다시 2D로 투영해 'pseudo-GT'로 쓰거나, 모호 영역(그림자·경계)의 라벨을 정제하는 용도를 떠올려 보세요.",
+      "key_takeaway": "재구성 기반 3D semantic 융합은 단순 시뮬레이션을 넘어 'label denoising / auto-labeling' 엔진이 될 수 있다 — 한 번 재구성해 두면 노이즈가 줄어든 일관 라벨을 임의 시점으로 무한히 투영해 낼 수 있다."
     }
   },
   "day_10": {
-    "title": "내 perception 데이터에 꽂기",
-    "intent": "Scene editing 기반 AD perception 증강 — 활용 시나리오 + 후속 + 반성",
-    "content": "열흘 마무리. 당신이 하는 **scene editing for AD perception data augmentation**에 Street Gaussians가 어떻게 꽂히는가.\n\n핵심은 *명시적 인스턴스 분리*입니다. 차량을 떼어 회전·이동·교체할 수 있다는 건 곧 **하나의 실거리 시퀀스로 무한한 '라벨 보존' 변형**을 만들 수 있다는 뜻이에요.\n\n구체 시나리오 3가지:\n\n1. **희귀 차종 증강** — 트럭/이륜이 한 번 잡힌 시퀀스에서 그 인스턴스만 떼서 다른 평범한 거리에 swap. 인스턴스의 (R, T)를 알기 때문에 박스·yaw 라벨이 자동으로 따라옵니다.\n\n2. **코너 케이스 합성** — 차량을 인도 쪽으로 translate + yaw 회전 → 'cut-in 직전' 장면을 안전하게 합성. *분포 끝단*을 채울 수 있어요.\n\n3. **Closed-loop 평가** — **135 FPS**면 ego 정책이 새 궤적을 그릴 때마다 view를 즉시 재렌더. CARLA를 photo-real로 갈아끼우는 셈.\n\n후속도 빠르게 보세요. 동시기 **DrivingGaussian**·**PVG**, 이후 **NeuRAD**(2024) — surround view·LiDAR까지 통합하는 흐름입니다.\n\n**머릿속 실험**: 당신 perception 모델이 가장 약한 *한 가지 시나리오* — 그걸 Street Gaussians로 합성한다면, 어떤 인스턴스를 어디서 떼어 어디에 붙이실 건가요? 그 한 컷이 라벨 비용 대비 가장 큰 ROI를 가질 가능성이 큽니다.",
-    "suggested_figure": "Figure 7 — Rotation/Translation/Swapping 편집 시연(편집 전후 비교)",
+    "title": "내 연구에 적용하기",
+    "intent": "자율주행 연구에의 구체적 적용 각도 + 후속 연구 + 자기 연구를 위한 성찰 질문(try-this-mentally)",
+    "content": "10일의 마무리는 '내 책상으로 가져오기'입니다.\n\n**적용 각도 1 — 폐루프 센서 시뮬레이션**: explicit·instance-aware 표현이라 차량을 회전·평행이동·**swap**할 수 있습니다(Figure 7). 실제 수집한 컷인 로그에서 상대 차량을 옆 차선으로 밀거나 다른 차종으로 바꿔 코너 케이스를 변주하고, ego 궤적을 2m 옮긴 extrapolation 시점까지 135 FPS로 렌더해 인지·계획을 폐루프로 검증할 수 있습니다.\n\n**적용 각도 2 — 데이터·라벨 자산화**: 3D semantic 융합으로 얻은 일관 라벨(mIoU 58.81)을 임의 시점으로 투영해 인지 모델의 학습 데이터·pseudo-GT를 자동 생성합니다. 그림자·경계처럼 2D 라벨러가 약한 곳에서 특히 가치가 큽니다.\n\n**한계는 곧 후속 연구의 입구**입니다. 저자가 명시한 세 가지: (1) **강체만** 가능 — 보행자 같은 비강체는 deformable/4D Gaussian 계열로 확장해야 합니다. (2) tracker **recall에 의존** — 놓친 객체는 복구 불가, tracklet 없는 모델링이 열린 문제입니다. (3) **scene별 최적화** 필요 — feed-forward 일반화 Gaussian이 다음 목표죠. 동시기·후속 흐름으로 DrivingGaussian, PVG가 tracker-free·self-supervised 방향을 탐색합니다.\n\n자, 이제 직접 머릿속에서 굴려보세요. **당신의 가장 까다로운 코너 케이스 하나를 떠올리고**, 그 장면에서 '어떤 객체를 어떻게 편집하면' 검증하고 싶은 가설이 생기는지, 그리고 그때 이 방법의 세 한계 중 무엇이 먼저 발목을 잡을지를 그려보세요. 그 교집합이 바로 당신이 다음에 손댈 연구 주제입니다.",
+    "suggested_figure": "Figure 7 — 장면 편집 연산(회전/평행이동/swap)",
     "figure_page": 13,
+    "figure_description": "(a) 회전, (b) 평행이동, (c) swap 세 가지 편집을 각각 편집 전(1행)/후(2행)로 비교. 차량의 heading이 돌아가거나 위치가 옮겨지거나 다른 차량으로 교체된 결과를 보여줌. instance-aware 표현이 주는 편집 자유도를 직관적으로 확인할 것.",
     "trigger_type": "C",
     "key_concepts": [
       {
-        "term": "Label-preserving augmentation",
-        "definition": "이미지 변형 후에도 박스·세그·포즈 같은 라벨이 자동으로 동등하게 변환되는 증강. 명시적 인스턴스 변환이 가능할 때 자연스럽게 성립."
-      },
-      {
-        "term": "Long-tail / corner case",
-        "definition": "데이터 분포 끝단에 위치해 자연 발생 빈도가 낮은 시나리오. 합성 증강의 가장 본질적 가치가 발휘되는 영역."
-      },
-      {
-        "term": "NeuRAD / DrivingGaussian / PVG",
-        "definition": "Street Gaussians 이후/동시기의 후속 흐름. 멀티 카메라·LiDAR·시간 동역학을 통합해 production-grade AD 시뮬에 다가가는 방향."
+        "term": "Instance-aware 장면 편집 (시나리오 합성 엔진)",
+        "definition": "객체가 독립 점군으로 분해되므로 차량 단위 회전(heading 변경)·평행이동·swap이 집합 연산으로 가능합니다(Figure 7). 자율주행 관점에서 이는 '실측 사실성을 유지한 채 코너 케이스를 변주하는' 엔진입니다 — 한 번 수집한 컷인 장면에서 상대 차량의 위치·차종·궤적을 바꿔 수십 개의 위험 시나리오를 파생시킬 수 있죠. 한계와 결합해 읽어야 합니다: 편집은 강체 차량에 한정되고 tracker가 잡은 객체에만 적용됩니다. 따라서 보행자가 핵심인 시나리오나 tracker recall이 낮은 환경에서는 편집 가능 범위가 제한됩니다."
       }
     ],
     "english_expressions": [
       {
-        "expression": "demonstrate the effectiveness of",
-        "korean": "~의 효과를 입증한다",
-        "example": "Detailed ablations and scene editing applications demonstrate the effectiveness of the proposed components.",
-        "context": "결론·실험 요약에서 자기 방법의 검증을 선언할 때 사용하는 단단한 정형구."
+        "expression": "can be applied to multiple tasks, including ...",
+        "korean": "~을 포함한 여러 과제에 적용될 수 있다",
+        "example": "Street Gaussians can be applied to multiple tasks, including object decomposition, semantic segmentation, and scene editing.",
+        "context": "방법의 활용 범위(응용)를 한 문장으로 폭넓게 제시할 때(논문 Applications 절 시작)."
       },
       {
-        "expression": "enables",
-        "korean": "~을 가능하게 한다",
-        "example": "Our instance-aware scene representation enables various types of scene editing operations.",
-        "context": "표현/구조의 결과로 무엇이 가능해졌는지 강조하는 응용/결론 단락."
+        "expression": "Future work could consider ... to address this issue",
+        "korean": "후속 연구는 이 문제를 해결하기 위해 ~을 고려할 수 있다",
+        "example": "Future work could consider employing more complex dynamic scene modeling methods to address the non-rigid object issue.",
+        "context": "한계를 인정한 직후 향후 방향을 제안하며 마무리할 때(Limitations/Conclusion)."
       },
       {
-        "expression": "future work / follow-up",
-        "korean": "후속 연구로",
-        "example": "We leave the integration with multi-modal sensors as future work.",
-        "context": "한계나 다음 단계를 명시할 때 책임감 있게 마무리하는 학술 정형구."
+        "expression": "remains an interesting problem",
+        "korean": "여전히 흥미로운 미해결 문제로 남아 있다",
+        "example": "Modeling dynamic urban scenes without object tracklets remains an interesting problem.",
+        "context": "열린 연구 과제를 후속 연구자에게 던지며 글을 닫을 때."
       }
     ],
     "mcq": [
       {
-        "question": "Street Gaussians로 합성한 영상으로 perception 모델을 학습할 때, '편집 후에도 박스·yaw 라벨이 자동으로 유효'한 가장 본질적 이유는?",
+        "question": "Street Gaussians를 '코너 케이스 변주 엔진'으로 쓸 때, 저자가 명시한 한계로 인해 가장 먼저 막히는 시나리오는?",
         "options": [
-          "편집 후 사람이 다시 라벨링하기 때문",
-          "차량 인스턴스가 *명시적*이라 변환 행렬 (R, T)을 라벨에도 동일하게 적용할 수 있기 때문",
-          "시멘틱 logit이 자동 보정되어서",
-          "모델이 합성을 자동 검출하니까"
+          "다른 차종으로 차량을 swap하는 시나리오",
+          "보행자가 도로를 가로지르는 비강체 동작이 핵심인 시나리오",
+          "ego가 차선을 2m 변경한 시점의 렌더링",
+          "주변 차량의 heading을 회전시키는 시나리오"
         ],
         "correct": 1,
-        "explanation": "명시적 인스턴스의 6DoF 변환은 점·박스·yaw에 동일 변환으로 전파 가능 — 라벨이 자동으로 동기화된다."
+        "explanation": "이 방법은 강체 차량만 모델링하며 보행자 같은 비강체 동작은 다루지 못한다. 따라서 보행자 중심 시나리오에서 가장 먼저 막힌다."
       },
       {
-        "question": "Street Gaussians가 closed-loop AD 시뮬에 적합한 이유로 가장 정확한 것은?",
+        "question": "논문이 제시한 후속 연구 방향과 그 동기의 연결로 옳은 것은?",
         "options": [
-          "라벨이 완벽해야 작동한다",
-          "135 FPS의 실시간 렌더링과 인스턴스 단위 편집이 *동시에* 가능하기 때문",
-          "GPU 4장 이상이 필요하기 때문",
-          "LiDAR가 반드시 있어야만 하기 때문"
+          "feed-forward 일반화 Gaussian — scene별 최적화가 필요하다는 한계를 극복하기 위해",
+          "4D SH 확장 — FPS를 더 높이기 위해",
+          "더 큰 cubemap — semantic 분할을 위해",
+          "L1 손실 추가 — tracker recall을 높이기 위해"
         ],
-        "correct": 1,
-        "explanation": "Closed-loop은 정책-환경 상호작용 — *빠른 렌더 + 동적 객체 편집*이 동시에 요구된다. 둘 중 하나만 빠져도 부적합."
+        "correct": 0,
+        "explanation": "현재 방법은 장면마다 재최적화가 필요하다. 이를 없애려면 입력에서 곧바로 Gaussian을 예측하는 feed-forward 일반화가 후속 과제로 제시된다."
       }
     ],
     "open_question": {
-      "question": "다음 한 주, 당신의 perception 파이프라인에서 *가장 마지막에 실패한* 한 가지 케이스를 골라보세요. Street Gaussians로 그 시나리오의 변형 100개를 만든다면, 어떤 축(차량 종류? 위치? 시간대? 조명?)으로 다양화하시겠어요? 그 축을 고른 이유는?",
-      "hint": "변형 축은 *실패 원인*과 직결되어야 의미가 있어요. 단순히 양만 늘리는 게 아니라 분포의 '비어 있는' 부분을 채우는 방향으로.",
-      "key_takeaway": "데이터 증강의 가치는 '*분포의 어느 부분을 채우는가*'에서 나온다 — Street Gaussians는 강력한 도구일 뿐, 어떤 축을 다양화할지 결정하는 것은 여전히 연구자의 통찰이다. 도구가 강력할수록 *문제 정의*의 질이 더 중요해진다."
+      "question": "당신의 가장 까다로운 코너 케이스 하나를 골라, 그 장면에서 어떤 객체를 어떻게 편집해 어떤 가설을 검증하고 싶은지, 그리고 그때 이 방법의 세 한계(비강체 불가·tracker 의존·scene별 최적화) 중 무엇이 먼저 발목을 잡을지 그려보세요.",
+      "hint": "편집 가능성(강점)과 세 한계(약점)가 겹치는 지점이, 당신 도메인에서 이 기술을 바로 쓸 수 있는지/연구로 확장해야 하는지를 가릅니다. 머릿속에서 한 장면을 실제로 굴려보세요.",
+      "key_takeaway": "이 방법은 '강체 차량을, tracker가 잡은 범위에서, scene별로 재구성해' 편집하는 엔진이다. 당신의 문제가 이 경계 안이면 즉시 적용 가능한 도구이고, 경계 밖(보행자·미검출·일반화)이면 그 지점이 곧 당신의 다음 연구 기여가 된다."
     }
-  },
-  "_meta": {
-    "goal": "scene editing for data augmentation in autonomous driving perception",
-    "generated_at": "2026-05-24T23:42:12.366946",
-    "source_pdf": "papers/StreetGaussians.pdf"
   }
 }

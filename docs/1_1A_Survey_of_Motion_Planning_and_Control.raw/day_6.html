@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 2 — 왜 NeRF는 부족했나</title>
+<title>Day 6 — 차량 모델 파고들기</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
@@ -203,12 +203,12 @@ body {
 
 
 <div class="hero">
-  <div class="hero-meta">오늘의 학습 · DAY 2</div>
-  <div class="hero-tag">배경</div>
-  <h1 class="hero-title">왜 NeRF는 부족했나</h1>
-  <div class="hero-subtitle">NeRF 계열(Block-NeRF, compositional NeRF, EmerNeRF, point-based)의 한계를 비용 구조 관점에서 진단</div>
+  <div class="hero-meta">오늘의 학습 · DAY 6</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">차량 모델 파고들기</h1>
+  <div class="hero-subtitle">기구학·동역학 차량 모델, 비홀로노믹 제약, 마찰원을 수식과 직관으로 deep dive</div>
   <div class="progress-bar">
-    <div class="progress-fill" style="width: 20%"></div>
+    <div class="progress-fill" style="width: 60%"></div>
   </div>
 </div>
 
@@ -220,26 +220,26 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">어제의 요구사항(실시간 + 동적)을 NeRF 계열은 왜 충족 못 했을까요? 비용 구조를 보면 답이 보입니다.
+<div class="content">첫 deep dive는 차량 모델입니다. 기구학 단일트랙은 앞뒤 바퀴를 강체 링크로 잇고 평면 운동·바퀴 무슬립을 가정합니다. 후륜 기준 미분제약은
+$$\dot{x}_r = v_r\cos\theta,\quad \dot{y}_r = v_r\sin\theta,\quad \dot{\theta} = \frac{v_r}{l}\tan\delta$$
+여기서 핵심은 <strong>비홀로노믹 제약</strong>입니다—차는 옆으로 평행이동(미끄러지듯)할 수 없고, 방향을 바꾸려면 반드시 전진(또는 후진)해야 합니다. 이게 &#x27;평행주차가 어려운&#x27; 수학적 이유죠. $v_r$를 고정하면 <strong>Dubins 차</strong>(최소시간 경로 = 직선·원호 최대 3개), 전후진을 허용하면 <strong>Reeds-Shepp 차</strong>가 되어 샘플링 기법의 exact steering에 쓰입니다.
 
-<strong>Block-NeRF</strong>는 대규모 장면을 블록으로 쪼개 각각을 NeRF로 모델링합니다. 사실적이지만 네트워크 파라미터가 방대해 학습이 오래 걸리고, 결정적으로 <strong>움직이는 차량을 다루지 못합니다</strong>. 자율주행에선 치명적이죠.
-
-다음은 compositional 계열(NSG, MARS)입니다. 장면을 정적 배경 + foreground 차량으로 나누고, tracked pose로 관측 공간을 canonical 공간에 매핑한 뒤 NeRF로 차량의 geometry/appearance를 학습합니다. 합리적인 결과를 내지만, 근본 문제는 ray-marching입니다. NeRF는 광선 하나마다 수백 개 점을 MLP에 통과시켜 적분 $C(r)=\int T(t)\sigma(t)c(t)\,dt$ 를 근사합니다. compositional이면 객체마다 별도 ray-marching이 필요해 비용이 곱해지죠. 그 결과 <strong>MARS는 18시간 이상 학습에 0.68 FPS, EmerNeRF는 0.21 FPS</strong>에 머뭅니다.
-
-EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>instance-aware가 아니어서</strong> 개별 차량을 떼어내 편집할 수 없고, 새 timestep의 동적 영역에서 잔상이 생깁니다. point-based 렌더링은 dense point cloud가 없으면 저밀도 영역이 흐릿해집니다. 한 줄로 요약하면: NeRF로 폐루프를 돌리는 건 &#x27;프레임마다 장면 전체를 적분으로 다시 그리는&#x27; 셈이라 실시간이 원천 봉쇄됩니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 — Waymo 정량 비교 (특히 FPS 행)</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a><div class="figure-explain">Waymo에서 5개 방법의 PSNR/SSIM/LPIPS/PSNR*/FPS를 비교한 표. FPS 행에 주목: NSG 0.47, MARS 0.68, EmerNeRF 0.21로 1 FPS 미만인 반면 Ours는 135. 품질 지표와 속도의 괴리를 한눈에 보여줌.</div></div>
-<div class="trigger">Trigger Type B</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Volumetric ray-marching의 비용 구조</div><div class="concept-def">NeRF는 픽셀의 색을 광선을 따라 $C(r)=\int_{t_n}^{t_f} T(t)\,\sigma(t)\,c(t)\,dt$ 로 적분하며, 이를 광선당 수십~수백 개 샘플 각각에서 MLP를 질의해 근사합니다. 느린 본질적 이유가 여기 있습니다: 픽셀×샘플×(MLP forward) 만큼의 연산이 매 프레임 필요하죠. 도심처럼 광선이 멀리 뻗는 장면에선 샘플 수가 더 늘어납니다. 흔한 오해: hash grid(Instant-NGP, EmerNeRF)가 이를 완전히 해결한다는 것. 질의는 빨라지지만 광선당 다중 샘플 적분 구조 자체는 남아 실시간 폐루프엔 여전히 부족합니다.</div></div>
-<div class="concept-card"><div class="concept-term">Compositional NeRF의 observation-to-canonical 매핑</div><div class="concept-def">NSG·MARS류는 tracked pose로 움직이는 차량을 정지된 canonical 공간으로 역변환한 뒤, 그 공간에서 NeRF가 객체의 형상/외관을 학습합니다. 강체 가정 덕에 시간에 따른 객체 모델을 한 번만 학습하면 된다는 장점이 있죠. 그러나 객체마다 별도의 NeRF/ray-marching이 필요해 비용이 객체 수에 비례·중첩됩니다. 또한 tracker pose 오차가 canonical 정합을 흐트러뜨려 흐릿한 결과를 낳습니다. 보행자 같은 비강체에는 canonical 가정이 깨진다는 한계도 있습니다.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">However, significant limitations are their slow training and rendering speed.</div><div class="expr-ko">그러나 중대한 한계는 느린 학습·렌더링 속도다</div><div class="expr-example">These methods enable photo-realistic synthesis; however, significant limitations are their slow training and rendering speed.</div><div class="expr-context">선행연구의 장점을 인정한 뒤 핵심 약점을 대비시켜 제시할 때(however 전환).</div></div>
-<div class="expr-card"><div class="expr-en">are still limited to the high training cost and low rendering speed</div><div class="expr-ko">여전히 높은 학습 비용과 낮은 렌더링 속도에 발목 잡혀 있다</div><div class="expr-example">Although these methods produce reasonable results, they are still limited to the high training cost and low rendering speed.</div><div class="expr-context">기존 방법이 &#x27;되긴 하지만 결정적 제약이 남는다&#x27;는 점을 강조할 때.</div></div>
-<div class="expr-card"><div class="expr-en">cannot handle dynamic vehicles, which are crucial in ...</div><div class="expr-ko">~에서 결정적인 동적 차량을 다루지 못한다</div><div class="expr-example">Moreover, it cannot handle dynamic vehicles, which are crucial aspects in autonomous driving environment simulation.</div><div class="expr-context">한계의 &#x27;도메인 중요도&#x27;까지 덧붙여 비판의 무게를 실을 때.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Compositional NeRF(NSG/MARS)가 단일 NeRF보다 렌더링이 더 느려지는 핵심 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">이미지 해상도를 더 높이기 때문</button><button class="mcq-option" data-correct="true">객체마다 별도의 ray-marching이 필요해 적분 비용이 객체 수만큼 중첩되기 때문</button><button class="mcq-option" data-correct="false">LiDAR 입력을 추가로 처리하기 때문</button><button class="mcq-option" data-correct="false">더 큰 배치 크기를 쓰기 때문</button></div><div class="mcq-explanation">정적 배경과 각 객체를 별도 NeRF로 ray-marching하므로 비용이 곱해진다. 이것이 1 FPS 미만 속도의 구조적 원인이다.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">EmerNeRF가 자율주행 편집·시뮬레이션 용도로 부족한 점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">LiDAR를 쓰지 못한다</button><button class="mcq-option" data-correct="true">static/dynamic은 분리하지만 instance-aware가 아니어서 개별 차량을 떼어내 편집할 수 없다</button><button class="mcq-option" data-correct="false">정적 장면만 모델링할 수 있다</button><button class="mcq-option" data-correct="false">학습이 30분 안에 끝나지 않는다</button></div><div class="mcq-explanation">EmerNeRF는 self-supervision으로 정적/동적은 나누지만 인스턴스 단위 표현이 아니라서 차량 단위 편집·합성이 불가능하다.</div></div>
+가속이 커지면 무슬립 가정이 깨집니다. 그땐 타이어 힘을 슬립의 함수로 보는 동역학 모델로 갑니다. 마찰력은 슬립의 반대 방향이고, 크기는 수직하중 × 마찰계수인데, 이 마찰계수를 <strong>Pacejka &#x27;매직 포뮬러&#x27;</strong>로 모델링합니다:
+$$\mu\!\left(\tfrac{\|s_r\|}{\Omega_r r}\right) = D\sin\!\Big(C\arctan\big(B\tfrac{\|s_r\|}{\Omega_r r}\big)\Big)$$
+이 곡선의 봉우리가 <strong>마찰원(friction circle)</strong>—타이어가 어느 방향으로든 낼 수 있는 최대 힘의 한계입니다. 조향(횡력)과 가감속(종력)이 이 하나의 원을 나눠 씁니다. 비유하면, 예산이 고정된 지갑에서 &#x27;코너링&#x27;과 &#x27;브레이킹&#x27;에 동시에 돈을 쏟으면 둘 다 부족해지는 것과 같죠. 그래서 한계조작에선 기구학 모델이 &#x27;불가능한 지령&#x27;을 내릴 수 있고, 동역학 모델·제약이 필요해집니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure III.1 — 단일트랙(자전거) 모델 기구학</div><a href="figures/page_5.png" target="_blank"><img src="figures/page_5.png" alt="Figure" loading="lazy"></a><div class="figure-explain">단일트랙 모델 도식. 후륜 접지점 $p_r$, 전륜 접지점 $p_f$, 차체 heading $\theta$, 전륜 조향각 $\delta$를 표시. 파란 화살표가 비홀로노믹 제약이 허용하는 속도 방향(바퀴 방향과 일치)을 나타내, 횡방향 미끄러짐이 금지됨을 시각화.</div></div>
+<div class="trigger">Trigger Type C</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">비홀로노믹 제약 (nonholonomic constraint)</div><div class="concept-def">무슬립 가정에서 바퀴 접지점의 속도가 바퀴 방향과 평행해야 한다는 미분 제약. 후륜에 대해 $\dot{y}_r\cos\theta - \dot{x}_r\sin\theta = 0$ 꼴로, 적분 불가능하므로 자세를 자유롭게 못 바꾼다. 의미: 차는 그 자리에서 옆으로 평행이동할 수 없고, 도달 가능한 순간 속도가 제한된다. 왜 중요한가: 이 제약이 곡률 상한(최소 회전반경)으로 이어지고, Day 2에서 본 곡률제약 경로계획의 NP-hardness 근원이 된다. 장애물 없는 경우엔 Dubins/Reeds-Shepp가 닫힌형 최적해를 준다. 함정: 모델이 순간적 조향각 점프를 허용하면 비현실적 경로가 나오므로, 연속 곡률엔 조향각·조향률을 상태로 증강한다.</div></div>
+<div class="concept-card"><div class="concept-term">마찰원 &amp; Pacejka 매직 포뮬러</div><div class="concept-def">타이어 마찰력은 슬립에 반대방향, 크기는 수직하중 $F_z$와 마찰계수 $\mu$의 곱이며, $\mu$는 슬립비의 비선형 함수 $\mu = D\sin(C\arctan(B\cdot \text{slip}))$ (Pacejka 단순화형)로 모델링된다. 이 함수의 봉우리가 타이어가 낼 수 있는 최대 합력을 정의하고, 종력·횡력의 벡터합이 이 한계 안에 갇히는 영역이 **마찰원**이다. 직관: 종방향(가감속)과 횡방향(조향)이 하나의 &#x27;힘 예산&#x27;을 공유하므로 둘을 동시에 최대로 쓸 수 없다(그래서 한계 코너링 중 급제동은 위험). 고속·저마찰·긴급기동에서 핵심. 함정: 기구학 모델은 이 한계를 전혀 모른다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">is referred to as ...</div><div class="expr-ko">~라고 불린다</div><div class="expr-example">This limitation on maneuverability is referred to as a nonholonomic constraint.</div><div class="expr-context">전문 용어를 정식으로 도입·정의할 때</div></div>
+<div class="expr-card"><div class="expr-en">A major drawback of this model is that ...</div><div class="expr-ko">이 모델의 주요 단점은 ~이다</div><div class="expr-example">A major drawback of this model is that it permits instantaneous steering angle changes.</div><div class="expr-context">모델/방법의 한계를 명시해 적용 범위를 한정할 때</div></div>
+<div class="expr-card"><div class="expr-en">the no-slip assumption becomes invalid when ...</div><div class="expr-ko">~일 때 무슬립 가정이 무효가 된다</div><div class="expr-example">When the acceleration is sufficiently large, the no-slip assumption becomes invalid.</div><div class="expr-context">가정의 적용 한계와 전환 조건을 서술할 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">비홀로노믹 제약이 의미하는 바로 가장 정확한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">차는 어떤 방향으로도 즉시 평행이동할 수 있다</button><button class="mcq-option" data-correct="true">전진·후진 없이는 횡방향으로 위치를 옮길 수 없다</button><button class="mcq-option" data-correct="false">조향각이 항상 0이어야 한다</button><button class="mcq-option" data-correct="false">차량 속도가 일정해야 한다</button></div><div class="mcq-explanation">무슬립 가정에서 접지점 속도는 바퀴 방향과 평행해야 하므로, 차는 제자리에서 옆으로 이동할 수 없고 자세 변경에 전진/후진이 필요하다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">마찰원(friction circle)이 제어·계획에 시사하는 핵심은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">타이어는 종·횡력을 각각 독립적으로 무한히 낼 수 있다</button><button class="mcq-option" data-correct="true">종력과 횡력의 벡터합이 한계 내에 있어 둘을 동시에 최대로 쓸 수 없다</button><button class="mcq-option" data-correct="false">마찰계수는 슬립과 무관하게 일정하다</button><button class="mcq-option" data-correct="false">수직하중이 클수록 마찰력은 줄어든다</button></div><div class="mcq-explanation">타이어 합력은 마찰원 안에 갇히므로 가감속(종)과 조향(횡)은 같은 힘 예산을 나눠 쓴다—한계 코너링 중 급제동이 위험한 이유다.</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">만약 우리 파이프라인이 이미 정확한 3D tracker를 갖고 있다면, NeRF 기반 compositional 표현의 비용 문제 중 어떤 부분은 여전히 남고 어떤 부분은 완화될까?</div>
+  <div class="oq-question">우리 MPC가 기구학 모델을 쓰는데 긴급 회피에서 불안정하다. 마찰원 관점에서 첫 진단은 무엇인가?</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -247,14 +247,14 @@ EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>ins
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>tracker가 좋아지면 &#x27;pose 정합 오차로 인한 흐림&#x27;은 줄어듭니다. 하지만 렌더링 속도를 결정하는 건 pose 품질이 아니라 무엇이었는지 다시 생각해 보세요.</div>
+    <div>기구학 모델이 모르는 물리량이 무엇인지, 그 결과 어떤 &#x27;실현 불가능한&#x27; 지령이 나올 수 있는지 생각하라.</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>tracker 품질은 &#x27;정합 정확도&#x27; 문제를 완화할 뿐, 느린 속도의 근본 원인인 광선당 다중 샘플 적분(ray-marching)은 그대로 남는다. 표현(representation) 자체를 바꾸지 않으면 실시간은 오지 않는다.</div>
+    <div>한계조작에선 타이어력이 마찰원에서 포화된다. 기구학 모델은 이 한계를 모르므로 물리적으로 실현 불가능한 조향·가감속을 지령할 수 있다—동역학 모델 또는 마찰원 제약을 명시적으로 넣어야 한다.</div>
   </div>
 </div></div>
-<div class="nav"><a href="day_1.html">← Day 1</a><a href="day_3.html">Day 3 →</a></div>
+<div class="nav"><a href="day_5.html">← Day 5</a><a href="day_7.html">Day 7 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
 <script>
 document.querySelectorAll('.tab').forEach(tab => {

@@ -3,7 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 1 — 왜 동적 도시 거리 복원인가</title>
+<title>Day 1 — 왜 동적 도심 장면인가</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -72,6 +82,11 @@ body {
 .figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
 .figure-box .desc { margin-bottom: 10px; }
 .figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
 .trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
 
 /* CONCEPTS */
@@ -169,6 +184,19 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
 </style>
 </head>
 <body>
@@ -177,8 +205,8 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 1</div>
   <div class="hero-tag">배경</div>
-  <h1 class="hero-title">왜 동적 도시 거리 복원인가</h1>
-  <div class="hero-subtitle">Sim2real·digital twin·data aug 관점에서 문제 정의</div>
+  <h1 class="hero-title">왜 동적 도심 장면인가</h1>
+  <div class="hero-subtitle">자율주행 시뮬레이션·디지털 트윈 관점에서 문제의 동기를 제시 (방법은 아직 언급하지 않음)</div>
   <div class="progress-bar">
     <div class="progress-fill" style="width: 10%"></div>
   </div>
@@ -192,25 +220,24 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">자율주행 연구의 영원한 숙제 — <strong>데이터</strong>. 특히 코너 케이스. 실차를 또 굴리자니 단가가 만만치 않고, <strong>CARLA·AirSim</strong> 같은 합성 시뮬은 &#x27;sim-to-real gap&#x27; 때문에 perception 모델이 실세계로 가면 무너지죠.
+<div class="content">자율주행 연구에서 가장 비싼 자원은 &#x27;실제 도로 주행 마일리지&#x27;입니다. 컷인, 무단횡단, 급정거 같은 코너 케이스는 드물게 나타나지만 안전성 검증에는 필수죠. 여기서 <strong>디지털 트윈</strong>이 등장합니다. 실제 주행 로그로 도심 거리를 3D로 재구성해 두면, 그 장면 안에서 ego 차량의 궤적을 바꿔가며 무한히 재생할 수 있습니다.
 
-그래서 요즘 다들 <strong>digital twin</strong> 쪽에 베팅합니다. 실제 거리 한 시퀀스를 통째로 3D로 복원해놓고, 시점·차량 위치·궤적을 자유롭게 바꿔가며 무한히 새 데이터를 뽑는 거예요. 시뮬 비용 ↓, 도메인 갭 ↓, <strong>data augmentation</strong> 효과까지 한 번에.
+핵심 요구사항은 두 가지입니다. 첫째는 <strong>실시간 렌더링</strong>입니다. 폐루프(closed-loop) 시뮬레이션에서는 플래너가 새 궤적을 내놓을 때마다 그 시점의 이미지를 즉시 생성해 인지 모듈에 다시 먹여야 합니다. 오프라인 데이터셋 재생이 아니라 진짜 &#x27;센서 시뮬레이터&#x27;가 되려면 속도가 생명이죠. 둘째는 <strong>동적 객체</strong> 처리입니다. 도심 장면의 본질은 움직이는 차량들인데, 정적 배경만 복원해선 의미가 없습니다.
 
-다만 closed-loop 시뮬은 &#x27;실시간&#x27;이라는 또 하나의 벽을 가져옵니다 — ego 차량이 새 궤적을 그릴 때마다 카메라 시점 영상이 즉시 나와야 의미가 있죠. 결국 우리한테 필요한 건 *고품질 + 실시간 + 편집 가능*한 동적 도시 거리 표현. 오늘은 여기까지. 내일은 &#x27;NeRF 계열이 왜 이걸 못 풀었는가&#x27;를 봅니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 — Waymo 렌더 결과 + 학습/렌더 속도 비교(논문이 무엇을 해결하려는지 한눈에)</div><a href="figures/page_2.png" target="_blank"><img src="figures/page_2.png" alt="Figure" loading="lazy"></a></div>
+여기에 sim2real 관점이 더해집니다. CARLA 같은 수작업 엔진은 수작업 비용이 크고 현실감이 부족해 도메인 갭이 크지만, 실제 로그 기반 재구성은 픽셀 수준 사실성을 그대로 가져옵니다. 즉 이 문제는 단순한 view synthesis가 아니라 &#x27;데이터 증강 + 폐루프 검증 + 희귀 시나리오 합성&#x27;을 한꺼번에 푸는 열쇠입니다. 오늘은 방법론은 미뤄두고, 왜 이게 본질적으로 어려운 문제인지에만 집중해 보세요.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 — Waymo 렌더링 결과 비교</div><a href="figures/page_2.png" target="_blank"><img src="figures/page_2.png" alt="Figure" loading="lazy"></a><div class="figure-explain">세 방법(Ours, EmerNeRF, MARS)의 Waymo 렌더링 결과를 가로로 나란히 배치. 각 패널 하단에 학습시간/FPS가 표기됨(Ours 30min·135FPS vs EmerNeRF 2.5h·0.21FPS vs MARS &gt;18h·0.68FPS). 화질은 비슷해 보여도 비용 차이가 100배 이상임에 주목.</div></div>
 <div class="trigger">Trigger Type A</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Digital twin</div><div class="concept-def">실제 도시·환경을 센서 데이터로부터 3D 복원해 만든 가상 쌍둥이. 자율주행에선 시뮬레이션 환경의 토대로 활용된다.</div></div>
-<div class="concept-card"><div class="concept-term">Sim-to-real gap</div><div class="concept-def">합성 시뮬 데이터에서 학습한 모델이 실세계 데이터로 옮겨갈 때 성능이 떨어지는 분포 격차.</div></div>
-<div class="concept-card"><div class="concept-term">Closed-loop simulation</div><div class="concept-def">ego 정책의 행동이 환경에 영향을 주고, 환경이 다시 정책에 새 관측을 돌려주는 양방향 시뮬. 매 스텝 새 시점 영상이 필요해 실시간 렌더가 필수.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">aims to tackle the problem of</div><div class="expr-ko">~문제를 다루는 것을 목표로 한다</div><div class="expr-example">This paper aims to tackle the problem of modeling dynamic urban streets for autonomous driving scenes.</div><div class="expr-context">논문 도입부 첫 문장에서 연구 목표를 진술할 때 흔히 쓰는 정형구.</div></div>
-<div class="expr-card"><div class="expr-en">has many important applications, such as</div><div class="expr-ko">~같은 많은 중요한 응용이 있다</div><div class="expr-example">Modeling dynamic 3D streets has many important applications, such as city simulation, autonomous driving, and gaming.</div><div class="expr-context">Introduction 첫 문단에서 문제의 실용적 가치를 열거할 때.</div></div>
-<div class="expr-card"><div class="expr-en">reduce the training and test cost</div><div class="expr-ko">학습·테스트 비용을 줄이다</div><div class="expr-example">The digital twin of city streets can be used as the simulation environment, thereby reducing the training and test costs.</div><div class="expr-context">동기 부여 단락에서 산업적 가치를 강조할 때.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">자율주행 시뮬에서 digital twin이 CARLA·AirSim 같은 합성 시뮬레이터 대비 매력적인 핵심 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">오픈소스이고 무료로 공개되어 있어서</button><button class="mcq-option" data-correct="true">실제 거리 캡처에서 출발하므로 sim-to-real gap이 작다</button><button class="mcq-option" data-correct="false">차량 동역학을 더 정확히 시뮬레이션하기 때문</button><button class="mcq-option" data-correct="false">라이선스 비용이 들지 않아서</button></div><div class="mcq-explanation">CARLA류는 수작업 환경 + 합성 외형이라 도메인 갭이 큼. digital twin은 실측 거리에서 출발해 외형 사실성이 본질적으로 높다.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">AD closed-loop 시뮬레이션에서 &#x27;실시간 렌더링&#x27;이 필수인 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">학습 데이터 저장 공간을 줄이기 위해</button><button class="mcq-option" data-correct="true">ego 차량이 매 스텝 새 궤적을 그릴 때마다 새 시점 영상이 필요하기 때문</button><button class="mcq-option" data-correct="false">라벨링 비용을 줄이기 위해</button><button class="mcq-option" data-correct="false">모델 파라미터 수를 줄이기 위해</button></div><div class="mcq-explanation">closed-loop은 정책 출력에 따라 환경이 응답해야 하므로, 매 스텝 새 시점이 즉시 렌더링되어야 함.</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">디지털 트윈 기반 폐루프 시뮬레이션</div><div class="concept-def">실제 주행 로그로 도심 거리를 3D로 재구성해 자율주행 시뮬레이션 환경으로 쓰는 패러다임입니다. 핵심 직관은, 장면을 &#x27;재생&#x27;하는 게 아니라 &#x27;재구성&#x27;해 두면 ego 시점·궤적을 바꿔도 동일 장면을 새 시점에서 렌더링할 수 있어 인지→계획→제어 루프를 닫을 수 있다는 점입니다. UniSim, MARS 같은 NeRF 기반 센서 시뮬레이터 계열에서 등장합니다. 흔한 혼동: open-loop 데이터셋 재생과 동일시하는 것. 폐루프는 학습 분포 밖 시점(extrapolation)을 요구하므로 난도가 본질적으로 다릅니다.</div></div>
+<div class="concept-card"><div class="concept-term">Novel View Synthesis (신규 시점 합성)</div><div class="concept-def">입력 이미지 집합으로부터, 관측하지 않은 카메라 시점의 이미지를 생성하는 문제입니다. 자율주행에서는 차선 변경처럼 입력 궤적에서 크게 벗어난 시점(외삽)까지 요구된다는 점이 일반 객체 중심 NVS와 다릅니다. NeRF·3D Gaussian Splatting이 대표 해법이죠. 함정: 다수 NVS 기법이 정적 장면을 가정해 두기 때문에 움직이는 차량 위에 ghosting(잔상)이 생기고, 입력 시점에서 멀어질수록 품질이 급격히 떨어집니다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">This paper aims to tackle the problem of ...</div><div class="expr-ko">본 논문은 ~ 문제를 다루는 것을 목표로 한다</div><div class="expr-example">This paper aims to tackle the problem of modeling dynamic urban streets for autonomous driving scenes.</div><div class="expr-context">논문 서두(Abstract/Intro)에서 연구 목표를 한 문장으로 선언할 때.</div></div>
+<div class="expr-card"><div class="expr-en">has many important applications, such as ...</div><div class="expr-ko">~와 같은 많은 중요한 응용이 있다</div><div class="expr-example">Modeling dynamic 3D streets from images has many important applications, such as city simulation, autonomous driving, and gaming.</div><div class="expr-context">동기(motivation) 문단에서 연구의 활용처를 열거해 중요성을 부각할 때.</div></div>
+<div class="expr-card"><div class="expr-en">thereby reducing the training and test costs</div><div class="expr-ko">그렇게 함으로써 학습·검증 비용을 줄인다</div><div class="expr-example">The digital twin of city streets can be used as the simulation environment for self-driving vehicles, thereby reducing the training and test costs.</div><div class="expr-context">제안 기술이 가져오는 실질적 이득을 결과절(thereby/thus)로 강조할 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">폐루프 시뮬레이션이 단순 오프라인 데이터셋 재생보다 본질적으로 어려운 이유로 가장 적절한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">더 많은 GPU 메모리가 필요하기 때문</button><button class="mcq-option" data-correct="true">플래너가 만든 새 궤적의 시점은 입력에 없으므로 외삽(extrapolation) 렌더링이 필요하기 때문</button><button class="mcq-option" data-correct="false">센서 노이즈가 재생보다 크기 때문</button><button class="mcq-option" data-correct="false">라벨링 비용이 더 높기 때문</button></div><div class="mcq-explanation">폐루프에서는 ego가 입력 궤적을 벗어나므로 학습에서 보지 못한 시점을 합성해야 한다. 보간이 아니라 외삽 문제라는 점이 난도를 결정한다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">이 문제 설정에서 &#x27;실시간 렌더링&#x27;이 편의가 아니라 필수 요건인 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">논문의 주 평가지표가 FPS이기 때문</button><button class="mcq-option" data-correct="true">폐루프에서 인지-계획 루프를 돌리려면 매 스텝 이미지를 즉시 생성해 인지 모듈에 공급해야 하기 때문</button><button class="mcq-option" data-correct="false">학습 시간을 줄이기 위해서</button><button class="mcq-option" data-correct="false">디스플레이 주사율을 맞추기 위해서</button></div><div class="mcq-explanation">시뮬레이터가 매 스텝 프레임을 실시간으로 인지 모듈에 공급해야 폐루프가 성립한다. 속도가 곧 사용 가능성이다.</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">당신의 perception 모델에서 가장 비용이 큰 코너 케이스 한 가지를 떠올려보세요. 그걸 실차 운행으로 다시 모으는 게 정말 현실적인가요? 안 된다면 그 빈자리를 어떻게 채워왔나요?</div>
+  <div class="oq-question">우리 팀의 코너 케이스 검증에 이런 재구성 시뮬레이터를 도입한다면, 가장 먼저 어떤 종류의 시나리오에서 가치를 볼 수 있을까?</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -218,11 +245,11 @@ body {
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>라벨 1장당 비용, 안전 이슈, 자연 발생 빈도 세 축에서 생각해보세요.</div>
+    <div>실제로 한 번 수집됐지만 변형해 반복 재생하고 싶은 상황, 혹은 ego 궤적을 조금만 바꿔도 위험도가 크게 달라지는 상황을 떠올려 보세요.</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>Digital twin이 매력적인 진짜 이유는 &#x27;실차로는 모을 수 없는 분포&#x27;를 합성으로 메울 수 있다는 가능성이지, 단순한 데이터 양 증가가 아니다.</div>
+    <div>재구성 기반 시뮬레이터의 진짜 가치는 &#x27;새 데이터 수집&#x27;이 아니라 &#x27;이미 수집한 위험 장면을 ego 시점·궤적만 바꿔 무한 변주&#x27;하는 데 있다. 실측 사실성과 편집 가능성의 결합이 핵심이다.</div>
   </div>
 </div></div>
 <div class="nav"><span class="disabled">← 이전</span><a href="day_2.html">Day 2 →</a></div>

@@ -3,7 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 6 — 점·Gaussian·초기화</title>
+<title>Day 6 — 딥다이브 ①: 4D SH</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -72,6 +82,11 @@ body {
 .figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
 .figure-box .desc { margin-bottom: 10px; }
 .figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
 .trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
 
 /* CONCEPTS */
@@ -169,6 +184,19 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
 </style>
 </head>
 <body>
@@ -177,8 +205,8 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 6</div>
   <div class="hero-tag">방법론</div>
-  <h1 class="hero-title">점·Gaussian·초기화</h1>
-  <div class="hero-subtitle">기하 모델(배경+객체)과 LiDAR 기반 초기화 깊이 보기</div>
+  <h1 class="hero-title">딥다이브 ①: 4D SH</h1>
+  <div class="hero-subtitle">시간 의존 외관을 Fourier 기반으로 압축하는 4D Spherical Harmonics를 수식·직관·근거로 해부</div>
   <div class="progress-bar">
     <div class="progress-fill" style="width: 60%"></div>
   </div>
@@ -192,31 +220,29 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">첫 번째 deep dive — <strong>점·Gaussian 기하 모델</strong>.
+<div class="content">오늘은 이 논문에서 가장 영리한 부품, <strong>4D Spherical Harmonics</strong>입니다.
 
-각 점은 3D Gaussian 1개. 파라미터는 평균 μ, 회전 R, 스케일 S, opacity α, SH 계수, semantic logit. 공분산은 Σ = R·S·Sᵀ·Rᵀ (Eq.1) — R은 <strong>unit quaternion</strong>, S는 대각 성분만. 이렇게 분해하는 이유는 임의 행렬이 *유효한 공분산*이 되지 못할 위험을 막기 위해서.
+문제 상황부터. 움직이는 차량은 위치가 바뀌며 받는 조명·그림자가 달라집니다. 정적 SH 계수 하나로는 이 시간 변화를 못 담아 차체에 noisy한 artifact가 생깁니다(Figure 3). 가장 단순한 해법은 &#x27;매 timestep마다 별도 SH&#x27;지만, 프레임 수만큼 저장 비용이 폭증하죠.
 
-<strong>배경 모델</strong>: μ_b, R_b를 world 좌표계에서 직접 학습. semantic은 M차원 logit β_b.
+저자의 해법은 우아합니다. 각 SH 계수 $z_{m,l}$을 시간에 대한 <strong>Fourier 계수 집합</strong> $f \in \mathbb{R}^k$ 로 치환하고, 임의 시각 $t$에서 실수값 역이산푸리에변환(IDFT)으로 복원합니다:
 
-<strong>객체 모델</strong>: μ_o, R_o는 차량 *local 좌표계*에 살다가, 매 프레임 트래킹 포즈 (R_t, T_t)로 world로 변환 (Eq.2): μ_w = R_t·μ_o + T_t, R_w = R_t·R_o. semantic은 1차원 scalar(차량 클래스 id) — 렌더 시 one-hot으로 펼쳐 배경과 합쳐요.
+$$z_{m,l}(t) = \sum_{i=0}^{k-1} f_i \cos\!\left(\frac{i\pi}{N_t} t\right)$$
 
-<strong>초기화</strong>가 결정적입니다. 3D GS의 SfM 점은 텍스처 없는 도시 거리에 무력. 대신 <strong>ego LiDAR 누적 점</strong>을 쓰고 이미지에 투영해 색을 입힙니다. 객체 박스 안 LiDAR 점이 <strong>2K 미만</strong>이면 박스 안 <strong>8K 점 랜덤 샘플링</strong>으로 대체.
+직관: 차량 외관의 시간 변화는 대부분 <strong>저주파</strong>입니다(조명이 갑자기 점멸하지 않죠). 그래서 낮은 차수 코사인 몇 개면 충분합니다. 실제로 $k=5$로 두는 것만으로 성능과 저장 비용의 균형을 잡습니다. 즉 &#x27;timestep마다 통째 저장&#x27;을 &#x27;소수의 주파수 성분&#x27;으로 압축한 셈입니다.
 
-학습 중 박스 *바깥*으로 자라난 객체 Gaussian은 가지치기 — occlusion 영역으로의 누설 차단. 내일은 외형: 4D SH로.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 2 — 객체/배경 표현 도식(geometry + appearance + semantic)</div><a href="figures/page_5.png" target="_blank"><img src="figures/page_5.png" alt="Figure" loading="lazy"></a></div>
-<div class="trigger">Trigger Type B</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Covariance decomposition Σ = RSSᵀRᵀ</div><div class="concept-def">공분산을 회전·스케일로 분해. 임의 행렬이 비-positive-definite가 되는 걸 막아 학습 안정성 확보.</div></div>
-<div class="concept-card"><div class="concept-term">LiDAR initialization</div><div class="concept-def">ego 차량 LiDAR 점을 시퀀스 전체에 걸쳐 누적해 점-기반 표현의 초기 위치로 사용. 텍스처 없는 영역에 강함.</div></div>
-<div class="concept-card"><div class="concept-term">Adaptive density control</div><div class="concept-def">3D GS에서 가져온 학습 중 점 분할·복제·제거 기법. 본 논문은 객체 박스 밖 점을 추가로 가지치기.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">consist of</div><div class="expr-ko">~으로 구성된다</div><div class="expr-example">The Gaussian parameters consist of a covariance matrix and a position vector.</div><div class="expr-context">수식·구조의 구성 요소를 열거할 때 표준 표현.</div></div>
-<div class="expr-card"><div class="expr-en">is assigned with</div><div class="expr-ko">~이 할당된다</div><div class="expr-example">Each point is assigned with a 3D Gaussian to softly represent the continuous scene geometry and color.</div><div class="expr-context">데이터 구조의 단위 요소가 어떤 속성을 갖는지 정의할 때.</div></div>
-<div class="expr-card"><div class="expr-en">to avoid invalid value during optimization</div><div class="expr-ko">최적화 중 비유효 값을 막기 위해</div><div class="expr-example">To avoid invalid value during optimization, each covariance matrix is further reduced to a scaling matrix and a rotation matrix.</div><div class="expr-context">설계 결정의 동기를 *수치 안정성* 관점에서 정당화할 때.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">공분산 Σ를 직접 학습하지 않고 R·S·Sᵀ·Rᵀ로 분해해 R, S만 학습하는 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">메모리를 줄이기 위해</button><button class="mcq-option" data-correct="true">임의 행렬이 비-positive-definite(유효 공분산이 아닌) 값으로 가는 것을 방지하기 위해</button><button class="mcq-option" data-correct="false">GPU에서 더 빠르기 때문</button><button class="mcq-option" data-correct="false">SH 계수와 차원을 맞추기 위해</button></div><div class="mcq-explanation">임의 행렬은 유효 공분산이 아닐 수 있음. 회전(quaternion)·스케일로 분해하면 항상 유효 공분산이 보장된다.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">박스 안 LiDAR 점이 2K 미만일 때 박스 안 *8K 점을 랜덤 샘플링*해 초기화하는 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">데이터 누수를 막기 위해</button><button class="mcq-option" data-correct="true">학습 초기 단계에 충분한 점이 필요하고, 박스 안은 객체일 가능성이 높은 신뢰 영역이기 때문</button><button class="mcq-option" data-correct="false">라벨링이 더 빠르기 때문</button><button class="mcq-option" data-correct="false">박스 자체가 학습 대상이라서</button></div><div class="mcq-explanation">점이 부족하면 splatting 품질이 무너짐. 박스라는 강한 prior로 안전한 위치에 초기 점을 뿌리는 셈.</div></div>
+또 하나의 설계 디테일: 도심 장면은 시점 의존 효과(반사 등)가 객체 중심 데이터셋보다 약해서, <strong>SH 차수를 1로 낮춰</strong> overfitting을 막습니다. 효과는 ablation에서 분명합니다 — 4D SH를 빼면 PSNR*가 30.23에서 29.27로 떨어집니다. 잠시 상상해 보세요: 한 대의 차가 그늘을 통과하며 차체 색이 매끈하게 변하는 그 곡선을, 코사인 다섯 개의 합으로 그린다는 것을요.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 3 — 4D SH 유무 비교</div><a href="figures/page_7.png" target="_blank"><img src="figures/page_7.png" alt="Figure" loading="lazy"></a><div class="figure-explain">상단 행은 외관이 변하는 입력 시퀀스, 하단 행은 4D SH 적용/미적용 렌더링과 GT. 4D SH가 없으면 차체에 뚜렷한 artifact(얼룩·잡음)가 나타나고, 적용 시 매끈한 그림자가 재현됨. 차체 표면의 매끄러움 차이를 볼 것.</div></div>
+<div class="trigger">Trigger Type C</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">4D Spherical Harmonics (Fourier 기반 시간 의존 외관)</div><div class="concept-def">각 SH 계수를 시간 함수로 만들되, 그 함수를 Fourier 계수 $f\in\mathbb{R}^k$로 파라미터화해 $z_{m,l}(t)=\sum_{i=0}^{k-1} f_i \cos(i\pi t / N_t)$ 로 복원합니다($N_t$는 프레임 수, $k=5$). 핵심 직관: 움직이는 차량의 외관 변화는 저주파 신호이므로 소수의 코사인 기저로 압축 가능하다는 것. timestep별 SH를 따로 저장하는 naive 방식 대비 저장 비용을 극적으로 줄입니다. 함정: $k$가 너무 작으면 빠른 조명 변화를 못 따라가고, 너무 크면 저장 비용·overfitting이 늘어 균형점($k=5$)이 중요합니다. SH 차수도 도심에선 1로 낮춰 시점 의존 과적합을 억제합니다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">is insufficient for modeling ..., because ...</div><div class="expr-ko">~을 모델링하기에 불충분하다, 왜냐하면 ~</div><div class="expr-example">Simply representing object appearance with SH coefficients is insufficient for modeling moving vehicles, because the appearance is influenced by its position in the global scene.</div><div class="expr-context">단순 baseline의 부족함을 짚고 그 이유를 명시해 개선의 필요성을 세울 때.</div></div>
+<div class="expr-card"><div class="expr-en">One straightforward solution is ...; however, ...</div><div class="expr-ko">한 가지 직관적 해법은 ~이지만, ~</div><div class="expr-example">One straightforward solution is to use separate SH for each timestep; however, this significantly increases the storage cost.</div><div class="expr-context">naive 해법을 먼저 제시해 기각한 뒤 자기 방법의 동기를 부각할 때.</div></div>
+<div class="expr-card"><div class="expr-en">to maintain a balance between performance and storage cost</div><div class="expr-ko">성능과 저장 비용 사이의 균형을 유지하기 위해</div><div class="expr-example">We set the number of Fourier coefficients k to 5 to maintain a balance between performance and storage cost.</div><div class="expr-context">하이퍼파라미터 선택의 근거를 트레이드오프로 정당화할 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">4D SH가 &#x27;timestep마다 별도 SH 저장&#x27; 방식보다 선호되는 핵심 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">더 높은 시점 의존 반사를 표현하려고</button><button class="mcq-option" data-correct="true">외관의 시간 변화가 저주파라 소수 Fourier 계수로 압축해 저장 비용을 크게 줄일 수 있어서</button><button class="mcq-option" data-correct="false">tracker pose 없이 동작하려고</button><button class="mcq-option" data-correct="false">semantic 분할 성능을 높이려고</button></div><div class="mcq-explanation">차량 외관의 시간 변화는 저주파이므로 k=5개의 코사인 기저로 충분히 근사되며, timestep별 저장 대비 메모리를 크게 절약한다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">도심 장면에서 SH 차수를 1로 낮춘 이유로 가장 적절한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">FPS를 135로 맞추려고</button><button class="mcq-option" data-correct="true">객체 중심 데이터셋보다 시점 의존 효과가 약해 고차 SH가 overfitting을 유발하기 때문</button><button class="mcq-option" data-correct="false">LiDAR 점이 부족해서</button><button class="mcq-option" data-correct="false">하늘 cubemap과 호환되도록</button></div><div class="mcq-explanation">도심은 강한 반사 등 view-dependent 효과가 상대적으로 약하므로, 고차 SH는 불필요한 자유도가 되어 overfitting 위험을 키운다.</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">당신 데이터에 텍스처 없는 영역(야간·터널·흰 벽)이 많다면, LiDAR 초기화만으로 충분할까요? 그렇지 않다면 어떤 보강 소스를 고려하시겠어요?</div>
+  <div class="oq-question">우리 데이터에 야간 점멸하는 신호등이나 깜빡이는 브레이크등처럼 &#x27;고주파&#x27; 외관 변화가 많다면, 4D SH의 $k$나 기저 선택을 어떻게 다시 생각해야 할까?</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -224,11 +250,11 @@ body {
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>논문은 LiDAR + SfM을 보완적으로 사용합니다. 다른 가능한 소스로는?</div>
+    <div>코사인 기저의 최고 주파수는 $k$가 좌우합니다. 신호의 변화 속도(Nyquist 관점)와 $k$, 그리고 저장 비용의 관계를 떠올려 보세요.</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>초기화는 &#x27;학습이 자력으로 도달할 수 없는 영역을 미리 채우는&#x27; 작업이다 — 데이터셋 특성에 맞춰 *다중 소스 점 합치기*는 거의 항상 합리적이다.</div>
+    <div>4D SH는 &#x27;외관 변화가 저주파&#x27;라는 가정에 최적화돼 있다. 점멸등 같은 고주파 현상이 중요하면 $k$를 키우거나(저장 비용↑) 이벤트성 외관을 위한 별도 모델링이 필요하다 — 가정과 데이터 특성의 정합을 먼저 확인해야 한다.</div>
   </div>
 </div></div>
 <div class="nav"><a href="day_5.html">← Day 5</a><a href="day_7.html">Day 7 →</a></div>

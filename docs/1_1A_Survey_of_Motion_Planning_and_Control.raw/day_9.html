@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 2 — 왜 NeRF는 부족했나</title>
+<title>Day 9 — 표와 실전이 말하는 결과</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
@@ -203,12 +203,12 @@ body {
 
 
 <div class="hero">
-  <div class="hero-meta">오늘의 학습 · DAY 2</div>
-  <div class="hero-tag">배경</div>
-  <h1 class="hero-title">왜 NeRF는 부족했나</h1>
-  <div class="hero-subtitle">NeRF 계열(Block-NeRF, compositional NeRF, EmerNeRF, point-based)의 한계를 비용 구조 관점에서 진단</div>
+  <div class="hero-meta">오늘의 학습 · DAY 9</div>
+  <div class="hero-tag">결과</div>
+  <h1 class="hero-title">표와 실전이 말하는 결과</h1>
+  <div class="hero-subtitle">비교표·실험 수치·DARPA 배치 사례 등 논문 내 실제 결과를 정리</div>
   <div class="progress-bar">
-    <div class="progress-fill" style="width: 20%"></div>
+    <div class="progress-fill" style="width: 90%"></div>
   </div>
 </div>
 
@@ -220,26 +220,24 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">어제의 요구사항(실시간 + 동적)을 NeRF 계열은 왜 충족 못 했을까요? 비용 구조를 보면 답이 보입니다.
+<div class="content">서베이의 &#x27;결과&#x27;는 새 벤치마크 수치가 아니라 <strong>비교표와 실전 배치 사례</strong>입니다. 무엇이 무엇을 가능케 하는지 봅시다.
 
-<strong>Block-NeRF</strong>는 대규모 장면을 블록으로 쪼개 각각을 NeRF로 모델링합니다. 사실적이지만 네트워크 파라미터가 방대해 학습이 오래 걸리고, 결정적으로 <strong>움직이는 차량을 다루지 못합니다</strong>. 자율주행에선 치명적이죠.
+제어 복잡도(Table II): pure pursuit·기하 제어는 $O(n)$ 또는 $O(1)$로 초경량인 반면, 선형 MPC는 지평선 $N$에 따라 더 무겁습니다. 구체적 교훈이 인상적입니다—한 연구에서 비선형 MPC는 빙판 긴급기동을 <strong>20 Hz</strong>로 안정화했지만, 지평선이 <strong>단 2스텝</strong>인데도 계산이 샘플주기의 <strong>3배</strong>라 실차 검증이 불가능했죠. 반면 단일 동작점 선형화로 QP를 풀자 계산이 줄어 <strong>최대 21 m/s</strong> 빙판 주행 실차 성공이 보고됩니다. &#x27;정확한 모델&#x27;과 &#x27;실시간성&#x27;의 거래가 숫자로 드러나는 대목입니다.
 
-다음은 compositional 계열(NSG, MARS)입니다. 장면을 정적 배경 + foreground 차량으로 나누고, tracked pose로 관측 공간을 canonical 공간에 매핑한 뒤 NeRF로 차량의 geometry/appearance를 학습합니다. 합리적인 결과를 내지만, 근본 문제는 ray-marching입니다. NeRF는 광선 하나마다 수백 개 점을 MLP에 통과시켜 적분 $C(r)=\int T(t)\sigma(t)c(t)\,dt$ 를 근사합니다. compositional이면 객체마다 별도 ray-marching이 필요해 비용이 곱해지죠. 그 결과 <strong>MARS는 18시간 이상 학습에 0.68 FPS, EmerNeRF는 0.21 FPS</strong>에 머뭅니다.
-
-EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>instance-aware가 아니어서</strong> 개별 차량을 떼어내 편집할 수 없고, 새 timestep의 동적 영역에서 잔상이 생깁니다. point-based 렌더링은 dense point cloud가 없으면 저밀도 영역이 흐릿해집니다. 한 줄로 요약하면: NeRF로 폐루프를 돌리는 건 &#x27;프레임마다 장면 전체를 적분으로 다시 그리는&#x27; 셈이라 실시간이 원천 봉쇄됩니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 — Waymo 정량 비교 (특히 FPS 행)</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a><div class="figure-explain">Waymo에서 5개 방법의 PSNR/SSIM/LPIPS/PSNR*/FPS를 비교한 표. FPS 행에 주목: NSG 0.47, MARS 0.68, EmerNeRF 0.21로 1 FPS 미만인 반면 Ours는 135. 품질 지표와 속도의 괴리를 한눈에 보여줌.</div></div>
-<div class="trigger">Trigger Type B</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Volumetric ray-marching의 비용 구조</div><div class="concept-def">NeRF는 픽셀의 색을 광선을 따라 $C(r)=\int_{t_n}^{t_f} T(t)\,\sigma(t)\,c(t)\,dt$ 로 적분하며, 이를 광선당 수십~수백 개 샘플 각각에서 MLP를 질의해 근사합니다. 느린 본질적 이유가 여기 있습니다: 픽셀×샘플×(MLP forward) 만큼의 연산이 매 프레임 필요하죠. 도심처럼 광선이 멀리 뻗는 장면에선 샘플 수가 더 늘어납니다. 흔한 오해: hash grid(Instant-NGP, EmerNeRF)가 이를 완전히 해결한다는 것. 질의는 빨라지지만 광선당 다중 샘플 적분 구조 자체는 남아 실시간 폐루프엔 여전히 부족합니다.</div></div>
-<div class="concept-card"><div class="concept-term">Compositional NeRF의 observation-to-canonical 매핑</div><div class="concept-def">NSG·MARS류는 tracked pose로 움직이는 차량을 정지된 canonical 공간으로 역변환한 뒤, 그 공간에서 NeRF가 객체의 형상/외관을 학습합니다. 강체 가정 덕에 시간에 따른 객체 모델을 한 번만 학습하면 된다는 장점이 있죠. 그러나 객체마다 별도의 NeRF/ray-marching이 필요해 비용이 객체 수에 비례·중첩됩니다. 또한 tracker pose 오차가 canonical 정합을 흐트러뜨려 흐릿한 결과를 낳습니다. 보행자 같은 비강체에는 canonical 가정이 깨진다는 한계도 있습니다.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">However, significant limitations are their slow training and rendering speed.</div><div class="expr-ko">그러나 중대한 한계는 느린 학습·렌더링 속도다</div><div class="expr-example">These methods enable photo-realistic synthesis; however, significant limitations are their slow training and rendering speed.</div><div class="expr-context">선행연구의 장점을 인정한 뒤 핵심 약점을 대비시켜 제시할 때(however 전환).</div></div>
-<div class="expr-card"><div class="expr-en">are still limited to the high training cost and low rendering speed</div><div class="expr-ko">여전히 높은 학습 비용과 낮은 렌더링 속도에 발목 잡혀 있다</div><div class="expr-example">Although these methods produce reasonable results, they are still limited to the high training cost and low rendering speed.</div><div class="expr-context">기존 방법이 &#x27;되긴 하지만 결정적 제약이 남는다&#x27;는 점을 강조할 때.</div></div>
-<div class="expr-card"><div class="expr-en">cannot handle dynamic vehicles, which are crucial in ...</div><div class="expr-ko">~에서 결정적인 동적 차량을 다루지 못한다</div><div class="expr-example">Moreover, it cannot handle dynamic vehicles, which are crucial aspects in autonomous driving environment simulation.</div><div class="expr-context">한계의 &#x27;도메인 중요도&#x27;까지 덧붙여 비판의 무게를 실을 때.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Compositional NeRF(NSG/MARS)가 단일 NeRF보다 렌더링이 더 느려지는 핵심 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">이미지 해상도를 더 높이기 때문</button><button class="mcq-option" data-correct="true">객체마다 별도의 ray-marching이 필요해 적분 비용이 객체 수만큼 중첩되기 때문</button><button class="mcq-option" data-correct="false">LiDAR 입력을 추가로 처리하기 때문</button><button class="mcq-option" data-correct="false">더 큰 배치 크기를 쓰기 때문</button></div><div class="mcq-explanation">정적 배경과 각 객체를 별도 NeRF로 ray-marching하므로 비용이 곱해진다. 이것이 1 FPS 미만 속도의 구조적 원인이다.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">EmerNeRF가 자율주행 편집·시뮬레이션 용도로 부족한 점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">LiDAR를 쓰지 못한다</button><button class="mcq-option" data-correct="true">static/dynamic은 분리하지만 instance-aware가 아니어서 개별 차량을 떼어내 편집할 수 없다</button><button class="mcq-option" data-correct="false">정적 장면만 모델링할 수 있다</button><button class="mcq-option" data-correct="false">학습이 30분 안에 끝나지 않는다</button></div><div class="mcq-explanation">EmerNeRF는 self-supervision으로 정적/동적은 나누지만 인스턴스 단위 표현이 아니라서 차량 단위 편집·합성이 불가능하다.</div></div>
+실전 배치(2007 DARPA Urban Challenge)는 더 웅변적입니다. 우승 <strong>Boss</strong>(CMU)는 구조화 환경엔 변분법, 주차장엔 위치·방향·속도의 <strong>4D 격자그래프 + Anytime D</strong>*를 썼고, 준우승 스탠퍼드는 <strong>Hybrid A</strong>*, 3위 VictorTango는 그래프+<strong>A</strong>*, MIT는 <strong>closed-loop RRT</strong>(편향 샘플링)를 썼습니다—Day 4의 세 가족이 모두 실차에 등장한 거죠. 핵심 메시지는 분명합니다: &#x27;최고의 단일 알고리즘&#x27;은 없고, 운영조건별 최적 조합만 있습니다. 비교표는 그 조합을 고르는 저울이고요.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table II — 제어기 개요 비교표</div><a href="figures/page_18.png" target="_blank"><img src="figures/page_18.png" alt="Figure" loading="lazy"></a><div class="figure-explain">행=제어기(Pure pursuit, 전/후륜 피드백, feedback linearization, Control Lyapunov, Linear/Nonlinear MPC), 열=모델·안정성·시간복잡도·가정/비고. 기하 제어는 $O(n)$·$O(1)$로 경량이나 가정이 많고, MPC는 무겁지만 제약·복잡모델을 처리함을 대조.</div></div>
+<div class="trigger">Trigger Type C</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">정확도–실시간성 거래의 정량적 증거</div><div class="concept-def">MPC 사례가 Day 1의 트레이드오프를 수치로 보여준다. 타이어 모델 기반 비선형 MPC는 빙판 긴급기동을 20 Hz로 시뮬레이션 안정화했으나, 제어 지평선이 단 2스텝인데도 계산시간이 샘플주기의 3배여서 실차 검증이 불가능했다. 반대로 현재 상태 주위 단일 선형화로 QP를 구성하니(내부점법 다항시간) 계산이 줄어 최대 21 m/s 빙판 주행 실차 성공이 보고됐다. 직관: 모델 충실도를 한 단계 낮추는(선형화) 대신 실시간성을 얻는 거래가 &#x27;실차 가능/불가&#x27;를 가른다. 함정: 선형화는 동작점에서 멀어지면 부정확해지므로 LTV·재선형화가 따라온다.</div></div>
+<div class="concept-card"><div class="concept-term">DARPA Urban Challenge 배치의 다양성</div><div class="concept-def">2007 대회 상위 4팀의 모션계획이 서로 달랐다는 사실 자체가 서베이의 결론을 입증한다. Boss(CMU, 우승)=구조화 도로엔 변분법, 주차장엔 위치·방향·속도의 4D 격자그래프+Anytime D*. Stanford(준우승)=Hybrid A*(모션프리미티브 트리를 휴리스틱으로 lazy 구성). VictorTango(3위)=그래프 이산화+A*. MIT=편향 샘플링 closed-loop RRT. 즉 변분·그래프·샘플링 세 계열이 모두 실차에 채택됐다. 시사: 단일 정답이 없고, 같은 차 안에서도 시나리오(구조화 도로 vs 주차장)에 따라 다른 플래너를 갈아끼운다. 함정: 다중 플래너 전환은 전환 로직과 검증 부담이라는 새 복잡도를 만든다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">successful experimental results are reported for ...</div><div class="expr-ko">~에 대해 성공적인 실험 결과가 보고된다</div><div class="expr-example">Successful experimental results are reported for driving in icy conditions at speeds up to 21 m/s.</div><div class="expr-context">실차/실험 검증 성과를 구체 수치와 함께 제시할 때</div></div>
+<div class="expr-card"><div class="expr-en">making experimental validation impossible</div><div class="expr-ko">실험적 검증을 불가능하게 만드는</div><div class="expr-example">The computation time was three times the sample time, making experimental validation impossible.</div><div class="expr-context">방법의 계산적 한계가 실증을 가로막은 상황을 서술할 때</div></div>
+<div class="expr-card"><div class="expr-en">the approaches used ... significantly differed</div><div class="expr-ko">사용된 접근법은 ~ 크게 달랐다</div><div class="expr-example">Even among the first four finishers, the approaches used for motion planning significantly differed.</div><div class="expr-context">사례 간 다양성을 부각해 &#x27;단일 정답 없음&#x27;을 논증할 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">비선형 MPC의 실차 검증이 어려웠던 직접적 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">제어 주파수가 20 Hz로 너무 높아서</button><button class="mcq-option" data-correct="true">지평선이 단 2스텝인데도 계산시간이 샘플주기의 3배였기 때문</button><button class="mcq-option" data-correct="false">빙판에서 타이어 모델이 발산해서</button><button class="mcq-option" data-correct="false">QP가 해를 갖지 않아서</button></div><div class="mcq-explanation">논문은 2스텝 지평선에서도 계산이 샘플주기의 3배라 실차 검증이 불가능했다고 기술한다. 선형화로 계산을 줄이자 21 m/s 실차 성공이 보고됐다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">DARPA Urban Challenge 상위팀들의 모션계획이 시사하는 핵심은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">샘플링 기법만이 실차에 적합하다</button><button class="mcq-option" data-correct="true">단일 최적 알고리즘은 없고 세 계열(변분·그래프·샘플링)이 모두 실차에 채택됐다</button><button class="mcq-option" data-correct="false">모든 팀이 동일한 Hybrid A*를 썼다</button><button class="mcq-option" data-correct="false">그래프 탐색은 실차에서 폐기됐다</button></div><div class="mcq-explanation">Boss(변분+4D격자+Anytime D*), Stanford(Hybrid A*), VictorTango(A*), MIT(closed-loop RRT)처럼 세 계열이 모두 등장—운영조건별 조합이 답임을 보여준다.</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">만약 우리 파이프라인이 이미 정확한 3D tracker를 갖고 있다면, NeRF 기반 compositional 표현의 비용 문제 중 어떤 부분은 여전히 남고 어떤 부분은 완화될까?</div>
+  <div class="oq-question">Boss가 주차장엔 격자+Anytime D*, 구조화 도로엔 변분법을 &#x27;갈아끼운&#x27; 것처럼, 우리도 시나리오별 플래너 전환이 답일까? 위험은 무엇인가?</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -247,14 +245,14 @@ EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>ins
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>tracker가 좋아지면 &#x27;pose 정합 오차로 인한 흐림&#x27;은 줄어듭니다. 하지만 렌더링 속도를 결정하는 건 pose 품질이 아니라 무엇이었는지 다시 생각해 보세요.</div>
+    <div>전환 로직, 경계 조건에서의 거동, 검증·인증 부담을 떠올려보라. 모듈이 늘면 무엇이 늘어나는가?</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>tracker 품질은 &#x27;정합 정확도&#x27; 문제를 완화할 뿐, 느린 속도의 근본 원인인 광선당 다중 샘플 적분(ray-marching)은 그대로 남는다. 표현(representation) 자체를 바꾸지 않으면 실시간은 오지 않는다.</div>
+    <div>시나리오별 플래너 전환은 강력하지만, 전환 로직·경계조건·검증 부담이라는 새 실패모드를 만든다. 이 통합 비용까지 시스템 수준에서 따지는 것이 서베이의 마지막 메시지다.</div>
   </div>
 </div></div>
-<div class="nav"><a href="day_1.html">← Day 1</a><a href="day_3.html">Day 3 →</a></div>
+<div class="nav"><a href="day_8.html">← Day 8</a><a href="day_10.html">Day 10 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
 <script>
 document.querySelectorAll('.tab').forEach(tab => {

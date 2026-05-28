@@ -3,7 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 10 — 내 perception 데이터에 꽂기</title>
+<title>Day 10 — 내 연구에 적용하기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -72,6 +82,11 @@ body {
 .figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
 .figure-box .desc { margin-bottom: 10px; }
 .figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
 .trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
 
 /* CONCEPTS */
@@ -169,6 +184,19 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
 </style>
 </head>
 <body>
@@ -177,8 +205,8 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 10</div>
   <div class="hero-tag">응용</div>
-  <h1 class="hero-title">내 perception 데이터에 꽂기</h1>
-  <div class="hero-subtitle">Scene editing 기반 AD perception 증강 — 활용 시나리오 + 후속 + 반성</div>
+  <h1 class="hero-title">내 연구에 적용하기</h1>
+  <div class="hero-subtitle">자율주행 연구에의 구체적 적용 각도 + 후속 연구 + 자기 연구를 위한 성찰 질문(try-this-mentally)</div>
   <div class="progress-bar">
     <div class="progress-fill" style="width: 100%"></div>
   </div>
@@ -192,35 +220,27 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">열흘 마무리. 당신이 하는 <strong>scene editing for AD perception data augmentation</strong>에 Street Gaussians가 어떻게 꽂히는가.
+<div class="content">10일의 마무리는 &#x27;내 책상으로 가져오기&#x27;입니다.
 
-핵심은 *명시적 인스턴스 분리*입니다. 차량을 떼어 회전·이동·교체할 수 있다는 건 곧 <strong>하나의 실거리 시퀀스로 무한한 &#x27;라벨 보존&#x27; 변형</strong>을 만들 수 있다는 뜻이에요.
+<strong>적용 각도 1 — 폐루프 센서 시뮬레이션</strong>: explicit·instance-aware 표현이라 차량을 회전·평행이동·<strong>swap</strong>할 수 있습니다(Figure 7). 실제 수집한 컷인 로그에서 상대 차량을 옆 차선으로 밀거나 다른 차종으로 바꿔 코너 케이스를 변주하고, ego 궤적을 2m 옮긴 extrapolation 시점까지 135 FPS로 렌더해 인지·계획을 폐루프로 검증할 수 있습니다.
 
-구체 시나리오 3가지:
+<strong>적용 각도 2 — 데이터·라벨 자산화</strong>: 3D semantic 융합으로 얻은 일관 라벨(mIoU 58.81)을 임의 시점으로 투영해 인지 모델의 학습 데이터·pseudo-GT를 자동 생성합니다. 그림자·경계처럼 2D 라벨러가 약한 곳에서 특히 가치가 큽니다.
 
-1. <strong>희귀 차종 증강</strong> — 트럭/이륜이 한 번 잡힌 시퀀스에서 그 인스턴스만 떼서 다른 평범한 거리에 swap. 인스턴스의 (R, T)를 알기 때문에 박스·yaw 라벨이 자동으로 따라옵니다.
+<strong>한계는 곧 후속 연구의 입구</strong>입니다. 저자가 명시한 세 가지: (1) <strong>강체만</strong> 가능 — 보행자 같은 비강체는 deformable/4D Gaussian 계열로 확장해야 합니다. (2) tracker <strong>recall에 의존</strong> — 놓친 객체는 복구 불가, tracklet 없는 모델링이 열린 문제입니다. (3) <strong>scene별 최적화</strong> 필요 — feed-forward 일반화 Gaussian이 다음 목표죠. 동시기·후속 흐름으로 DrivingGaussian, PVG가 tracker-free·self-supervised 방향을 탐색합니다.
 
-2. <strong>코너 케이스 합성</strong> — 차량을 인도 쪽으로 translate + yaw 회전 → &#x27;cut-in 직전&#x27; 장면을 안전하게 합성. *분포 끝단*을 채울 수 있어요.
-
-3. <strong>Closed-loop 평가</strong> — <strong>135 FPS</strong>면 ego 정책이 새 궤적을 그릴 때마다 view를 즉시 재렌더. CARLA를 photo-real로 갈아끼우는 셈.
-
-후속도 빠르게 보세요. 동시기 <strong>DrivingGaussian</strong>·<strong>PVG</strong>, 이후 <strong>NeuRAD</strong>(2024) — surround view·LiDAR까지 통합하는 흐름입니다.
-
-<strong>머릿속 실험</strong>: 당신 perception 모델이 가장 약한 *한 가지 시나리오* — 그걸 Street Gaussians로 합성한다면, 어떤 인스턴스를 어디서 떼어 어디에 붙이실 건가요? 그 한 컷이 라벨 비용 대비 가장 큰 ROI를 가질 가능성이 큽니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 7 — Rotation/Translation/Swapping 편집 시연(편집 전후 비교)</div><a href="figures/page_13.png" target="_blank"><img src="figures/page_13.png" alt="Figure" loading="lazy"></a></div>
+자, 이제 직접 머릿속에서 굴려보세요. <strong>당신의 가장 까다로운 코너 케이스 하나를 떠올리고</strong>, 그 장면에서 &#x27;어떤 객체를 어떻게 편집하면&#x27; 검증하고 싶은 가설이 생기는지, 그리고 그때 이 방법의 세 한계 중 무엇이 먼저 발목을 잡을지를 그려보세요. 그 교집합이 바로 당신이 다음에 손댈 연구 주제입니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 7 — 장면 편집 연산(회전/평행이동/swap)</div><a href="figures/page_13.png" target="_blank"><img src="figures/page_13.png" alt="Figure" loading="lazy"></a><div class="figure-explain">(a) 회전, (b) 평행이동, (c) swap 세 가지 편집을 각각 편집 전(1행)/후(2행)로 비교. 차량의 heading이 돌아가거나 위치가 옮겨지거나 다른 차량으로 교체된 결과를 보여줌. instance-aware 표현이 주는 편집 자유도를 직관적으로 확인할 것.</div></div>
 <div class="trigger">Trigger Type C</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Label-preserving augmentation</div><div class="concept-def">이미지 변형 후에도 박스·세그·포즈 같은 라벨이 자동으로 동등하게 변환되는 증강. 명시적 인스턴스 변환이 가능할 때 자연스럽게 성립.</div></div>
-<div class="concept-card"><div class="concept-term">Long-tail / corner case</div><div class="concept-def">데이터 분포 끝단에 위치해 자연 발생 빈도가 낮은 시나리오. 합성 증강의 가장 본질적 가치가 발휘되는 영역.</div></div>
-<div class="concept-card"><div class="concept-term">NeuRAD / DrivingGaussian / PVG</div><div class="concept-def">Street Gaussians 이후/동시기의 후속 흐름. 멀티 카메라·LiDAR·시간 동역학을 통합해 production-grade AD 시뮬에 다가가는 방향.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">demonstrate the effectiveness of</div><div class="expr-ko">~의 효과를 입증한다</div><div class="expr-example">Detailed ablations and scene editing applications demonstrate the effectiveness of the proposed components.</div><div class="expr-context">결론·실험 요약에서 자기 방법의 검증을 선언할 때 사용하는 단단한 정형구.</div></div>
-<div class="expr-card"><div class="expr-en">enables</div><div class="expr-ko">~을 가능하게 한다</div><div class="expr-example">Our instance-aware scene representation enables various types of scene editing operations.</div><div class="expr-context">표현/구조의 결과로 무엇이 가능해졌는지 강조하는 응용/결론 단락.</div></div>
-<div class="expr-card"><div class="expr-en">future work / follow-up</div><div class="expr-ko">후속 연구로</div><div class="expr-example">We leave the integration with multi-modal sensors as future work.</div><div class="expr-context">한계나 다음 단계를 명시할 때 책임감 있게 마무리하는 학술 정형구.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Street Gaussians로 합성한 영상으로 perception 모델을 학습할 때, &#x27;편집 후에도 박스·yaw 라벨이 자동으로 유효&#x27;한 가장 본질적 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">편집 후 사람이 다시 라벨링하기 때문</button><button class="mcq-option" data-correct="true">차량 인스턴스가 *명시적*이라 변환 행렬 (R, T)을 라벨에도 동일하게 적용할 수 있기 때문</button><button class="mcq-option" data-correct="false">시멘틱 logit이 자동 보정되어서</button><button class="mcq-option" data-correct="false">모델이 합성을 자동 검출하니까</button></div><div class="mcq-explanation">명시적 인스턴스의 6DoF 변환은 점·박스·yaw에 동일 변환으로 전파 가능 — 라벨이 자동으로 동기화된다.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">Street Gaussians가 closed-loop AD 시뮬에 적합한 이유로 가장 정확한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">라벨이 완벽해야 작동한다</button><button class="mcq-option" data-correct="true">135 FPS의 실시간 렌더링과 인스턴스 단위 편집이 *동시에* 가능하기 때문</button><button class="mcq-option" data-correct="false">GPU 4장 이상이 필요하기 때문</button><button class="mcq-option" data-correct="false">LiDAR가 반드시 있어야만 하기 때문</button></div><div class="mcq-explanation">Closed-loop은 정책-환경 상호작용 — *빠른 렌더 + 동적 객체 편집*이 동시에 요구된다. 둘 중 하나만 빠져도 부적합.</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Instance-aware 장면 편집 (시나리오 합성 엔진)</div><div class="concept-def">객체가 독립 점군으로 분해되므로 차량 단위 회전(heading 변경)·평행이동·swap이 집합 연산으로 가능합니다(Figure 7). 자율주행 관점에서 이는 &#x27;실측 사실성을 유지한 채 코너 케이스를 변주하는&#x27; 엔진입니다 — 한 번 수집한 컷인 장면에서 상대 차량의 위치·차종·궤적을 바꿔 수십 개의 위험 시나리오를 파생시킬 수 있죠. 한계와 결합해 읽어야 합니다: 편집은 강체 차량에 한정되고 tracker가 잡은 객체에만 적용됩니다. 따라서 보행자가 핵심인 시나리오나 tracker recall이 낮은 환경에서는 편집 가능 범위가 제한됩니다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">can be applied to multiple tasks, including ...</div><div class="expr-ko">~을 포함한 여러 과제에 적용될 수 있다</div><div class="expr-example">Street Gaussians can be applied to multiple tasks, including object decomposition, semantic segmentation, and scene editing.</div><div class="expr-context">방법의 활용 범위(응용)를 한 문장으로 폭넓게 제시할 때(논문 Applications 절 시작).</div></div>
+<div class="expr-card"><div class="expr-en">Future work could consider ... to address this issue</div><div class="expr-ko">후속 연구는 이 문제를 해결하기 위해 ~을 고려할 수 있다</div><div class="expr-example">Future work could consider employing more complex dynamic scene modeling methods to address the non-rigid object issue.</div><div class="expr-context">한계를 인정한 직후 향후 방향을 제안하며 마무리할 때(Limitations/Conclusion).</div></div>
+<div class="expr-card"><div class="expr-en">remains an interesting problem</div><div class="expr-ko">여전히 흥미로운 미해결 문제로 남아 있다</div><div class="expr-example">Modeling dynamic urban scenes without object tracklets remains an interesting problem.</div><div class="expr-context">열린 연구 과제를 후속 연구자에게 던지며 글을 닫을 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Street Gaussians를 &#x27;코너 케이스 변주 엔진&#x27;으로 쓸 때, 저자가 명시한 한계로 인해 가장 먼저 막히는 시나리오는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">다른 차종으로 차량을 swap하는 시나리오</button><button class="mcq-option" data-correct="true">보행자가 도로를 가로지르는 비강체 동작이 핵심인 시나리오</button><button class="mcq-option" data-correct="false">ego가 차선을 2m 변경한 시점의 렌더링</button><button class="mcq-option" data-correct="false">주변 차량의 heading을 회전시키는 시나리오</button></div><div class="mcq-explanation">이 방법은 강체 차량만 모델링하며 보행자 같은 비강체 동작은 다루지 못한다. 따라서 보행자 중심 시나리오에서 가장 먼저 막힌다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">논문이 제시한 후속 연구 방향과 그 동기의 연결로 옳은 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="true">feed-forward 일반화 Gaussian — scene별 최적화가 필요하다는 한계를 극복하기 위해</button><button class="mcq-option" data-correct="false">4D SH 확장 — FPS를 더 높이기 위해</button><button class="mcq-option" data-correct="false">더 큰 cubemap — semantic 분할을 위해</button><button class="mcq-option" data-correct="false">L1 손실 추가 — tracker recall을 높이기 위해</button></div><div class="mcq-explanation">현재 방법은 장면마다 재최적화가 필요하다. 이를 없애려면 입력에서 곧바로 Gaussian을 예측하는 feed-forward 일반화가 후속 과제로 제시된다.</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">다음 한 주, 당신의 perception 파이프라인에서 *가장 마지막에 실패한* 한 가지 케이스를 골라보세요. Street Gaussians로 그 시나리오의 변형 100개를 만든다면, 어떤 축(차량 종류? 위치? 시간대? 조명?)으로 다양화하시겠어요? 그 축을 고른 이유는?</div>
+  <div class="oq-question">당신의 가장 까다로운 코너 케이스 하나를 골라, 그 장면에서 어떤 객체를 어떻게 편집해 어떤 가설을 검증하고 싶은지, 그리고 그때 이 방법의 세 한계(비강체 불가·tracker 의존·scene별 최적화) 중 무엇이 먼저 발목을 잡을지 그려보세요.</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -228,11 +248,11 @@ body {
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>변형 축은 *실패 원인*과 직결되어야 의미가 있어요. 단순히 양만 늘리는 게 아니라 분포의 &#x27;비어 있는&#x27; 부분을 채우는 방향으로.</div>
+    <div>편집 가능성(강점)과 세 한계(약점)가 겹치는 지점이, 당신 도메인에서 이 기술을 바로 쓸 수 있는지/연구로 확장해야 하는지를 가릅니다. 머릿속에서 한 장면을 실제로 굴려보세요.</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>데이터 증강의 가치는 &#x27;*분포의 어느 부분을 채우는가*&#x27;에서 나온다 — Street Gaussians는 강력한 도구일 뿐, 어떤 축을 다양화할지 결정하는 것은 여전히 연구자의 통찰이다. 도구가 강력할수록 *문제 정의*의 질이 더 중요해진다.</div>
+    <div>이 방법은 &#x27;강체 차량을, tracker가 잡은 범위에서, scene별로 재구성해&#x27; 편집하는 엔진이다. 당신의 문제가 이 경계 안이면 즉시 적용 가능한 도구이고, 경계 밖(보행자·미검출·일반화)이면 그 지점이 곧 당신의 다음 연구 기여가 된다.</div>
   </div>
 </div></div>
 <div class="nav"><a href="day_9.html">← Day 9</a><span class="disabled">다음 →</span></div>

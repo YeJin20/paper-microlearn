@@ -3,7 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 4 — 동적 거리 표현 지도</title>
+<title>Day 4 — 지형도: 경쟁 기법 비교</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -72,6 +82,11 @@ body {
 .figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
 .figure-box .desc { margin-bottom: 10px; }
 .figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
 .trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
 
 /* CONCEPTS */
@@ -169,6 +184,19 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
 </style>
 </head>
 <body>
@@ -177,8 +205,8 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 4</div>
   <div class="hero-tag">개요</div>
-  <h1 class="hero-title">동적 거리 표현 지도</h1>
-  <div class="hero-subtitle">Street Gaussians가 관련 연구 지도에서 어디에 위치하는가</div>
+  <h1 class="hero-title">지형도: 경쟁 기법 비교</h1>
+  <div class="hero-subtitle">Block-NeRF/compositional NeRF/EmerNeRF/vanilla 3DGS/concurrent Gaussian 기법들과 비교해 본 논문의 위치와 트레이드오프를 정렬</div>
   <div class="progress-bar">
     <div class="progress-fill" style="width: 40%"></div>
   </div>
@@ -192,29 +220,28 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">동적 도시 표현은 크게 세 그룹으로 갈립니다.
+<div class="content">오늘은 이 논문을 지형도 위에 놓아봅니다. 축을 둘로 잡으면 깔끔합니다: (1) explicit vs implicit, (2) instance-aware vs not.
 
-<strong>(1) Implicit · compositional NeRF</strong> — <strong>NSG, MARS, UniSim</strong>. 배경 NeRF + 차량별 NeRF를 트래킹 포즈로 합성. 품질은 OK지만 ray marching 때문에 ~1 FPS. 편집은 가능해도 *느려서* closed-loop 시뮬이 어려움.
+<strong>vanilla 3D GS</strong>는 explicit이고 무려 <strong>205 FPS</strong>로 본 논문보다도 빠릅니다. 하지만 정적 장면 전용이라 움직이는 차량의 PSNR*가 21.25로 무너집니다. 속도는 공짜로 얻지만 동역학을 포기한 셈이죠.
 
-<strong>(2) Implicit · self-supervised 분해</strong> — <strong>EmerNeRF, SUDS</strong>. optical flow나 ViT feature로 동적/정적을 알아서 가른다. 박스 annotation이 필요 없는 장점은 크지만 <strong>instance-aware가 아니라</strong> &#x27;저 차만 회전&#x27;은 불가능. AD 편집 시뮬엔 결정적 약점.
+<strong>NSG·MARS</strong>는 implicit + instance-aware입니다. 차량 단위 편집은 되지만 ray-marching 비용으로 1 FPS 미만입니다. <strong>EmerNeRF</strong>는 implicit인데 self-supervision으로 동적 분리는 하되 instance-aware가 아니라 차량 단위 편집·swap이 불가능합니다.
 
-<strong>(3) Explicit · 포인트 기반</strong> — 정적 <strong>3D GS</strong>는 빠르지만 동역학을 못 다룸. 동시기 작업 <strong>DrivingGaussian</strong>(점진적 정적 + 동적 그래프), <strong>PVG</strong>(Periodic Vibration Gaussian)가 함께 등장. Street Gaussians는 *명시적 인스턴스 분리 + 4D SH 외형 + 학습 가능한 트래킹 포즈*의 조합으로 자리잡습니다.
+동시기 Gaussian 연구들도 흥미롭습니다. <strong>DrivingGaussian</strong>은 Incremental 3D Static Gaussians와 Composite Dynamic Gaussian Graphs를 쓰고, <strong>PVG</strong>는 Periodic Vibration Gaussian으로 주기적 진동을 부여해 tracker 없이 동역학을 흡수합니다. PVG의 매력은 tracklet 의존성이 없다는 점이지만, 그 대가로 인스턴스 분리가 약해 &#x27;swap&#x27; 같은 편집은 어렵습니다.
 
-트레이드오프 한 줄: instance-aware를 포기하면 박스 라벨이 필요 없어지지만 *편집을 잃습니다*. Street Gaussians는 &#x27;박스 필요 + 편집 자유&#x27;를 택한 쪽. 내일부터 method 본론으로.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 — Waymo 정량 비교(3D GS·NSG·MARS·EmerNeRF·Ours, PSNR/PSNR*/SSIM/LPIPS/FPS)</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a></div>
-<div class="trigger">Trigger Type C</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Instance-aware representation</div><div class="concept-def">장면 내 각 객체를 식별 가능한 단위로 분리해 표현. 객체 단위 편집·라벨 전파에 필수.</div></div>
-<div class="concept-card"><div class="concept-term">Self-supervised decomposition</div><div class="concept-def">박스 라벨 없이 광학 흐름·feature 일관성 등으로 정적/동적 영역을 분리 학습하는 접근. EmerNeRF·SUDS 계열.</div></div>
-<div class="concept-card"><div class="concept-term">DrivingGaussian / PVG</div><div class="concept-def">본 논문과 동시기에 등장한 3D Gaussian 기반 동적 도시 모델링 연구. 각각 점진적 정적 + 동적 그래프, 주기 진동 가우시안 사용.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">is most similar to ours</div><div class="expr-ko">우리와 가장 유사하다</div><div class="expr-example">Another line of works model the scene as the composition of moving object models and a background model, which is most similar to ours.</div><div class="expr-context">Related Work에서 자기 방법과 가장 가까운 비교군을 명시할 때.</div></div>
-<div class="expr-card"><div class="expr-en">In contrast</div><div class="expr-ko">이와 대조적으로</div><div class="expr-example">In contrast, our method focuses on performing real-time rendering of dynamic urban scenes.</div><div class="expr-context">선행 연구의 한계를 짚은 직후 본인 방법의 차별점을 제시할 때 단락 첫머리에 자주 등장.</div></div>
-<div class="expr-card"><div class="expr-en">Another line of works</div><div class="expr-ko">또 다른 갈래의 연구들은</div><div class="expr-example">Another line of works model the scene as the composition of moving object models and a background model.</div><div class="expr-context">Related Work에서 여러 접근을 카테고리화할 때 카테고리 전환 신호어로 사용.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">EmerNeRF처럼 박스 라벨 없이 동적/정적을 자기지도로 가르는 방식이 *AD 편집 시뮬*에 부족한 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">학습 속도가 너무 빠르기 때문</button><button class="mcq-option" data-correct="true">instance-aware가 아니어서 특정 차량만 골라 편집할 수 없음</button><button class="mcq-option" data-correct="false">도시 거리에 적용 불가</button><button class="mcq-option" data-correct="false">LiDAR가 필수이기 때문</button></div><div class="mcq-explanation">EmerNeRF는 동적 영역을 분해는 하지만 인스턴스 단위 식별이 없음 → &#x27;저 차만 회전&#x27;식 편집 불가.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">동시기 작업 DrivingGaussian과 Street Gaussians의 핵심 공통점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">둘 다 NeRF MLP를 그대로 사용한다</button><button class="mcq-option" data-correct="true">둘 다 명시적 점-기반 3D Gaussian으로 동적 도시 거리를 모델링한다</button><button class="mcq-option" data-correct="false">둘 다 LiDAR 없이 작동한다</button><button class="mcq-option" data-correct="false">둘 다 트래킹 포즈를 사용하지 않는다</button></div><div class="mcq-explanation">두 작업 모두 3D Gaussian 계열의 명시적 표현으로 동적 도시를 다룸 (세부 구조는 다름).</div></div>
+Street Gaussians의 자리: <strong>explicit + instance-aware</strong>를 둘 다 취해, 차량을 떼어내 편집하면서도 135 FPS를 냅니다. 대신 tracker pose가 필요하고(노이즈는 학습으로 보정), 강체 차량에 국한된다는 트레이드오프를 안습니다. &#x27;편집 자유도&#x27;와 &#x27;tracker 독립성&#x27;은 이 분야의 핵심 긴장 관계입니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 4 — Waymo 정성 비교</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a><div class="figure-explain">한 장면에 대해 Ours/3D GS/NSG/MARS/EmerNeRF/Ground Truth를 가로로 비교. NSG·MARS는 흐림·왜곡, 3D GS·EmerNeRF는 움직이는 객체 영역의 ghosting이 보이고, Ours가 선명함. 동적 영역(차량 주변)을 집중해서 볼 것.</div></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Instance-aware vs. self-supervised 동적 분리</div><div class="concept-def">동적 장면 분리에는 두 갈래가 있습니다. (1) instance-aware: tracker가 준 객체 박스로 차량별 모델을 명시적으로 두는 방식(NSG, MARS, 본 논문). 차량 단위 편집·swap·궤적 변경이 가능합니다. (2) self-supervised: optical flow나 ViT feature 감독으로 static/dynamic을 분리(EmerNeRF, SUDS). tracker가 필요 없지만 &#x27;저 차량&#x27;을 개별 객체로 지칭할 수 없어 편집이 어렵습니다. 트레이드오프의 핵심: tracker 의존성을 줄이면 편집 자유도가 떨어지고, 편집 자유도를 높이면 tracker 품질·recall에 묶입니다.</div></div>
+<div class="concept-card"><div class="concept-term">동시기 Gaussian 도심 기법 (DrivingGaussian, PVG)</div><div class="concept-def">본 논문과 같은 시기에 3D Gaussian을 도심에 적용한 연구들입니다. DrivingGaussian은 Incremental 3D Static Gaussians로 배경을 점진 구축하고 Composite Dynamic Gaussian Graphs로 동적 객체를 합성합니다. PVG(Periodic Vibration Gaussian)는 각 가우시안에 주기적 진동 항을 부여해 tracklet 없이 동역학을 표현하죠. 비교 포인트: Street Gaussians는 tracker 기반 instance 분해로 편집성을 극대화한 반면, PVG는 tracker-free라 편집성은 약하지만 라벨 의존이 적습니다. &#x27;어디에 사전지식을 넣을 것인가&#x27;의 설계 선택 차이입니다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">which is most similar to us</div><div class="expr-ko">우리 방법과 가장 유사한</div><div class="expr-example">Another line of works model the scene as a composition of object models and a background model, which is most similar to us.</div><div class="expr-context">관련연구 중 자기 방법과 가장 가까운 계열을 짚어 비교의 기준선을 세울 때.</div></div>
+<div class="expr-card"><div class="expr-en">In contrast, our method focuses on ...</div><div class="expr-ko">이와 대조적으로, 우리 방법은 ~에 초점을 둔다</div><div class="expr-example">In contrast, our method focuses on performing real-time rendering of dynamic urban scenes.</div><div class="expr-context">선행연구 한계를 나열한 직후 자기 기여의 차별점을 대비로 선언할 때.</div></div>
+<div class="expr-card"><div class="expr-en">some concurrent works also explore ...</div><div class="expr-ko">몇몇 동시기 연구들도 ~을 탐구한다</div><div class="expr-example">More recently, some concurrent works also explore 3D Gaussians in urban street scenes.</div><div class="expr-context">우선권을 주장하지 않으면서 동시기 유사 연구를 공정하게 인정할 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">vanilla 3D GS가 Street Gaussians보다 FPS는 높지만(205 vs 135) 도심 시뮬레이션에 부적합한 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">LiDAR를 지원하지 않아서</button><button class="mcq-option" data-correct="true">정적 장면 전용이라 움직이는 객체에서 품질(PSNR*)이 크게 떨어져서</button><button class="mcq-option" data-correct="false">instance-aware라 메모리를 많이 써서</button><button class="mcq-option" data-correct="false">tracker pose가 필요해서</button></div><div class="mcq-explanation">vanilla 3D GS는 정적 가정이라 동적 차량을 모델링 못 하고 PSNR*가 21.25로 무너진다. 속도는 빠르나 동역학을 포기한 결과다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">PVG(Periodic Vibration Gaussian)와 비교했을 때 Street Gaussians가 갖는 차별적 강점과 그 대가는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">tracker가 필요 없으면서도 더 빠르다</button><button class="mcq-option" data-correct="true">instance-aware 편집(swap 등)이 가능하지만 tracker pose에 의존한다</button><button class="mcq-option" data-correct="false">비강체 보행자까지 모델링하지만 학습이 느리다</button><button class="mcq-option" data-correct="false">LiDAR 없이도 동작하지만 FPS가 낮다</button></div><div class="mcq-explanation">Street Gaussians는 tracker 기반 instance 분해로 차량 단위 편집을 얻는 대신 tracker pose·recall에 의존한다. PVG는 그 반대 트레이드오프다.</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">박스 어노테이션이 부정확하거나 부분적으로만 있는 사내 데이터에 instance-aware 방법을 적용한다면, 어떤 절충을 받아들여야 할까요?</div>
+  <div class="oq-question">우리 조직의 데이터 파이프라인에서 &#x27;tracker가 이미 잘 갖춰져 있는가&#x27;가 instance-aware(Street Gaussians) vs self-supervised(EmerNeRF/PVG) 선택을 어떻게 가를까?</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -222,11 +249,11 @@ body {
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>트래킹 포즈 자체가 학습 가능하다는 사실이 이 문제를 어디까지 흡수할 수 있을지 떠올려보세요.</div>
+    <div>편집·swap 같은 시나리오 생성이 목표인지, 아니면 라벨 없이도 동적 장면을 재현하는 게 목표인지에 따라 비용 대비 효용이 달라집니다.</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>AD 데이터의 라벨 노이즈는 *표현 학습 단계에서* 흡수될 수 있다 — 이 가능성이 8일차에서 다룰 pose optimization의 가치를 설명한다.</div>
+    <div>사전지식(tracker 라벨)을 넣을 수 있으면 instance-aware로 편집 자유도를 극대화하는 게 유리하고, 라벨 확보가 비싸거나 recall이 낮으면 self-supervised/tracker-free 쪽 트레이드오프가 합리적이다. 정답은 데이터 자산 상태가 결정한다.</div>
   </div>
 </div></div>
 <div class="nav"><a href="day_3.html">← Day 3</a><a href="day_5.html">Day 5 →</a></div>

@@ -124,8 +124,17 @@ Rotate among 3 types:
 - C (try-this-mentally)
 Each type at least 3 times across 10 days. Day 10 must be C.
 
+## METADATA
+Before the day_N entries, include a "_meta" object with a 
+"paper_title" field — a concise (10-40 char) title for the paper. 
+This will be used as the message header. Use Korean or English 
+as feels natural.
+
 ## OUTPUT FORMAT (return ONLY this JSON, no other text or markdown)
 {
+  "_meta": {
+    "paper_title": "concise paper title — 10-40 chars, can be Korean or English"
+  },
   "day_1": {
     "title": "string (10-20 Korean chars)",
     "intent": "1-line description",

@@ -3,7 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 9 — 숫자가 말하는 것</title>
+<title>Day 9 — 의미 있는 결과들</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -72,6 +82,11 @@ body {
 .figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
 .figure-box .desc { margin-bottom: 10px; }
 .figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
 .trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
 
 /* CONCEPTS */
@@ -169,6 +184,19 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
 </style>
 </head>
 <body>
@@ -177,8 +205,8 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 9</div>
   <div class="hero-tag">결과</div>
-  <h1 class="hero-title">숫자가 말하는 것</h1>
-  <div class="hero-subtitle">Waymo·KITTI·VKITTI2·ablation·응용 핵심 수치 정리</div>
+  <h1 class="hero-title">의미 있는 결과들</h1>
+  <div class="hero-subtitle">논문에 실제로 등장하는 핵심 수치와 ablation, 그리고 각 수치가 무엇을 가능케 하는지 해석</div>
   <div class="progress-bar">
     <div class="progress-fill" style="width: 90%"></div>
   </div>
@@ -192,40 +220,28 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">숫자 정리. Waymo Open 8개 시퀀스, <strong>1066×1600</strong> 해상도.
+<div class="content">오늘은 숫자입니다. 단, 각 숫자가 &#x27;무엇을 가능케 하는지&#x27;와 함께요.
 
-<strong>렌더 품질</strong> (Table 1):
-- PSNR: <strong>34.61</strong> (Ours) vs 30.87 (EmerNeRF), 29.75 (MARS), 28.31 (NSG)
-- *움직이는 차만* 떼어 본 PSNR\*: <strong>30.23</strong> vs 26.54 (MARS) — 가장 어려운 영역에서 격차가 가장 큼
-- LPIPS: 0.079 vs 0.133 (EmerNeRF)
+<strong>품질 + 속도의 동시 달성</strong>: Waymo에서 PSNR <strong>34.61</strong>(EmerNeRF 30.87 대비 +12.1%), 움직이는 객체만 평가하는 PSNR*는 <strong>30.23</strong>(+13.9%), SSIM 0.938, LPIPS 0.079로 전 지표 1위입니다. 동시에 <strong>135 FPS</strong> — NeRF 계열(0.21~0.68 FPS)보다 두 자릿수 배 빠릅니다. vanilla 3D GS가 205 FPS로 더 빠르지만 동적 객체에서 PSNR* 21.25로 무너지는 것과 대조적이죠. 이 조합이 곧 &#x27;실시간 폐루프 + 동적 차량&#x27;을 둘 다 준다는 뜻입니다.
 
-저자 보고치: PSNR <strong>+12.1%</strong>, PSNR\* <strong>+13.9%</strong>.
+<strong>효율</strong>: 단일 <strong>RTX 4090</strong> 한 장으로 <strong>30분</strong> 학습. MARS(&gt;18h)·EmerNeRF(2.5h) 대비 운영 비용이 차원이 다릅니다. 일반화: KITTI 75%에서 25.79(MARS 24.23), VKITTI2 75%에서 30.10(MARS 29.79)으로 데이터셋을 넘어 일관됩니다.
 
-<strong>속도</strong>:
-- 학습 <strong>30분</strong> vs MARS 18시간+, EmerNeRF 2.5시간
-- 렌더 <strong>135 FPS</strong> vs 0.68 / 0.21 — 두 자릿수가 아니라 *세 자릿수* 빠릅니다 (RTX 4090 1장).
+<strong>ablation이 말하는 것</strong>(Table 3, complete 34.61/30.23): pose opt 제거 시 PSNR* 28.24로 급락 — 동적 품질의 최대 기여자입니다. 4D SH 제거 시 29.27, LiDAR 제거 시 29.53.
 
-<strong>KITTI/VKITTI2</strong>도 25/50/75% train 분할 모두에서 MARS·NSG·3D GS를 일관되게 상회 (KITTI-75%: 25.79 vs 24.23).
-
-<strong>Ablation</strong> (Waymo PSNR\*): LiDAR init 빼면 29.53, 4D SH 빼면 29.27, pose opt 빼면 28.24 — 셋 다 유의미.
-
-<strong>응용 검증</strong>: 회전·이동·차량 swap 편집이 자연스럽고(Fig.7), semantic seg <strong>mIoU 58.81</strong>로 Video K-Net의 GT 입력 결과(57.94)를 *오히려 넘깁니다*.
-
-내일: 이걸 당신의 perception 데이터 증강에 어떻게 꽂을 것인가.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 — Waymo 종합 비교(PSNR/PSNR*/SSIM/LPIPS/FPS)</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a></div>
+<strong>가장 흥미로운 결과</strong>: KITTI semantic 분할에서 우리 렌더 결과의 mIoU <strong>58.81</strong>이, 교사 모델(Video K-Net)을 <strong>GT 이미지</strong>에 돌린 57.94보다 높습니다. 3D에서 semantic을 융합해 단일 이미지 예측의 노이즈를 평균해 낸 효과 — 그림자·모호 영역에서 특히 강합니다. 자동 라벨링의 단서가 여기 있습니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 3 — Waymo ablation 연구</div><a href="figures/page_11.png" target="_blank"><img src="figures/page_11.png" alt="Figure" loading="lazy"></a><div class="figure-explain">complete model 대비 w/o LiDAR, w/o 4DSH, w/o pose opt., w/ GT pose 변형의 PSNR/PSNR*/SSIM/LPIPS 표. PSNR* 열을 볼 것: complete 30.23 vs w/o pose opt. 28.24로 가장 큰 낙폭 → pose 최적화가 동적 품질의 핵심 기여자임을 시사.</div></div>
 <div class="trigger">Trigger Type A</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">PSNR*</div><div class="concept-def">전체 이미지가 아닌 *3D 박스가 2D로 투영된 영역*에서만 계산한 PSNR. 동적 객체 복원 품질의 직접 지표.</div></div>
-<div class="concept-card"><div class="concept-term">Ablation study</div><div class="concept-def">구성요소를 하나씩 제거해 각 요소의 기여를 정량 검증하는 실험. 본 논문은 LiDAR init·4D SH·pose opt를 검증.</div></div>
-<div class="concept-card"><div class="concept-term">mIoU 58.81 vs 57.94</div><div class="concept-def">KITTI semantic segmentation에서 Street Gaussians의 렌더 기반 결과가 Video K-Net의 GT 입력 결과를 능가 — 3D 일관성이 2D 분할까지 개선.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">consistently outperforms</div><div class="expr-ko">일관되게 능가한다</div><div class="expr-example">Our method consistently outperforms state-of-the-art methods across all datasets.</div><div class="expr-context">여러 벤치마크에 걸친 우수성을 한 문장으로 요약할 때, abstract와 결과 섹션 첫 문장에서 자주 등장.</div></div>
-<div class="expr-card"><div class="expr-en">by a large margin</div><div class="expr-ko">큰 폭으로</div><div class="expr-example">Our complete model outperforms the model without tracking pose optimization by a large margin.</div><div class="expr-context">ablation 결과의 차이가 통계적·실용적으로 분명할 때 강조 표현.</div></div>
-<div class="expr-card"><div class="expr-en">two magnitudes faster than</div><div class="expr-ko">~보다 두 자릿수만큼 빠른</div><div class="expr-example">Our method renders two magnitudes faster than NeRF-based methods.</div><div class="expr-context">속도 우위를 정량적으로 강조할 때. &#x27;orders of magnitude&#x27;와 거의 동의어.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Waymo Open Dataset에서 Street Gaussians의 *움직이는 차에 대한 PSNR\**가 MARS 대비 얼마나 향상되었나? (저자 보고치)</div><div class="mcq-options"><button class="mcq-option" data-correct="false">약 2%</button><button class="mcq-option" data-correct="true">약 13.9%</button><button class="mcq-option" data-correct="false">약 50%</button><button class="mcq-option" data-correct="false">차이 없음</button></div><div class="mcq-explanation">PSNR* +13.9% (30.23 vs 26.54). 동적 영역에서 가장 큰 격차가 난 것이 핵심 결과 중 하나.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">ablation에서 *pose optimization 제거* 시 평균 PSNR(34.61→34.18)보다 PSNR\*(30.23→28.24) 하락 폭이 훨씬 큰 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">메트릭 계산 오류</button><button class="mcq-option" data-correct="true">pose opt는 주로 객체 좌표계 정합을 개선하므로 그 효과가 동적 영역에 집중되어 나타나기 때문</button><button class="mcq-option" data-correct="false">학습이 덜 됐기 때문</button><button class="mcq-option" data-correct="false">데이터가 부족해서</button></div><div class="mcq-explanation">pose는 객체 점의 world 위치를 결정. 정적 배경 PSNR에는 영향이 적고, 차량 영역(PSNR*)에서 큰 차이로 드러난다.</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">PSNR* (움직이는 객체 전용 화질 지표)</div><div class="concept-def">전체 PSNR은 정적 배경 픽셀이 다수라 동적 영역의 품질 저하를 가려버립니다. 그래서 저자는 3D tracked box를 2D로 투영한 마스크 내부 픽셀에서만 MSE를 계산해 PSNR*를 정의합니다. 박스가 객체를 완전히 덮도록 길이·폭을 1.5배 확장하죠. 왜 중요한가: 자율주행 시뮬레이션의 가치는 &#x27;움직이는 차량을 얼마나 잘 그리는가&#x27;에 있으므로, 전체 PSNR보다 PSNR*가 방법의 핵심 역량을 더 정직하게 드러냅니다. 함정: 박스 확장 비율·tracker 마스크 품질에 따라 값이 흔들릴 수 있어 공정 비교 시 동일 마스크를 써야 합니다.</div></div>
+<div class="concept-card"><div class="concept-term">렌더된 semantic이 교사를 능가하는 현상 (3D 융합 노이즈 제거)</div><div class="concept-def">Street Gaussians의 렌더 semantic map mIoU(58.81)가, 교사 Video K-Net을 GT 이미지에 적용한 결과(57.94)와 렌더 이미지에 적용한 결과(53.81)를 모두 웃돕니다. 원리: 2D 예측은 프레임마다 독립이라 노이즈가 크지만, semantic logit을 3D 가우시안에 얹어 다중 시점으로 융합·최적화하면 시간·공간 일관성이 강제되어 단일 프레임 노이즈가 평균화됩니다. 특히 그림자·경계 같은 모호 영역에서 이득이 큽니다. 시사점: 재구성을 통한 &#x27;auto-labeling/label denoising&#x27;의 가능성을 보여주는 결과로, 직접적 응용 가치가 큽니다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">our model achieves the best performance among all the methods with a X% increase in ...</div><div class="expr-ko">우리 모델은 모든 방법 중 최고 성능을 달성하며 ~에서 X% 향상을 보인다</div><div class="expr-example">Our model achieves the best performance among all the methods with a 12.1% increase in PSNR.</div><div class="expr-context">정량 우위를 구체적 향상폭(%)과 함께 단정적으로 보고할 때.</div></div>
+<div class="expr-card"><div class="expr-en">renders two magnitudes faster than ...</div><div class="expr-ko">~보다 두 자릿수(약 100배) 빠르게 렌더링한다</div><div class="expr-example">Our method renders two magnitudes faster than NeRF-based methods.</div><div class="expr-context">속도 우위를 자릿수(order of magnitude) 단위로 강조할 때.</div></div>
+<div class="expr-card"><div class="expr-en">It is interesting to notice that ...</div><div class="expr-ko">~라는 점은 흥미롭다</div><div class="expr-example">It is interesting to notice that our result is even better than the model trained with ground-truth poses.</div><div class="expr-context">직관에 반하는 결과를 독자의 주의를 끌어 부각할 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">ablation(Table 3)에서 &#x27;동적 객체 품질(PSNR*)&#x27;에 가장 크게 기여한 구성요소는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">LiDAR 초기화 (제거 시 29.53)</button><button class="mcq-option" data-correct="false">4D SH (제거 시 29.27)</button><button class="mcq-option" data-correct="true">tracked pose 최적화 (제거 시 28.24)</button><button class="mcq-option" data-correct="false">하늘 cubemap</button></div><div class="mcq-explanation">pose opt 제거 시 PSNR*가 30.23→28.24로 가장 크게 떨어진다. 노이즈 pose 보정이 동적 품질의 최대 기여자임을 보여준다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">렌더된 semantic map의 mIoU(58.81)가 GT 이미지에 교사를 돌린 값(57.94)보다 높은 이유로 가장 적절한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">렌더 이미지가 GT보다 고해상도라서</button><button class="mcq-option" data-correct="true">semantic을 3D 가우시안에 융합해 다중 시점으로 최적화하면 단일 프레임 예측 노이즈가 평균화되기 때문</button><button class="mcq-option" data-correct="false">교사 모델이 KITTI에 과적합되어서</button><button class="mcq-option" data-correct="false">PSNR*로 평가했기 때문</button></div><div class="mcq-explanation">3D에 라벨을 얹어 다중 시점으로 융합하면 시공간 일관성이 강제되어 프레임별 2D 예측의 노이즈가 줄어든다 — label denoising 효과다.</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">PSNR·LPIPS 같은 렌더 품질 지표 외에, 당신의 perception 모델 학습용 합성 데이터의 *실제 유용성*을 측정하려면 어떤 지표를 추가해야 할까요?</div>
+  <div class="oq-question">렌더 semantic이 교사를 능가한다는 이 결과를, 우리 인지팀의 데이터 라벨링 비용 절감 파이프라인에 어떻게 끼워 넣을 수 있을까?</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -233,11 +249,11 @@ body {
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>&#x27;예쁜 영상&#x27;과 &#x27;학습에 도움되는 영상&#x27;은 같지 않습니다 — downstream task 측면에서.</div>
+    <div>재구성으로 얻은 3D 일관 라벨을 다시 2D로 투영해 &#x27;pseudo-GT&#x27;로 쓰거나, 모호 영역(그림자·경계)의 라벨을 정제하는 용도를 떠올려 보세요.</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>PSNR은 *시각적 충실도*만 측정한다 — data augmentation의 진짜 가치는 *downstream perception 성능 향상*으로만 검증된다. 합성 데이터 평가는 perception 메트릭과 동반되어야 한다.</div>
+    <div>재구성 기반 3D semantic 융합은 단순 시뮬레이션을 넘어 &#x27;label denoising / auto-labeling&#x27; 엔진이 될 수 있다 — 한 번 재구성해 두면 노이즈가 줄어든 일관 라벨을 임의 시점으로 무한히 투영해 낼 수 있다.</div>
   </div>
 </div></div>
 <div class="nav"><a href="day_8.html">← Day 8</a><a href="day_10.html">Day 10 →</a></div>

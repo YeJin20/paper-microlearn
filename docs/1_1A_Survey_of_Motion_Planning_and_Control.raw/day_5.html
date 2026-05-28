@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 2 — 왜 NeRF는 부족했나</title>
+<title>Day 5 — 전체 파이프라인 조감도</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
@@ -203,12 +203,12 @@ body {
 
 
 <div class="hero">
-  <div class="hero-meta">오늘의 학습 · DAY 2</div>
-  <div class="hero-tag">배경</div>
-  <h1 class="hero-title">왜 NeRF는 부족했나</h1>
-  <div class="hero-subtitle">NeRF 계열(Block-NeRF, compositional NeRF, EmerNeRF, point-based)의 한계를 비용 구조 관점에서 진단</div>
+  <div class="hero-meta">오늘의 학습 · DAY 5</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">전체 파이프라인 조감도</h1>
+  <div class="hero-subtitle">deep dive 전, 결정 계층과 차량 모델 두 축으로 전체 파이프라인을 개관</div>
   <div class="progress-bar">
-    <div class="progress-fill" style="width: 20%"></div>
+    <div class="progress-fill" style="width: 50%"></div>
   </div>
 </div>
 
@@ -220,26 +220,26 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">어제의 요구사항(실시간 + 동적)을 NeRF 계열은 왜 충족 못 했을까요? 비용 구조를 보면 답이 보입니다.
+<div class="content">오늘은 deep dive 전에 &#x27;지도&#x27;를 펼칩니다. 전체 파이프라인은 두 축으로 봅니다.
 
-<strong>Block-NeRF</strong>는 대규모 장면을 블록으로 쪼개 각각을 NeRF로 모델링합니다. 사실적이지만 네트워크 파라미터가 방대해 학습이 오래 걸리고, 결정적으로 <strong>움직이는 차량을 다루지 못합니다</strong>. 자율주행에선 치명적이죠.
+(축1: 결정 계층, Fig II.1) 목적지 → <strong>경로계획</strong>(도로망을 가중그래프로 보고 최단경로; 대륙규모 네트워크도 전처리 후 ms 단위로 푼다) → <strong>행동결정</strong>(차선유지·차선변경·교차로 양보 등 국소 과업 선택; 유한상태기계나 (PO)MDP로 타 참가자 의도의 불확실성 처리) → <strong>모션계획</strong>(국소 충돌회피·동역학 가능 궤적 생성) → <strong>피드백제어</strong>(추종오차 실시간 보정). 각 층의 출력이 다음 층의 입력이 되는 직렬 구조죠.
 
-다음은 compositional 계열(NSG, MARS)입니다. 장면을 정적 배경 + foreground 차량으로 나누고, tracked pose로 관측 공간을 canonical 공간에 매핑한 뒤 NeRF로 차량의 geometry/appearance를 학습합니다. 합리적인 결과를 내지만, 근본 문제는 ray-marching입니다. NeRF는 광선 하나마다 수백 개 점을 MLP에 통과시켜 적분 $C(r)=\int T(t)\sigma(t)c(t)\,dt$ 를 근사합니다. compositional이면 객체마다 별도 ray-marching이 필요해 비용이 곱해지죠. 그 결과 <strong>MARS는 18시간 이상 학습에 0.68 FPS, EmerNeRF는 0.21 FPS</strong>에 머뭅니다.
+(축2: 모델, Section III) 계획과 제어는 모두 차량 모델 위에서 돕니다. 저속·주차엔 미끄러짐 없음을 가정한 <strong>기구학 단일트랙(bicycle) 모델</strong>이면 충분하고, 고속·미끄러운 노면처럼 관성효과가 커지면 타이어 힘과 슬립을 다루는 <strong>동역학 모델</strong>이 필요합니다. 즉 모델 선택이 곧 계획·제어의 난이도를 정합니다(Day 1의 트레이드오프!).
 
-EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>instance-aware가 아니어서</strong> 개별 차량을 떼어내 편집할 수 없고, 새 timestep의 동적 영역에서 잔상이 생깁니다. point-based 렌더링은 dense point cloud가 없으면 저밀도 영역이 흐릿해집니다. 한 줄로 요약하면: NeRF로 폐루프를 돌리는 건 &#x27;프레임마다 장면 전체를 적분으로 다시 그리는&#x27; 셈이라 실시간이 원천 봉쇄됩니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 — Waymo 정량 비교 (특히 FPS 행)</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a><div class="figure-explain">Waymo에서 5개 방법의 PSNR/SSIM/LPIPS/PSNR*/FPS를 비교한 표. FPS 행에 주목: NSG 0.47, MARS 0.68, EmerNeRF 0.21로 1 FPS 미만인 반면 Ours는 135. 품질 지표와 속도의 괴리를 한눈에 보여줌.</div></div>
+비유하면 계층은 &#x27;여행 일정&#x27;(대륙→도시→골목→발걸음)이고, 모델은 &#x27;내 몸 상태&#x27;(평지냐 빙판이냐)입니다. 둘이 맞아야 안전하죠. 흥미로운 비대칭도 하나—경로계획은 정적 그래프라 거의 즉시 풀리지만, 모션계획은 연속·미분제약·동적 장애물 때문에 가장 무거운 병목입니다. 다음 3일간 모델 → 모션계획 → 제어 순으로 한 층씩 파고듭니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure II.1 — 의사결정 계층 다이어그램</div><a href="figures/page_3.png" target="_blank"><img src="figures/page_3.png" alt="Figure" loading="lazy"></a><div class="figure-explain">상단 목적지 입력 → Route Planning → Behavioral Layer(Lane Following·Change Lanes·Negotiate Intersection·Parking 등 박스) → Motion Planning → Local Feedback Control로 내려가는 수직 파이프라인. 좌측엔 도로망데이터·인지된 에이전트 입력, 우측엔 각 단계 출력(웨이포인트→모션사양→기준궤적→조향/가감속 명령).</div></div>
 <div class="trigger">Trigger Type B</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Volumetric ray-marching의 비용 구조</div><div class="concept-def">NeRF는 픽셀의 색을 광선을 따라 $C(r)=\int_{t_n}^{t_f} T(t)\,\sigma(t)\,c(t)\,dt$ 로 적분하며, 이를 광선당 수십~수백 개 샘플 각각에서 MLP를 질의해 근사합니다. 느린 본질적 이유가 여기 있습니다: 픽셀×샘플×(MLP forward) 만큼의 연산이 매 프레임 필요하죠. 도심처럼 광선이 멀리 뻗는 장면에선 샘플 수가 더 늘어납니다. 흔한 오해: hash grid(Instant-NGP, EmerNeRF)가 이를 완전히 해결한다는 것. 질의는 빨라지지만 광선당 다중 샘플 적분 구조 자체는 남아 실시간 폐루프엔 여전히 부족합니다.</div></div>
-<div class="concept-card"><div class="concept-term">Compositional NeRF의 observation-to-canonical 매핑</div><div class="concept-def">NSG·MARS류는 tracked pose로 움직이는 차량을 정지된 canonical 공간으로 역변환한 뒤, 그 공간에서 NeRF가 객체의 형상/외관을 학습합니다. 강체 가정 덕에 시간에 따른 객체 모델을 한 번만 학습하면 된다는 장점이 있죠. 그러나 객체마다 별도의 NeRF/ray-marching이 필요해 비용이 객체 수에 비례·중첩됩니다. 또한 tracker pose 오차가 canonical 정합을 흐트러뜨려 흐릿한 결과를 낳습니다. 보행자 같은 비강체에는 canonical 가정이 깨진다는 한계도 있습니다.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">However, significant limitations are their slow training and rendering speed.</div><div class="expr-ko">그러나 중대한 한계는 느린 학습·렌더링 속도다</div><div class="expr-example">These methods enable photo-realistic synthesis; however, significant limitations are their slow training and rendering speed.</div><div class="expr-context">선행연구의 장점을 인정한 뒤 핵심 약점을 대비시켜 제시할 때(however 전환).</div></div>
-<div class="expr-card"><div class="expr-en">are still limited to the high training cost and low rendering speed</div><div class="expr-ko">여전히 높은 학습 비용과 낮은 렌더링 속도에 발목 잡혀 있다</div><div class="expr-example">Although these methods produce reasonable results, they are still limited to the high training cost and low rendering speed.</div><div class="expr-context">기존 방법이 &#x27;되긴 하지만 결정적 제약이 남는다&#x27;는 점을 강조할 때.</div></div>
-<div class="expr-card"><div class="expr-en">cannot handle dynamic vehicles, which are crucial in ...</div><div class="expr-ko">~에서 결정적인 동적 차량을 다루지 못한다</div><div class="expr-example">Moreover, it cannot handle dynamic vehicles, which are crucial aspects in autonomous driving environment simulation.</div><div class="expr-context">한계의 &#x27;도메인 중요도&#x27;까지 덧붙여 비판의 무게를 실을 때.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Compositional NeRF(NSG/MARS)가 단일 NeRF보다 렌더링이 더 느려지는 핵심 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">이미지 해상도를 더 높이기 때문</button><button class="mcq-option" data-correct="true">객체마다 별도의 ray-marching이 필요해 적분 비용이 객체 수만큼 중첩되기 때문</button><button class="mcq-option" data-correct="false">LiDAR 입력을 추가로 처리하기 때문</button><button class="mcq-option" data-correct="false">더 큰 배치 크기를 쓰기 때문</button></div><div class="mcq-explanation">정적 배경과 각 객체를 별도 NeRF로 ray-marching하므로 비용이 곱해진다. 이것이 1 FPS 미만 속도의 구조적 원인이다.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">EmerNeRF가 자율주행 편집·시뮬레이션 용도로 부족한 점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">LiDAR를 쓰지 못한다</button><button class="mcq-option" data-correct="true">static/dynamic은 분리하지만 instance-aware가 아니어서 개별 차량을 떼어내 편집할 수 없다</button><button class="mcq-option" data-correct="false">정적 장면만 모델링할 수 있다</button><button class="mcq-option" data-correct="false">학습이 30분 안에 끝나지 않는다</button></div><div class="mcq-explanation">EmerNeRF는 self-supervision으로 정적/동적은 나누지만 인스턴스 단위 표현이 아니라서 차량 단위 편집·합성이 불가능하다.</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">기구학 단일트랙(bicycle) 모델</div><div class="concept-def">앞뒤 바퀴를 강체 링크로 잇고 평면 운동·바퀴 무슬립을 가정한 가장 기본 모델. 후륜 기준 미분제약은 $\dot{x}_r = v_r\cos\theta,\ \dot{y}_r = v_r\sin\theta,\ \dot{\theta} = \tfrac{v_r}{l}\tan\delta$ (여기서 $l$=축거, $\delta$=조향각). 왜 쓰나: 두 바퀴를 하나로 묶어 상태를 3차원($x,y,\theta$)으로 줄이면서도 비홀로노믹 거동을 포착한다. 저속·주차·도심처럼 관성효과가 작을 때 유효하다. 변형으로 $v_r$ 고정 시 Dubins 차, 전후진 허용 시 Reeds-Shepp 차. 함정: 순간적 조향각 변화를 허용하므로 연속 곡률이 필요하면 조향각/조향률을 상태로 증강해야 하고, 한계조작·저마찰에선 깨진다.</div></div>
+<div class="concept-card"><div class="concept-term">행동결정의 불확실성 처리 (FSM vs POMDP)</div><div class="concept-def">행동층은 &#x27;지금 무엇을 할지&#x27;(차선유지/변경, 교차로 양보 등)를 결정한다. DARPA Urban Challenge 대다수 팀은 운전 맥락을 상태로, 인지 결과를 전이조건으로 하는 **유한상태기계(FSM)**+휴리스틱을 썼다. 그러나 실제 도심은 타 참가자 의도가 불확실해, 이를 명시적으로 다루려 **MDP/POMDP**로 정식화하고 근사해법(예: 보행자 의도를 잠재상태로)을 쓴다. 직관: FSM은 &#x27;규칙표&#x27;라 명확하지만 예외에 취약(brittle)하고, POMDP는 부분관측 불확실성을 원리적으로 다루나 계산이 비싸다. 의도 예측엔 GMM·가우시안 프로세스 회귀 등 학습 기법도 등장한다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">At the highest level, ...</div><div class="expr-ko">가장 상위 수준에서는 ~</div><div class="expr-example">At the highest level, a vehicle&#x27;s decision-making system must select a route through the road network.</div><div class="expr-context">계층적 시스템을 위에서 아래로 설명하기 시작할 때</div></div>
+<div class="expr-card"><div class="expr-en">is hierarchically decomposed into ...</div><div class="expr-ko">~로 계층적으로 분해된다</div><div class="expr-example">The decision-making system is hierarchically decomposed into four components.</div><div class="expr-context">시스템 아키텍처의 모듈 구성을 정의할 때</div></div>
+<div class="expr-card"><div class="expr-en">This is followed by ...</div><div class="expr-ko">그 다음에 ~이 이어진다</div><div class="expr-example">This is followed by a behavioral layer, which decides on a local driving task.</div><div class="expr-context">순차적 파이프라인의 단계를 연결해 서술할 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">기구학 단일트랙 모델만으로 충분한 상황으로 가장 적절한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">빙판에서의 고속 긴급 회피</button><button class="mcq-option" data-correct="true">저속 주차 및 일반 도심 주행</button><button class="mcq-option" data-correct="false">트랙에서의 최소 랩타임 주행</button><button class="mcq-option" data-correct="false">급가속 시 타이어 슬립 제어</button></div><div class="mcq-explanation">기구학 모델은 무슬립 가정이 유효한 저속·주차·도심에서 적합하다. 관성·타이어 슬립이 커지는 고속·저마찰에선 동역학 모델이 필요하다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">행동결정 층에서 POMDP를 도입하는 주된 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">차량 동역학을 더 정밀히 모델링하려고</button><button class="mcq-option" data-correct="true">타 교통참가자 의도의 부분관측 불확실성을 원리적으로 다루려고</button><button class="mcq-option" data-correct="false">최단경로를 더 빨리 계산하려고</button><button class="mcq-option" data-correct="false">제어 안정성을 보장하려고</button></div><div class="mcq-explanation">도심 주행의 핵심 난점은 타 참가자 의도가 불확실하고 부분관측이라는 점이다. POMDP는 이 불확실성을 명시적으로 다루는 틀을 제공한다.</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">만약 우리 파이프라인이 이미 정확한 3D tracker를 갖고 있다면, NeRF 기반 compositional 표현의 비용 문제 중 어떤 부분은 여전히 남고 어떤 부분은 완화될까?</div>
+  <div class="oq-question">경로계획은 대륙 규모도 ms로 푸는데 모션계획은 가장 무거운 병목이다. 두 문제의 본질적 차이는 무엇인가?</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -247,14 +247,14 @@ EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>ins
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>tracker가 좋아지면 &#x27;pose 정합 오차로 인한 흐림&#x27;은 줄어듭니다. 하지만 렌더링 속도를 결정하는 건 pose 품질이 아니라 무엇이었는지 다시 생각해 보세요.</div>
+    <div>한쪽은 정적 가중그래프 위 최단경로(전처리로 가속 가능), 다른 쪽은 연속공간·미분제약·동적 장애물을 동시에 다룬다.</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>tracker 품질은 &#x27;정합 정확도&#x27; 문제를 완화할 뿐, 느린 속도의 근본 원인인 광선당 다중 샘플 적분(ray-marching)은 그대로 남는다. 표현(representation) 자체를 바꾸지 않으면 실시간은 오지 않는다.</div>
+    <div>경로계획과 모션계획은 같은 &#x27;계획&#x27;이라도 복잡도 클래스가 다르다. 정적 이산 그래프 최단경로는 전처리로 ms에 풀리지만, 연속·미분제약·동적 모션계획은 근본적으로 더 어려운 문제다.</div>
   </div>
 </div></div>
-<div class="nav"><a href="day_1.html">← Day 1</a><a href="day_3.html">Day 3 →</a></div>
+<div class="nav"><a href="day_4.html">← Day 4</a><a href="day_6.html">Day 6 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
 <script>
 document.querySelectorAll('.tab').forEach(tab => {

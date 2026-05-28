@@ -179,6 +179,19 @@ body {
 .day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
 .index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
 .index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
 """
 
 
@@ -454,21 +467,37 @@ def render_day(num: int, data: dict, total: int) -> str:
 def render_index(curriculum: dict, paper_id: str) -> str:
     keys = sorted([k for k in curriculum if k.startswith("day_")],
                   key=lambda x: int(x.split("_")[1]))
+    paper_title = curriculum.get("_meta", {}).get("paper_title", paper_id)
     items = []
     for k in keys:
         num = int(k.split("_")[1])
         title = html.escape(curriculum[k].get("title", ""))
         items.append(
-            f'<li><a href="day_{num}.html">'
+            f'<li data-day="{num}"><a href="day_{num}.html">'
             f'<div class="day-num">DAY {num}</div>'
             f'<div class="day-title">{title}</div>'
             '</a></li>'
         )
     body = f"""
 <div class="index-meta">arXiv {paper_id}</div>
-<h1 class="index-title">10일 마이크로러닝</h1>
-<ul class="day-list">{chr(10).join(items)}</ul>"""
-    return page(f"{paper_id} — 10일 마이크로러닝", body)
+<h1 class="index-title">{html.escape(paper_title)}</h1>
+<ul class="day-list">{chr(10).join(items)}</ul>
+<script>
+const params = new URLSearchParams(window.location.search);
+const today = params.get('day');
+if (today) {{
+  const el = document.querySelector(`li[data-day="${{today}}"]`);
+  if (el) {{
+    el.classList.add('today');
+    const badge = document.createElement('span');
+    badge.className = 'today-badge';
+    badge.textContent = '오늘';
+    el.querySelector('.day-num').appendChild(badge);
+    el.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+  }}
+}}
+</script>"""
+    return page(f"{paper_title} — 10일 마이크로러닝", body)
 
 
 def render_paper(arxiv_id: str):

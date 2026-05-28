@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 2 — 왜 NeRF는 부족했나</title>
+<title>Day 10 — 내 연구에 어떻게 쓸까</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
@@ -203,12 +203,12 @@ body {
 
 
 <div class="hero">
-  <div class="hero-meta">오늘의 학습 · DAY 2</div>
-  <div class="hero-tag">배경</div>
-  <h1 class="hero-title">왜 NeRF는 부족했나</h1>
-  <div class="hero-subtitle">NeRF 계열(Block-NeRF, compositional NeRF, EmerNeRF, point-based)의 한계를 비용 구조 관점에서 진단</div>
+  <div class="hero-meta">오늘의 학습 · DAY 10</div>
+  <div class="hero-tag">응용</div>
+  <h1 class="hero-title">내 연구에 어떻게 쓸까</h1>
+  <div class="hero-subtitle">AD 연구에의 구체적 적용 각도·후속 흐름·성찰 질문으로 마무리</div>
   <div class="progress-bar">
-    <div class="progress-fill" style="width: 20%"></div>
+    <div class="progress-fill" style="width: 100%"></div>
   </div>
 </div>
 
@@ -220,26 +220,24 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">어제의 요구사항(실시간 + 동적)을 NeRF 계열은 왜 충족 못 했을까요? 비용 구조를 보면 답이 보입니다.
+<div class="content">마지막 날, 이 2016년 서베이를 2026년 당신의 연구에 어떻게 쓸지 정리합니다.
 
-<strong>Block-NeRF</strong>는 대규모 장면을 블록으로 쪼개 각각을 NeRF로 모델링합니다. 사실적이지만 네트워크 파라미터가 방대해 학습이 오래 걸리고, 결정적으로 <strong>움직이는 차량을 다루지 못합니다</strong>. 자율주행에선 치명적이죠.
+첫째, 이 논문은 <strong>시스템 설계 체크리스트</strong>로 가장 강력합니다. 새 플래너를 제안할 때 Table I의 축—모델 가정·완전성·최적성·복잡도·anytime 여부—로 자기 기법을 자리매김하면 리뷰어 설득이 쉬워집니다. 둘째, <strong>계획기–제어기 호환성</strong>이라는 결론을 잊지 마세요. 더 효율적인 플래너가 더 무거운 MPC를 요구하거나, 단순 제어기가 더 정밀한 계획 모델을 요구하는 식의 결합 비용을 시스템 수준에서 따져야 합니다.
 
-다음은 compositional 계열(NSG, MARS)입니다. 장면을 정적 배경 + foreground 차량으로 나누고, tracked pose로 관측 공간을 canonical 공간에 매핑한 뒤 NeRF로 차량의 geometry/appearance를 학습합니다. 합리적인 결과를 내지만, 근본 문제는 ray-marching입니다. NeRF는 광선 하나마다 수백 개 점을 MLP에 통과시켜 적분 $C(r)=\int T(t)\sigma(t)c(t)\,dt$ 를 근사합니다. compositional이면 객체마다 별도 ray-marching이 필요해 비용이 곱해지죠. 그 결과 <strong>MARS는 18시간 이상 학습에 0.68 FPS, EmerNeRF는 0.21 FPS</strong>에 머뭅니다.
+후속 흐름과 연결하면, 이 고전적 모듈형 스택은 학습 기반 예측·계획, 미분가능(differentiable) 플래너, end-to-end 정책으로 진화했습니다. 하지만 <strong>비홀로노믹·마찰원 같은 물리 제약</strong>과 <strong>안전성 보장</strong>은 사라지지 않았고, 오히려 학습 기반 기법을 검증·제약하는 사전지식으로 재등장합니다—예컨대 학습 플래너 출력에 Dubins/곡률 제약을 투영하거나, MPC를 안전 필터(safety filter)로 감싸는 식이죠. 즉 이 서베이는 &#x27;무엇이 변해도 변하지 않는 골격&#x27;을 줍니다. 비유하자면, 새 건축 양식이 와도 하중·재료의 역학은 그대로이듯, 자율주행의 운동학·동역학·복잡도 벽은 당신의 학습 모델 위에서도 똑같이 작동합니다. 마지막 질문 하나로 10일을 닫습니다—당신의 최신 학습 기반 모듈은 이 골격의 어느 칸을 대체하고, 어느 칸을 여전히 빌리고 있나요?</div>
 
-EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>instance-aware가 아니어서</strong> 개별 차량을 떼어내 편집할 수 없고, 새 timestep의 동적 영역에서 잔상이 생깁니다. point-based 렌더링은 dense point cloud가 없으면 저밀도 영역이 흐릿해집니다. 한 줄로 요약하면: NeRF로 폐루프를 돌리는 건 &#x27;프레임마다 장면 전체를 적분으로 다시 그리는&#x27; 셈이라 실시간이 원천 봉쇄됩니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 — Waymo 정량 비교 (특히 FPS 행)</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a><div class="figure-explain">Waymo에서 5개 방법의 PSNR/SSIM/LPIPS/PSNR*/FPS를 비교한 표. FPS 행에 주목: NSG 0.47, MARS 0.68, EmerNeRF 0.21로 1 FPS 미만인 반면 Ours는 135. 품질 지표와 속도의 괴리를 한눈에 보여줌.</div></div>
-<div class="trigger">Trigger Type B</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Volumetric ray-marching의 비용 구조</div><div class="concept-def">NeRF는 픽셀의 색을 광선을 따라 $C(r)=\int_{t_n}^{t_f} T(t)\,\sigma(t)\,c(t)\,dt$ 로 적분하며, 이를 광선당 수십~수백 개 샘플 각각에서 MLP를 질의해 근사합니다. 느린 본질적 이유가 여기 있습니다: 픽셀×샘플×(MLP forward) 만큼의 연산이 매 프레임 필요하죠. 도심처럼 광선이 멀리 뻗는 장면에선 샘플 수가 더 늘어납니다. 흔한 오해: hash grid(Instant-NGP, EmerNeRF)가 이를 완전히 해결한다는 것. 질의는 빨라지지만 광선당 다중 샘플 적분 구조 자체는 남아 실시간 폐루프엔 여전히 부족합니다.</div></div>
-<div class="concept-card"><div class="concept-term">Compositional NeRF의 observation-to-canonical 매핑</div><div class="concept-def">NSG·MARS류는 tracked pose로 움직이는 차량을 정지된 canonical 공간으로 역변환한 뒤, 그 공간에서 NeRF가 객체의 형상/외관을 학습합니다. 강체 가정 덕에 시간에 따른 객체 모델을 한 번만 학습하면 된다는 장점이 있죠. 그러나 객체마다 별도의 NeRF/ray-marching이 필요해 비용이 객체 수에 비례·중첩됩니다. 또한 tracker pose 오차가 canonical 정합을 흐트러뜨려 흐릿한 결과를 낳습니다. 보행자 같은 비강체에는 canonical 가정이 깨진다는 한계도 있습니다.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">However, significant limitations are their slow training and rendering speed.</div><div class="expr-ko">그러나 중대한 한계는 느린 학습·렌더링 속도다</div><div class="expr-example">These methods enable photo-realistic synthesis; however, significant limitations are their slow training and rendering speed.</div><div class="expr-context">선행연구의 장점을 인정한 뒤 핵심 약점을 대비시켜 제시할 때(however 전환).</div></div>
-<div class="expr-card"><div class="expr-en">are still limited to the high training cost and low rendering speed</div><div class="expr-ko">여전히 높은 학습 비용과 낮은 렌더링 속도에 발목 잡혀 있다</div><div class="expr-example">Although these methods produce reasonable results, they are still limited to the high training cost and low rendering speed.</div><div class="expr-context">기존 방법이 &#x27;되긴 하지만 결정적 제약이 남는다&#x27;는 점을 강조할 때.</div></div>
-<div class="expr-card"><div class="expr-en">cannot handle dynamic vehicles, which are crucial in ...</div><div class="expr-ko">~에서 결정적인 동적 차량을 다루지 못한다</div><div class="expr-example">Moreover, it cannot handle dynamic vehicles, which are crucial aspects in autonomous driving environment simulation.</div><div class="expr-context">한계의 &#x27;도메인 중요도&#x27;까지 덧붙여 비판의 무게를 실을 때.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Compositional NeRF(NSG/MARS)가 단일 NeRF보다 렌더링이 더 느려지는 핵심 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">이미지 해상도를 더 높이기 때문</button><button class="mcq-option" data-correct="true">객체마다 별도의 ray-marching이 필요해 적분 비용이 객체 수만큼 중첩되기 때문</button><button class="mcq-option" data-correct="false">LiDAR 입력을 추가로 처리하기 때문</button><button class="mcq-option" data-correct="false">더 큰 배치 크기를 쓰기 때문</button></div><div class="mcq-explanation">정적 배경과 각 객체를 별도 NeRF로 ray-marching하므로 비용이 곱해진다. 이것이 1 FPS 미만 속도의 구조적 원인이다.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">EmerNeRF가 자율주행 편집·시뮬레이션 용도로 부족한 점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">LiDAR를 쓰지 못한다</button><button class="mcq-option" data-correct="true">static/dynamic은 분리하지만 instance-aware가 아니어서 개별 차량을 떼어내 편집할 수 없다</button><button class="mcq-option" data-correct="false">정적 장면만 모델링할 수 있다</button><button class="mcq-option" data-correct="false">학습이 30분 안에 끝나지 않는다</button></div><div class="mcq-explanation">EmerNeRF는 self-supervision으로 정적/동적은 나누지만 인스턴스 단위 표현이 아니라서 차량 단위 편집·합성이 불가능하다.</div></div>
+<div class="trigger">Trigger Type C</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">물리 사전지식으로서의 고전 계획·제어</div><div class="concept-def">모듈형 스택이 학습 기반·end-to-end로 진화해도, 고전 모션계획·제어의 핵심은 사라지지 않고 &#x27;사전지식·제약·검증 도구&#x27;로 재배치된다. 예: 학습 플래너 출력을 Dubins/Reeds-Shepp나 곡률 상한으로 투영해 운동학적 실현가능성을 강제하고, 미분가능 MPC/제어 배리어 함수를 안전 필터로 정책 위에 얹어 보장을 회복한다. 왜 유효한가: 비홀로노믹 제약·마찰원·복잡도 벽은 데이터로 &#x27;학습&#x27;되는 게 아니라 물리·계산의 불변 사실이기 때문이다. 함정: 학습 모듈이 이 제약을 암묵적으로만 만족한다고 가정하면, 분포 밖(OOD) 상황에서 실현 불가능·불안전한 출력을 낼 수 있다.</div></div>
+<div class="concept-card"><div class="concept-term">시스템 수준 호환성·통합 비용</div><div class="concept-def">서베이의 결론적 설계 원리: 모듈을 각각 최적화한다고 전체가 최적이 되지 않는다. 더 효율적인 플래너가 더 무거운 제어기(MPC)를 요구하거나, 단순 제어기가 더 정밀한 계획 모델을 전제하는 식으로 모듈 간 요구가 얽힌다. 따라서 planner-controller co-design 관점에서 계산예산·모델 충실도·보장의 호환성을 함께 평가해야 한다. 직관: 톱니바퀴를 따로 갈면 안 맞물린다. Table I·II는 바로 이 호환성·계산 트레이드오프를 시스템 설계 선택의 참조로 제공한다. 함정: 벤치마크에서 한 모듈 점수만 올리면 통합 시 다른 모듈의 부담·실패모드를 키울 수 있다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">serves as a reference for ...</div><div class="expr-ko">~을 위한 참조 자료로 기능한다</div><div class="expr-example">The survey serves as a reference for assessing compatibility and computational tradeoffs in system-level design.</div><div class="expr-context">자신의 기여가 후속 연구·설계에 어떻게 쓰이는지 제시할 때</div></div>
+<div class="expr-card"><div class="expr-en">potential areas for future research</div><div class="expr-ko">향후 연구의 잠재적 영역</div><div class="expr-example">We conclude with remarks on the state of the art and potential areas for future research.</div><div class="expr-context">결론에서 한계를 미래 연구 방향으로 전환해 마무리할 때</div></div>
+<div class="expr-card"><div class="expr-en">the task is then to integrate ... so that ...</div><div class="expr-ko">그렇다면 과제는 ~하도록 ~을 통합하는 것이다</div><div class="expr-example">The task is then to integrate these methods so that their interactions are semantically valid and computationally efficient.</div><div class="expr-context">개별 기법을 시스템으로 통합하는 도전 과제를 정식화할 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">이 서베이가 강조하는 결론적 설계 교훈으로 가장 정확한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">각 모듈을 독립적으로 최적화하면 전체가 최적이 된다</button><button class="mcq-option" data-correct="true">계획기와 제어기의 호환성·통합 비용을 시스템 수준에서 함께 따져야 한다</button><button class="mcq-option" data-correct="false">항상 가장 정밀한 모델을 쓰는 것이 최선이다</button><button class="mcq-option" data-correct="false">샘플링 기법이 모든 경우에 우월하다</button></div><div class="mcq-explanation">결론은 모듈 개별 최적화가 아니라, 계획기-제어기 간 요구의 얽힘(호환성)과 통합 비용을 시스템 수준에서 평가하라는 것이다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">학습 기반·end-to-end 시대에 고전 모션계획·제어 지식이 갖는 역할로 적절한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">완전히 대체되어 더 이상 쓸모가 없다</button><button class="mcq-option" data-correct="true">물리·안전 제약의 사전지식이자 학습 출력의 검증·필터 도구로 재등장한다</button><button class="mcq-option" data-correct="false">오직 시뮬레이션에서만 의미가 있다</button><button class="mcq-option" data-correct="false">학습 모델의 정확도 평가에만 쓰인다</button></div><div class="mcq-explanation">비홀로노믹·마찰원·복잡도 같은 불변 제약은 학습되지 않으므로, 곡률 투영·안전 필터(MPC/CBF) 등 사전지식·검증 도구로 재배치된다.</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">만약 우리 파이프라인이 이미 정확한 3D tracker를 갖고 있다면, NeRF 기반 compositional 표현의 비용 문제 중 어떤 부분은 여전히 남고 어떤 부분은 완화될까?</div>
+  <div class="oq-question">당신 연구의 핵심 모듈을 Table I/II의 축에 올려놓으면 어디에 위치하는가? 그 위치가 드러내는 미충족 보장(완전성·최적성·실시간·안전)은 무엇이며, 다음 논문에서 어느 칸을 메울 것인가?</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -247,14 +245,14 @@ EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>ins
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>tracker가 좋아지면 &#x27;pose 정합 오차로 인한 흐림&#x27;은 줄어듭니다. 하지만 렌더링 속도를 결정하는 건 pose 품질이 아니라 무엇이었는지 다시 생각해 보세요.</div>
+    <div>머릿속에 route→behavioral→motion→control 다이어그램을 그리고, 학습으로 대체한 칸엔 ★, 고전 기법이 남은 칸엔 △를 표시하라. ★ 옆엔 반드시 &#x27;안전 보장은 어디서 오나?&#x27;를 적어보라.</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>tracker 품질은 &#x27;정합 정확도&#x27; 문제를 완화할 뿐, 느린 속도의 근본 원인인 광선당 다중 샘플 적분(ray-marching)은 그대로 남는다. 표현(representation) 자체를 바꾸지 않으면 실시간은 오지 않는다.</div>
+    <div>자신의 기여를 이 서베이의 공통 축에 명시적으로 위치시키면, 무엇을 개선했고 무엇을 여전히 빚지고 있는지가 드러난다. 골격을 이해해야 학습이 무엇을 대체·포기하는지 정직하게 평가하고 다음 연구를 설계할 수 있다.</div>
   </div>
 </div></div>
-<div class="nav"><a href="day_1.html">← Day 1</a><a href="day_3.html">Day 3 →</a></div>
+<div class="nav"><a href="day_9.html">← Day 9</a><span class="disabled">다음 →</span></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
 <script>
 document.querySelectorAll('.tab').forEach(tab => {

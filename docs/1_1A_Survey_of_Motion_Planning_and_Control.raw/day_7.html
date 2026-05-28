@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 2 — 왜 NeRF는 부족했나</title>
+<title>Day 7 — 샘플링 기반 모션계획</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
@@ -203,12 +203,12 @@ body {
 
 
 <div class="hero">
-  <div class="hero-meta">오늘의 학습 · DAY 2</div>
-  <div class="hero-tag">배경</div>
-  <h1 class="hero-title">왜 NeRF는 부족했나</h1>
-  <div class="hero-subtitle">NeRF 계열(Block-NeRF, compositional NeRF, EmerNeRF, point-based)의 한계를 비용 구조 관점에서 진단</div>
+  <div class="hero-meta">오늘의 학습 · DAY 7</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">샘플링 기반 모션계획</h1>
+  <div class="hero-subtitle">RRT·RRT*·상태격자·steering 함수를 수식과 직관으로 deep dive</div>
   <div class="progress-bar">
-    <div class="progress-fill" style="width: 20%"></div>
+    <div class="progress-fill" style="width: 70%"></div>
   </div>
 </div>
 
@@ -220,26 +220,26 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">어제의 요구사항(실시간 + 동적)을 NeRF 계열은 왜 충족 못 했을까요? 비용 구조를 보면 답이 보입니다.
+<div class="content">둘째 deep dive는 모션계획의 주력—샘플링 기반 증분 탐색입니다. 장애물의 기하 모델이 없어도 두 함수만 있으면 됩니다: <strong>steering</strong>(상태 $x$에서 $y$ 쪽으로 동역학적으로 가능한 경로 생성)과 <strong>충돌검사</strong>(col-free). RRT는 무작위 표본 $x_{rnd}$를 뽑아 가장 가까운 트리 노드를 그쪽으로 확장하며 공간을 빠르게 덮습니다. 하지만 LaValle의 RRT는 <strong>확률적 완전</strong>일 뿐, 해가 <strong>suboptimal로 확률 1 수렴</strong>한다는 게 함정이죠.
 
-<strong>Block-NeRF</strong>는 대규모 장면을 블록으로 쪼개 각각을 NeRF로 모델링합니다. 사실적이지만 네트워크 파라미터가 방대해 학습이 오래 걸리고, 결정적으로 <strong>움직이는 차량을 다루지 못합니다</strong>. 자율주행에선 치명적이죠.
+Karaman·Frazzoli의 <strong>RRT</strong>*가 이를 고칩니다. 새 노드 $x_{new}$ 주변의 반경
+$$r = \gamma\Big(\frac{\log n}{n}\Big)^{1/d}$$
+안에서 ⓐ최소비용 부모로 연결하고 ⓑ더 싼 경로가 되면 이웃을 <strong>rewire</strong>합니다. 반경이 $\log n / n$로 줄어드는 게 핵심—이웃 수의 기대값을 로그로 유지해 점근적 최적성과 계산 효율($O(n\log n)$)을 동시에 잡습니다($d$=상태차원, $\gamma$=인스턴스 상수).
 
-다음은 compositional 계열(NSG, MARS)입니다. 장면을 정적 배경 + foreground 차량으로 나누고, tracked pose로 관측 공간을 canonical 공간에 매핑한 뒤 NeRF로 차량의 geometry/appearance를 학습합니다. 합리적인 결과를 내지만, 근본 문제는 ray-marching입니다. NeRF는 광선 하나마다 수백 개 점을 MLP에 통과시켜 적분 $C(r)=\int T(t)\sigma(t)c(t)\,dt$ 를 근사합니다. compositional이면 객체마다 별도 ray-marching이 필요해 비용이 곱해지죠. 그 결과 <strong>MARS는 18시간 이상 학습에 0.68 FPS, EmerNeRF는 0.21 FPS</strong>에 머뭅니다.
-
-EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>instance-aware가 아니어서</strong> 개별 차량을 떼어내 편집할 수 없고, 새 timestep의 동적 영역에서 잔상이 생깁니다. point-based 렌더링은 dense point cloud가 없으면 저밀도 영역이 흐릿해집니다. 한 줄로 요약하면: NeRF로 폐루프를 돌리는 건 &#x27;프레임마다 장면 전체를 적분으로 다시 그리는&#x27; 셈이라 실시간이 원천 봉쇄됩니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 — Waymo 정량 비교 (특히 FPS 행)</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a><div class="figure-explain">Waymo에서 5개 방법의 PSNR/SSIM/LPIPS/PSNR*/FPS를 비교한 표. FPS 행에 주목: NSG 0.47, MARS 0.68, EmerNeRF 0.21로 1 FPS 미만인 반면 Ours는 135. 품질 지표와 속도의 괴리를 한눈에 보여줌.</div></div>
-<div class="trigger">Trigger Type B</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Volumetric ray-marching의 비용 구조</div><div class="concept-def">NeRF는 픽셀의 색을 광선을 따라 $C(r)=\int_{t_n}^{t_f} T(t)\,\sigma(t)\,c(t)\,dt$ 로 적분하며, 이를 광선당 수십~수백 개 샘플 각각에서 MLP를 질의해 근사합니다. 느린 본질적 이유가 여기 있습니다: 픽셀×샘플×(MLP forward) 만큼의 연산이 매 프레임 필요하죠. 도심처럼 광선이 멀리 뻗는 장면에선 샘플 수가 더 늘어납니다. 흔한 오해: hash grid(Instant-NGP, EmerNeRF)가 이를 완전히 해결한다는 것. 질의는 빨라지지만 광선당 다중 샘플 적분 구조 자체는 남아 실시간 폐루프엔 여전히 부족합니다.</div></div>
-<div class="concept-card"><div class="concept-term">Compositional NeRF의 observation-to-canonical 매핑</div><div class="concept-def">NSG·MARS류는 tracked pose로 움직이는 차량을 정지된 canonical 공간으로 역변환한 뒤, 그 공간에서 NeRF가 객체의 형상/외관을 학습합니다. 강체 가정 덕에 시간에 따른 객체 모델을 한 번만 학습하면 된다는 장점이 있죠. 그러나 객체마다 별도의 NeRF/ray-marching이 필요해 비용이 객체 수에 비례·중첩됩니다. 또한 tracker pose 오차가 canonical 정합을 흐트러뜨려 흐릿한 결과를 낳습니다. 보행자 같은 비강체에는 canonical 가정이 깨진다는 한계도 있습니다.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">However, significant limitations are their slow training and rendering speed.</div><div class="expr-ko">그러나 중대한 한계는 느린 학습·렌더링 속도다</div><div class="expr-example">These methods enable photo-realistic synthesis; however, significant limitations are their slow training and rendering speed.</div><div class="expr-context">선행연구의 장점을 인정한 뒤 핵심 약점을 대비시켜 제시할 때(however 전환).</div></div>
-<div class="expr-card"><div class="expr-en">are still limited to the high training cost and low rendering speed</div><div class="expr-ko">여전히 높은 학습 비용과 낮은 렌더링 속도에 발목 잡혀 있다</div><div class="expr-example">Although these methods produce reasonable results, they are still limited to the high training cost and low rendering speed.</div><div class="expr-context">기존 방법이 &#x27;되긴 하지만 결정적 제약이 남는다&#x27;는 점을 강조할 때.</div></div>
-<div class="expr-card"><div class="expr-en">cannot handle dynamic vehicles, which are crucial in ...</div><div class="expr-ko">~에서 결정적인 동적 차량을 다루지 못한다</div><div class="expr-example">Moreover, it cannot handle dynamic vehicles, which are crucial aspects in autonomous driving environment simulation.</div><div class="expr-context">한계의 &#x27;도메인 중요도&#x27;까지 덧붙여 비판의 무게를 실을 때.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Compositional NeRF(NSG/MARS)가 단일 NeRF보다 렌더링이 더 느려지는 핵심 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">이미지 해상도를 더 높이기 때문</button><button class="mcq-option" data-correct="true">객체마다 별도의 ray-marching이 필요해 적분 비용이 객체 수만큼 중첩되기 때문</button><button class="mcq-option" data-correct="false">LiDAR 입력을 추가로 처리하기 때문</button><button class="mcq-option" data-correct="false">더 큰 배치 크기를 쓰기 때문</button></div><div class="mcq-explanation">정적 배경과 각 객체를 별도 NeRF로 ray-marching하므로 비용이 곱해진다. 이것이 1 FPS 미만 속도의 구조적 원인이다.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">EmerNeRF가 자율주행 편집·시뮬레이션 용도로 부족한 점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">LiDAR를 쓰지 못한다</button><button class="mcq-option" data-correct="true">static/dynamic은 분리하지만 instance-aware가 아니어서 개별 차량을 떼어내 편집할 수 없다</button><button class="mcq-option" data-correct="false">정적 장면만 모델링할 수 있다</button><button class="mcq-option" data-correct="false">학습이 30분 안에 끝나지 않는다</button></div><div class="mcq-explanation">EmerNeRF는 self-supervision으로 정적/동적은 나누지만 인스턴스 단위 표현이 아니라서 차량 단위 편집·합성이 불가능하다.</div></div>
+이산화 방식도 중요합니다. 모션프리미티브를 재귀 적용하면 트리가 생기는데, 특정 <strong>격자생성(lattice)</strong> 프리미티브는 상태공간을 균일하게 덮어 루트 근처에 노드가 뭉치는 비효율을 막습니다(Fig IV.2: 90° vs 89° 원호의 차이!). exact steering이 없을 땐 SST가 무작위 제어를 전방시뮬레이션하며 가지치기로 트리를 희소하게 유지하죠. 비유: RRT는 &#x27;아무 데나 던지는 정찰&#x27;, RRT*는 &#x27;던질 때마다 지나온 길까지 더 싸게 재배선하는 정찰&#x27;입니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure IV.2 — 격자(lattice) vs 비격자 그래프</div><a href="figures/page_14.png" target="_blank"><img src="figures/page_14.png" alt="Figure" loading="lazy"></a><div class="figure-explain">두 그래프 모두 5000개 간선. (a) 90° 좌/우 원호+직선을 재귀 적용 → 규칙적 격자(lattice)로 공간을 균일하게 커버. (b) 89° 원호 사용 → 트리가 원점 근처에서 루프·뭉침이 생겨 커버 면적이 작음. 작은 각도 차이가 구조를 가른다는 점을 시각 대비.</div></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">RRT* rewiring &amp; 수축 반경</div><div class="concept-def">RRT*는 매 반복에서 새 노드 $x_{new}$의 이웃 반경 $r = \gamma(\log n / n)^{1/d}$ 내 정점들을 검토해, (1) $x_{new}$를 비용 최소가 되는 부모에 연결하고 (2) $x_{new}$ 경유가 더 싸지는 이웃은 부모를 $x_{new}$로 rewire한다. 왜 $\log n / n$인가: 이 비율이라야 반경 내 기대 정점 수가 트리 크기의 로그로 유지되어, 연결성(점근적 최적성)과 계산효율($O(n\log n)$, 무한정 RRT와 동일 차수)이 양립한다. 미분제약 시스템(Dubins, double integrator 등)으로도 확장됐다. 함정: 고정 시간스텝 휴리스틱 steering을 쓰면 보장이 깨진다—Kunz·Stilman은 그런 RRT가 확률적 완전조차 아님을 보였다.</div></div>
+<div class="concept-card"><div class="concept-term">상태격자(state lattice) vs 트리</div><div class="concept-def">모션프리미티브를 초기상태에서 재귀 적용하면 일반적으로 트리가 생기는데, 최악의 경우 루트 근처에 정점이 과밀하게 뭉친다. 반면 **격자생성(lattice-generating)** 프리미티브 집합은 정점이 격자처럼 규칙적으로 배치돼 상태공간을 균일하게 덮는다. 구성법(Pivtoraiko 등): 원점 주위에 규칙적으로 배치한 목표 자세들을 2점 BVP 해(가능 경로)로 연결한다. 직관: Fig IV.2처럼 90° 원호는 닫힌 격자를, 89°는 무한히 어긋나는 트리를 만든다—작은 설계 차이가 커버리지를 좌우한다. 균일 커버는 탐색 효율과 해상도 보장에 유리. 함정: 격자는 미리 정의된 자세 집합에 갇혀 임의 목표 자세 도달이 제한될 수 있다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">has been shown to be ...</div><div class="expr-ko">~임이 밝혀졌다(증명되었다)</div><div class="expr-example">Under certain assumptions, the RRT algorithm has been shown to be probabilistically complete.</div><div class="expr-context">선행연구의 이론적 결과를 인용해 근거로 삼을 때</div></div>
+<div class="expr-card"><div class="expr-en">An important characteristic of the algorithm is that ...</div><div class="expr-ko">이 알고리즘의 중요한 특성은 ~이다</div><div class="expr-example">An important characteristic of the algorithm is that the neighborhood radius shrinks with the size of the tree.</div><div class="expr-context">방법의 핵심 설계 선택을 강조해 설명할 때</div></div>
+<div class="expr-card"><div class="expr-en">does not readily generalize to ...</div><div class="expr-ko">~로 곧바로 일반화되지는 않는다</div><div class="expr-example">The result on probabilistic completeness does not readily generalize to versions using heuristic steering.</div><div class="expr-context">이론적 보장의 적용 범위 한계를 정직하게 단서로 달 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">RRT*의 이웃 반경이 $r = \gamma(\log n / n)^{1/d}$로 수축하는 목적은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">탐색을 무작위로 만들어 다양성을 높이려고</button><button class="mcq-option" data-correct="true">이웃 기대 정점 수를 로그로 유지해 점근적 최적성과 계산효율을 동시에 확보하려고</button><button class="mcq-option" data-correct="false">충돌검사를 생략하려고</button><button class="mcq-option" data-correct="false">트리를 항상 격자로 만들려고</button></div><div class="mcq-explanation">반경이 너무 크면 계산 폭발, 너무 작으면 연결성 상실이다. $\log n / n$ 비율이 이웃 기대수를 로그로 유지해 두 목표를 양립시킨다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">격자생성(lattice) 모션프리미티브의 장점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">충돌검사가 필요 없다</button><button class="mcq-option" data-correct="true">정점이 상태공간을 균일하게 덮어 루트 근처 과밀을 막는다</button><button class="mcq-option" data-correct="false">항상 전역 최적해를 보장한다</button><button class="mcq-option" data-correct="false">비홀로노믹 제약을 무시할 수 있다</button></div><div class="mcq-explanation">격자생성 프리미티브는 정점을 규칙적으로 배치해 공간을 균일하게 커버한다. 임의 프리미티브는 트리가 루트 근처에 뭉치는 비효율을 낳는다(Fig IV.2).</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">만약 우리 파이프라인이 이미 정확한 3D tracker를 갖고 있다면, NeRF 기반 compositional 표현의 비용 문제 중 어떤 부분은 여전히 남고 어떤 부분은 완화될까?</div>
+  <div class="oq-question">양산 RRT가 고정 시간스텝 heuristic steering을 쓰면 확률적 완전성조차 잃는다는 결과(Kunz·Stilman)가 있다. 이게 실무에 주는 경고는?</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -247,14 +247,14 @@ EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>ins
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>tracker가 좋아지면 &#x27;pose 정합 오차로 인한 흐림&#x27;은 줄어듭니다. 하지만 렌더링 속도를 결정하는 건 pose 품질이 아니라 무엇이었는지 다시 생각해 보세요.</div>
+    <div>논문의 보장들이 어떤 가정(exact/random steering) 하에서 증명됐는지, 당신 구현이 그 가정을 지키는지 따져보라.</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>tracker 품질은 &#x27;정합 정확도&#x27; 문제를 완화할 뿐, 느린 속도의 근본 원인인 광선당 다중 샘플 적분(ray-marching)은 그대로 남는다. 표현(representation) 자체를 바꾸지 않으면 실시간은 오지 않는다.</div>
+    <div>이론적 보장은 그것이 증명된 가정 안에서만 유효하다. exact steering을 휴리스틱으로 바꾸면 점근적 최적성은 물론 확률적 완전성까지 사라질 수 있다—구현의 가정 일치를 항상 확인하라.</div>
   </div>
 </div></div>
-<div class="nav"><a href="day_1.html">← Day 1</a><a href="day_3.html">Day 3 →</a></div>
+<div class="nav"><a href="day_6.html">← Day 6</a><a href="day_8.html">Day 8 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
 <script>
 document.querySelectorAll('.tab').forEach(tab => {

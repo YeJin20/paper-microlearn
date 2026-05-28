@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 2 — 왜 NeRF는 부족했나</title>
+<title>Day 4 — 세 가족, 한눈에 비교</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
@@ -203,12 +203,12 @@ body {
 
 
 <div class="hero">
-  <div class="hero-meta">오늘의 학습 · DAY 2</div>
-  <div class="hero-tag">배경</div>
-  <h1 class="hero-title">왜 NeRF는 부족했나</h1>
-  <div class="hero-subtitle">NeRF 계열(Block-NeRF, compositional NeRF, EmerNeRF, point-based)의 한계를 비용 구조 관점에서 진단</div>
+  <div class="hero-meta">오늘의 학습 · DAY 4</div>
+  <div class="hero-tag">개요</div>
+  <h1 class="hero-title">세 가족, 한눈에 비교</h1>
+  <div class="hero-subtitle">변분법·그래프탐색·증분(샘플링) 세 계열을 비교하고 트레이드오프로 자리매김</div>
   <div class="progress-bar">
-    <div class="progress-fill" style="width: 20%"></div>
+    <div class="progress-fill" style="width: 40%"></div>
   </div>
 </div>
 
@@ -220,26 +220,26 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">어제의 요구사항(실시간 + 동적)을 NeRF 계열은 왜 충족 못 했을까요? 비용 구조를 보면 답이 보입니다.
+<div class="content">모션계획 기법을 세 가족으로 갈라 비교합니다(Table I).
 
-<strong>Block-NeRF</strong>는 대규모 장면을 블록으로 쪼개 각각을 NeRF로 모델링합니다. 사실적이지만 네트워크 파라미터가 방대해 학습이 오래 걸리고, 결정적으로 <strong>움직이는 차량을 다루지 못합니다</strong>. 자율주행에선 치명적이죠.
+① <strong>변분법(variational / trajectory optimization)</strong>: 궤적을 유한차원 벡터로 파라미터화해 비선형 최적화로 푼다. 국소 최적에 빠르게 수렴하지만($O(1/\epsilon)$급 수렴률) 전역 최적 보장은 없어, 좋은 초기해가 사실상 필수다.
+② <strong>그래프 탐색(graph search)</strong>: 상태공간을 그래프(차선그래프·격자/모션프리미티브)로 이산화하고 Dijkstra/A*로 최단경로를 찾는다. 국소 최저에 안 빠지지만, 그래프가 표현하는 경로집합 안에서만 완전·최적이라 &#x27;이산화 한계&#x27;를 갖는다.
+③ <strong>증분/샘플링(incremental, RRT·PRM 계열)</strong>: 표본을 뿌리며 도달가능 트리/로드맵을 키운다. <strong>확률적 완전성</strong>과 <strong>점근적 최적성</strong>(RRT*, PRM*)을 제공하고 anytime이 자연스럽다.
 
-다음은 compositional 계열(NSG, MARS)입니다. 장면을 정적 배경 + foreground 차량으로 나누고, tracked pose로 관측 공간을 canonical 공간에 매핑한 뒤 NeRF로 차량의 geometry/appearance를 학습합니다. 합리적인 결과를 내지만, 근본 문제는 ray-marching입니다. NeRF는 광선 하나마다 수백 개 점을 MLP에 통과시켜 적분 $C(r)=\int T(t)\sigma(t)c(t)\,dt$ 를 근사합니다. compositional이면 객체마다 별도 ray-marching이 필요해 비용이 곱해지죠. 그 결과 <strong>MARS는 18시간 이상 학습에 0.68 FPS, EmerNeRF는 0.21 FPS</strong>에 머뭅니다.
-
-EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>instance-aware가 아니어서</strong> 개별 차량을 떼어내 편집할 수 없고, 새 timestep의 동적 영역에서 잔상이 생깁니다. point-based 렌더링은 dense point cloud가 없으면 저밀도 영역이 흐릿해집니다. 한 줄로 요약하면: NeRF로 폐루프를 돌리는 건 &#x27;프레임마다 장면 전체를 적분으로 다시 그리는&#x27; 셈이라 실시간이 원천 봉쇄됩니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 — Waymo 정량 비교 (특히 FPS 행)</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a><div class="figure-explain">Waymo에서 5개 방법의 PSNR/SSIM/LPIPS/PSNR*/FPS를 비교한 표. FPS 행에 주목: NSG 0.47, MARS 0.68, EmerNeRF 0.21로 1 FPS 미만인 반면 Ours는 135. 품질 지표와 속도의 괴리를 한눈에 보여줌.</div></div>
-<div class="trigger">Trigger Type B</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Volumetric ray-marching의 비용 구조</div><div class="concept-def">NeRF는 픽셀의 색을 광선을 따라 $C(r)=\int_{t_n}^{t_f} T(t)\,\sigma(t)\,c(t)\,dt$ 로 적분하며, 이를 광선당 수십~수백 개 샘플 각각에서 MLP를 질의해 근사합니다. 느린 본질적 이유가 여기 있습니다: 픽셀×샘플×(MLP forward) 만큼의 연산이 매 프레임 필요하죠. 도심처럼 광선이 멀리 뻗는 장면에선 샘플 수가 더 늘어납니다. 흔한 오해: hash grid(Instant-NGP, EmerNeRF)가 이를 완전히 해결한다는 것. 질의는 빨라지지만 광선당 다중 샘플 적분 구조 자체는 남아 실시간 폐루프엔 여전히 부족합니다.</div></div>
-<div class="concept-card"><div class="concept-term">Compositional NeRF의 observation-to-canonical 매핑</div><div class="concept-def">NSG·MARS류는 tracked pose로 움직이는 차량을 정지된 canonical 공간으로 역변환한 뒤, 그 공간에서 NeRF가 객체의 형상/외관을 학습합니다. 강체 가정 덕에 시간에 따른 객체 모델을 한 번만 학습하면 된다는 장점이 있죠. 그러나 객체마다 별도의 NeRF/ray-marching이 필요해 비용이 객체 수에 비례·중첩됩니다. 또한 tracker pose 오차가 canonical 정합을 흐트러뜨려 흐릿한 결과를 낳습니다. 보행자 같은 비강체에는 canonical 가정이 깨진다는 한계도 있습니다.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">However, significant limitations are their slow training and rendering speed.</div><div class="expr-ko">그러나 중대한 한계는 느린 학습·렌더링 속도다</div><div class="expr-example">These methods enable photo-realistic synthesis; however, significant limitations are their slow training and rendering speed.</div><div class="expr-context">선행연구의 장점을 인정한 뒤 핵심 약점을 대비시켜 제시할 때(however 전환).</div></div>
-<div class="expr-card"><div class="expr-en">are still limited to the high training cost and low rendering speed</div><div class="expr-ko">여전히 높은 학습 비용과 낮은 렌더링 속도에 발목 잡혀 있다</div><div class="expr-example">Although these methods produce reasonable results, they are still limited to the high training cost and low rendering speed.</div><div class="expr-context">기존 방법이 &#x27;되긴 하지만 결정적 제약이 남는다&#x27;는 점을 강조할 때.</div></div>
-<div class="expr-card"><div class="expr-en">cannot handle dynamic vehicles, which are crucial in ...</div><div class="expr-ko">~에서 결정적인 동적 차량을 다루지 못한다</div><div class="expr-example">Moreover, it cannot handle dynamic vehicles, which are crucial aspects in autonomous driving environment simulation.</div><div class="expr-context">한계의 &#x27;도메인 중요도&#x27;까지 덧붙여 비판의 무게를 실을 때.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Compositional NeRF(NSG/MARS)가 단일 NeRF보다 렌더링이 더 느려지는 핵심 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">이미지 해상도를 더 높이기 때문</button><button class="mcq-option" data-correct="true">객체마다 별도의 ray-marching이 필요해 적분 비용이 객체 수만큼 중첩되기 때문</button><button class="mcq-option" data-correct="false">LiDAR 입력을 추가로 처리하기 때문</button><button class="mcq-option" data-correct="false">더 큰 배치 크기를 쓰기 때문</button></div><div class="mcq-explanation">정적 배경과 각 객체를 별도 NeRF로 ray-marching하므로 비용이 곱해진다. 이것이 1 FPS 미만 속도의 구조적 원인이다.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">EmerNeRF가 자율주행 편집·시뮬레이션 용도로 부족한 점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">LiDAR를 쓰지 못한다</button><button class="mcq-option" data-correct="true">static/dynamic은 분리하지만 instance-aware가 아니어서 개별 차량을 떼어내 편집할 수 없다</button><button class="mcq-option" data-correct="false">정적 장면만 모델링할 수 있다</button><button class="mcq-option" data-correct="false">학습이 30분 안에 끝나지 않는다</button></div><div class="mcq-explanation">EmerNeRF는 self-supervision으로 정적/동적은 나누지만 인스턴스 단위 표현이 아니라서 차량 단위 편집·합성이 불가능하다.</div></div>
+핵심 트레이드오프: 변분법=빠르고 매끄럽지만 국소적, 그래프=전역적이나 이산화에 갇힘, 샘플링=점근보장이나 유한시간 품질이 불확실. 실제로 셋은 결합됩니다—거친 그래프탐색으로 초기해를 만들고 변분법으로 다듬는 식이죠. 비유하면 변분법은 &#x27;근처 골짜기로 미끄러져 내려가기&#x27;, 그래프탐색은 &#x27;미리 깐 레일 위 최단&#x27;, 샘플링은 &#x27;점점 촘촘해지는 정찰대&#x27;입니다. Table I가 바로 Day 1에서 말한 &#x27;선택 지도&#x27;의 실체입니다—어떤 기법도 완전성·최적성·저복잡도를 공짜로 동시에 주지 않음을 한눈에 보여주죠.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table I — 경로계획 기법 비교표</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a><div class="figure-explain">행=기법(Visibility graph, Variational, Lane graph+Dijkstra, Lattice+Dijkstra, PRM/PRM*/RRG, RRT/RRT*/SST), 열=모델가정·완전성·최적성·시간복잡도·anytime. 별표 각주로 &#x27;미분제약 없는 경우만 성립&#x27; 등 조건을 표기. 어떤 기법도 세 보장을 동시에 공짜로 주지 않음을 비교.</div></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">확률적 완전성 &amp; 점근적 최적성</div><div class="concept-def">샘플링 기반 기법의 보장을 기술하는 두 핵심 개념. 확률적 완전성: 해가 존재하면 표본 수 $n\to\infty$에서 그래프가 해를 포함할 확률이 1로 수렴. 점근적 최적성: 그래프 내 최단경로 비용이 진짜 최적으로 확률 1 수렴. RRT는 확률적 완전이지만 suboptimal로 수렴(확률 1)하는 반면, RRT*·PRM*는 이웃 반경을 $\log n / n$ 비율로 수축시켜 점근적 최적성을 동일 복잡도에서 달성한다. 직관: 이웃 후보 기대수를 로그로 유지해야 &#x27;연결성 확보&#x27;와 &#x27;계산 폭발 방지&#x27;가 양립한다. 함정: 이 보장들 대부분은 exact steering(2점 BVP 정확해) 가정 하에서만 증명됐다.</div></div>
+<div class="concept-card"><div class="concept-term">이산화 한계 (그래프 유도 경로집합 내 최적)</div><div class="concept-def">그래프 탐색의 본질적 제약. Dijkstra/A*는 그래프 내 최단경로를 정확히 찾지만, 그 &#x27;최단&#x27;은 그래프가 표현하는 경로집합에 한정된다—즉 완전성·최적성이 &#x27;w.r.t. the graph&#x27;다. 그래서 격자 기반 해는 진짜 연속공간 최단경로보다 현저히 길 수 있다(격자 방향에 갇힘). 완화책으로 Theta*·Field D* 같은 any-angle 알고리즘이 그래프 간선 사이 &#x27;지름길&#x27;과 선형보간을 허용해 더 매끄러운 경로를 만든다. 직관: 도시를 바둑판 도로로만 다니면 대각선 목적지엔 항상 우회한다. 함정: 해상도를 높이면 최적성은 좋아지나 그래프 크기·탐색비용이 급증한다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">are attractive for their rapid convergence to ...</div><div class="expr-ko">~로의 빠른 수렴 덕분에 매력적이다</div><div class="expr-example">Variational methods are attractive for their rapid convergence to locally optimal solutions.</div><div class="expr-context">한 기법의 장점을 제시하면서 곧이어 한계와 대비할 때</div></div>
+<div class="expr-card"><div class="expr-en">are not prone to ...</div><div class="expr-ko">~에 빠지기 쉽지 않다</div><div class="expr-example">Graph-search methods are not prone to getting stuck in local minima.</div><div class="expr-context">특정 약점을 회피하는 기법의 강점을 강조할 때</div></div>
+<div class="expr-card"><div class="expr-en">it is possible to exploit the advantages of each by combining them</div><div class="expr-ko">각각의 장점을 결합해 활용할 수 있다</div><div class="expr-example">It is possible to exploit the advantages of each method by combining them, e.g., a coarse graph search to initialize a variational method.</div><div class="expr-context">상호배타로 보이는 기법들을 하이브리드로 통합하는 방향을 제안할 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">RRT와 RRT*의 핵심 차이는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">RRT*는 더 빠르지만 완전성을 잃는다</button><button class="mcq-option" data-correct="true">RRT*는 새 노드 주변을 rewiring해 점근적 최적성을 확보한다</button><button class="mcq-option" data-correct="false">RRT*는 그래프 기반이고 RRT는 변분법이다</button><button class="mcq-option" data-correct="false">둘 다 동일하며 이름만 다르다</button></div><div class="mcq-explanation">RRT는 suboptimal로 수렴(확률 1)하는 반면, RRT*는 수축 반경 내에서 최소비용 부모 연결과 rewiring으로 점근적 최적성을 같은 복잡도에서 달성한다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">그래프 탐색의 &#x27;완전성/최적성&#x27;이 제한적이라는 말의 의미는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">Dijkstra가 최단경로를 못 찾는다는 뜻</button><button class="mcq-option" data-correct="true">그래프가 유도하는 경로집합 내에서만 완전·최적이라는 뜻</button><button class="mcq-option" data-correct="false">그래프가 항상 해를 놓친다는 뜻</button><button class="mcq-option" data-correct="false">최적성이 확률적으로만 성립한다는 뜻</button></div><div class="mcq-explanation">그래프 탐색은 이산화된 경로집합 안에서만 완전·최적이다. 실제 연속공간 최단경로는 격자 방향 제약 때문에 더 짧을 수 있다(any-angle 기법이 이를 완화).</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">만약 우리 파이프라인이 이미 정확한 3D tracker를 갖고 있다면, NeRF 기반 compositional 표현의 비용 문제 중 어떤 부분은 여전히 남고 어떤 부분은 완화될까?</div>
+  <div class="oq-question">이론적으론 점근적 최적인 RRT*가 있는데, 왜 양산에선 lattice+A*나 Hybrid A* 같은 결정론적 이산화를 더 자주 쓸까?</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -247,14 +247,14 @@ EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>ins
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>tracker가 좋아지면 &#x27;pose 정합 오차로 인한 흐림&#x27;은 줄어듭니다. 하지만 렌더링 속도를 결정하는 건 pose 품질이 아니라 무엇이었는지 다시 생각해 보세요.</div>
+    <div>실시간 worst-case 시간, 결과의 재현성, 검증·인증 용이성을 떠올려보라. 점근적 보장은 &#x27;무한 시간&#x27;의 약속이다.</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>tracker 품질은 &#x27;정합 정확도&#x27; 문제를 완화할 뿐, 느린 속도의 근본 원인인 광선당 다중 샘플 적분(ray-marching)은 그대로 남는다. 표현(representation) 자체를 바꾸지 않으면 실시간은 오지 않는다.</div>
+    <div>이론적 최적성 보장과 실무 선호는 다르다. 양산에선 결정론적 재현성, 유한시간 worst-case 보장, 검증 용이성이 점근적 최적성보다 중요한 경우가 많다.</div>
   </div>
 </div></div>
-<div class="nav"><a href="day_1.html">← Day 1</a><a href="day_3.html">Day 3 →</a></div>
+<div class="nav"><a href="day_3.html">← Day 3</a><a href="day_5.html">Day 5 →</a></div>
 <a class="home-link" href="index.html">전체 Day 목록 →</a>
 <script>
 document.querySelectorAll('.tab').forEach(tab => {

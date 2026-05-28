@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Day 2 — 왜 NeRF는 부족했나</title>
+<title>Day 2 — 정확한 최적해의 벽</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
@@ -205,8 +205,8 @@ body {
 <div class="hero">
   <div class="hero-meta">오늘의 학습 · DAY 2</div>
   <div class="hero-tag">배경</div>
-  <h1 class="hero-title">왜 NeRF는 부족했나</h1>
-  <div class="hero-subtitle">NeRF 계열(Block-NeRF, compositional NeRF, EmerNeRF, point-based)의 한계를 비용 구조 관점에서 진단</div>
+  <h1 class="hero-title">정확한 최적해의 벽</h1>
+  <div class="hero-subtitle">정확·최적 경로계획이 계산 복잡도상 왜 불가능에 가까운지(NP-hard/PSPACE) 설명</div>
   <div class="progress-bar">
     <div class="progress-fill" style="width: 20%"></div>
   </div>
@@ -220,26 +220,20 @@ body {
 </div>
 
 <div class="tab-panel active" id="tab-content">
-<div class="content">어제의 요구사항(실시간 + 동적)을 NeRF 계열은 왜 충족 못 했을까요? 비용 구조를 보면 답이 보입니다.
+<div class="content">어제 본 트레이드오프의 뿌리엔 계산 복잡도 이론이 있습니다. &#x27;그냥 최적 경로를 정확히 풀면 안 되나?&#x27;에 대한 답은 단호히 &#x27;안 됩니다&#x27;예요. 미분 제약이 있는 최적 경로계획(Problem IV.1)은 <strong>PSPACE-hard</strong>로 알려져 있습니다(Reif). 즉 $P \neq NP$ 가정 하에 모든 인스턴스를 다항시간에 푸는 알고리즘은 존재하지 않죠. 흥미로운 대비가 핵심입니다. 점 로봇(홀로노믹)의 2D 다각형 환경 최단경로는 <strong>$O(n^2)$</strong>로 효율적으로 풀립니다(visibility graph). 그런데 자동차처럼 <strong>곡률 제약(최소 회전반경)</strong>이 붙는 순간, 다각형 장애물 사이의 최단 곡률제약 경로는 <strong>NP-hard</strong>로 뛰어오릅니다(Lazard·Reif·Wang). 곡률제약 경로의 존재성 판정조차 EXPTIME이고요. 동적 환경은 더 가혹합니다—정적에선 쉽던 점 로봇 최단경로가, 움직이는 다각형 장애물 사이 속도제한 충돌회피 궤적 문제가 되면 <strong>NP-hard</strong>가 됩니다(Canny·Reif). 결론은 분명합니다. 자율주행에서 실용적 복잡도를 갖는 &#x27;정확한&#x27; 알고리즘은 사실상 없습니다. 그래서 이 분야는 정확해 대신 <strong>수치적 근사</strong>—국소 최적에 빠르게 수렴하거나, 확률적으로 완전한 해법—으로 방향을 틀었습니다. 비유하면, 미로의 모든 경로를 완벽히 따져 최단을 보장하려다 우주의 수명이 끝나느니, &#x27;충분히 좋은&#x27; 길을 빨리 찾고 시간이 더 주어지면 개선하는 전략을 택한 셈이죠. 이 &#x27;근사로의 전환&#x27;이 이후 모든 방법론(변분법·그래프탐색·샘플링)을 가른 분기점입니다. 곡률 제약 하나가 다항에서 NP-hard로 복잡도를 바꾼다는 사실—이게 어제의 &#x27;모델이 곧 난이도&#x27;를 정량적으로 증명합니다.</div>
 
-<strong>Block-NeRF</strong>는 대규모 장면을 블록으로 쪼개 각각을 NeRF로 모델링합니다. 사실적이지만 네트워크 파라미터가 방대해 학습이 오래 걸리고, 결정적으로 <strong>움직이는 차량을 다루지 못합니다</strong>. 자율주행에선 치명적이죠.
-
-다음은 compositional 계열(NSG, MARS)입니다. 장면을 정적 배경 + foreground 차량으로 나누고, tracked pose로 관측 공간을 canonical 공간에 매핑한 뒤 NeRF로 차량의 geometry/appearance를 학습합니다. 합리적인 결과를 내지만, 근본 문제는 ray-marching입니다. NeRF는 광선 하나마다 수백 개 점을 MLP에 통과시켜 적분 $C(r)=\int T(t)\sigma(t)c(t)\,dt$ 를 근사합니다. compositional이면 객체마다 별도 ray-marching이 필요해 비용이 곱해지죠. 그 결과 <strong>MARS는 18시간 이상 학습에 0.68 FPS, EmerNeRF는 0.21 FPS</strong>에 머뭅니다.
-
-EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>instance-aware가 아니어서</strong> 개별 차량을 떼어내 편집할 수 없고, 새 timestep의 동적 영역에서 잔상이 생깁니다. point-based 렌더링은 dense point cloud가 없으면 저밀도 영역이 흐릿해집니다. 한 줄로 요약하면: NeRF로 폐루프를 돌리는 건 &#x27;프레임마다 장면 전체를 적분으로 다시 그리는&#x27; 셈이라 실시간이 원천 봉쇄됩니다.</div>
-<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 1 — Waymo 정량 비교 (특히 FPS 행)</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a><div class="figure-explain">Waymo에서 5개 방법의 PSNR/SSIM/LPIPS/PSNR*/FPS를 비교한 표. FPS 행에 주목: NSG 0.47, MARS 0.68, EmerNeRF 0.21로 1 FPS 미만인 반면 Ours는 135. 품질 지표와 속도의 괴리를 한눈에 보여줌.</div></div>
 <div class="trigger">Trigger Type B</div></div>
-<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Volumetric ray-marching의 비용 구조</div><div class="concept-def">NeRF는 픽셀의 색을 광선을 따라 $C(r)=\int_{t_n}^{t_f} T(t)\,\sigma(t)\,c(t)\,dt$ 로 적분하며, 이를 광선당 수십~수백 개 샘플 각각에서 MLP를 질의해 근사합니다. 느린 본질적 이유가 여기 있습니다: 픽셀×샘플×(MLP forward) 만큼의 연산이 매 프레임 필요하죠. 도심처럼 광선이 멀리 뻗는 장면에선 샘플 수가 더 늘어납니다. 흔한 오해: hash grid(Instant-NGP, EmerNeRF)가 이를 완전히 해결한다는 것. 질의는 빨라지지만 광선당 다중 샘플 적분 구조 자체는 남아 실시간 폐루프엔 여전히 부족합니다.</div></div>
-<div class="concept-card"><div class="concept-term">Compositional NeRF의 observation-to-canonical 매핑</div><div class="concept-def">NSG·MARS류는 tracked pose로 움직이는 차량을 정지된 canonical 공간으로 역변환한 뒤, 그 공간에서 NeRF가 객체의 형상/외관을 학습합니다. 강체 가정 덕에 시간에 따른 객체 모델을 한 번만 학습하면 된다는 장점이 있죠. 그러나 객체마다 별도의 NeRF/ray-marching이 필요해 비용이 객체 수에 비례·중첩됩니다. 또한 tracker pose 오차가 canonical 정합을 흐트러뜨려 흐릿한 결과를 낳습니다. 보행자 같은 비강체에는 canonical 가정이 깨진다는 한계도 있습니다.</div></div></div>
-<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">However, significant limitations are their slow training and rendering speed.</div><div class="expr-ko">그러나 중대한 한계는 느린 학습·렌더링 속도다</div><div class="expr-example">These methods enable photo-realistic synthesis; however, significant limitations are their slow training and rendering speed.</div><div class="expr-context">선행연구의 장점을 인정한 뒤 핵심 약점을 대비시켜 제시할 때(however 전환).</div></div>
-<div class="expr-card"><div class="expr-en">are still limited to the high training cost and low rendering speed</div><div class="expr-ko">여전히 높은 학습 비용과 낮은 렌더링 속도에 발목 잡혀 있다</div><div class="expr-example">Although these methods produce reasonable results, they are still limited to the high training cost and low rendering speed.</div><div class="expr-context">기존 방법이 &#x27;되긴 하지만 결정적 제약이 남는다&#x27;는 점을 강조할 때.</div></div>
-<div class="expr-card"><div class="expr-en">cannot handle dynamic vehicles, which are crucial in ...</div><div class="expr-ko">~에서 결정적인 동적 차량을 다루지 못한다</div><div class="expr-example">Moreover, it cannot handle dynamic vehicles, which are crucial aspects in autonomous driving environment simulation.</div><div class="expr-context">한계의 &#x27;도메인 중요도&#x27;까지 덧붙여 비판의 무게를 실을 때.</div></div></div>
-<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Compositional NeRF(NSG/MARS)가 단일 NeRF보다 렌더링이 더 느려지는 핵심 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">이미지 해상도를 더 높이기 때문</button><button class="mcq-option" data-correct="true">객체마다 별도의 ray-marching이 필요해 적분 비용이 객체 수만큼 중첩되기 때문</button><button class="mcq-option" data-correct="false">LiDAR 입력을 추가로 처리하기 때문</button><button class="mcq-option" data-correct="false">더 큰 배치 크기를 쓰기 때문</button></div><div class="mcq-explanation">정적 배경과 각 객체를 별도 NeRF로 ray-marching하므로 비용이 곱해진다. 이것이 1 FPS 미만 속도의 구조적 원인이다.</div></div>
-<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">EmerNeRF가 자율주행 편집·시뮬레이션 용도로 부족한 점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">LiDAR를 쓰지 못한다</button><button class="mcq-option" data-correct="true">static/dynamic은 분리하지만 instance-aware가 아니어서 개별 차량을 떼어내 편집할 수 없다</button><button class="mcq-option" data-correct="false">정적 장면만 모델링할 수 있다</button><button class="mcq-option" data-correct="false">학습이 30분 안에 끝나지 않는다</button></div><div class="mcq-explanation">EmerNeRF는 self-supervision으로 정적/동적은 나누지만 인스턴스 단위 표현이 아니라서 차량 단위 편집·합성이 불가능하다.</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">곡률 제약이 만드는 복잡도 점프 (다항 → NP-hard)</div><div class="concept-def">핵심 직관: 장애물의 기하가 같아도 &#x27;운동 가능성(differential constraint)&#x27;을 추가하면 문제 난이도가 질적으로 변한다. 홀로노믹 점 로봇의 2D 다각형 최단경로는 visibility graph로 $O(n^2)$에 풀리지만($n$=장애물 꼭짓점 수), 최소 회전반경(곡률 상한 $\kappa$)을 강제하면 동일 환경의 최단 곡률제약 경로는 NP-hard가 된다. 왜? 곡률 제약은 경로의 &#x27;도달 가능한 방향&#x27;을 국소적으로 묶어, 전역 조합 선택지가 폭발하기 때문이다. 예외적으로 장애물 없는 경우 Dubins가 최적해를 닫힌형(직선·원호 ≤3개)으로 준다. 함정: &#x27;내 플래너가 곡률을 대충 후처리로 깎는다&#x27;면 그건 NP-hard 문제를 푼 게 아니라 회피한 것.</div></div>
+<div class="concept-card"><div class="concept-term">정확해에서 수치적 근사로의 전환</div><div class="concept-def">복잡도 벽 때문에 자율주행 계획은 &#x27;정확·최적&#x27; 대신 &#x27;근사&#x27;를 받아들였고, 보장의 언어 자체가 바뀌었다. feasible(제약만 만족) vs optimal(품질 최적)을 구분하고, 결정론적 정확성 대신 **확률적 완전성**(해가 있으면 계산시간↑에 따라 찾을 확률→1)과 **점근적 최적성**(비용이 최적으로 확률 1 수렴)을 목표로 한다. 변분법은 빠른 국소수렴, 그래프탐색은 이산화된 전역탐색, 샘플링은 점근보장으로 각각 다른 절충을 택한다. 이 개념틀이 Day 4의 비교 축을 이룬다. 주의: &#x27;확률적 완전&#x27;은 해가 없을 땐 종료를 보장하지 않는다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">It has been long known that ...</div><div class="expr-ko">~은 오래전부터 알려져 있다</div><div class="expr-example">It has been long known that a shortest path for a holonomic vehicle among polygonal obstacles can be found in polynomial time.</div><div class="expr-context">확립된 고전 결과를 인용하며 새 기여와 대비시킬 때</div></div>
+<div class="expr-card"><div class="expr-en">one has to resort to ...</div><div class="expr-ko">~에 의존할 수밖에 없다</div><div class="expr-example">Since exact algorithms with practical complexity are unavailable, one has to resort to numerical solution methods.</div><div class="expr-context">근본적 한계 때문에 차선책을 택하는 논리를 정당화할 때</div></div>
+<div class="expr-card"><div class="expr-en">In contrast to ..., ...</div><div class="expr-ko">~와 대조적으로</div><div class="expr-example">In contrast to the holonomic case, finding a shortest curvature-bounded path among polygonal obstacles is NP-hard.</div><div class="expr-context">두 결과의 본질적 차이를 부각해 독자의 직관을 교정할 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">곡률 제약(최소 회전반경)이 경로계획 복잡도에 미치는 영향으로 옳은 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">복잡도에 영향이 없다—기하만 같으면 동일하다</button><button class="mcq-option" data-correct="true">홀로노믹 점 로봇은 $O(n^2)$이나, 곡률제약 car-like는 NP-hard가 된다</button><button class="mcq-option" data-correct="false">곡률제약이 오히려 탐색공간을 줄여 다항시간으로 만든다</button><button class="mcq-option" data-correct="false">두 경우 모두 PSPACE-complete로 동일하다</button></div><div class="mcq-explanation">Lazard·Reif·Wang의 결과대로, 동일 다각형 환경에서 곡률 제약을 추가하면 최단경로 문제는 다항(홀로노믹)에서 NP-hard로 점프한다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">동적(궤적) 계획이 정적(경로) 계획보다 본질적으로 어렵다는 근거는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">동적 환경은 차원이 무한하기 때문</button><button class="mcq-option" data-correct="true">정적에서 다항으로 풀리던 점 로봇 문제가, 움직이는 장애물 사이 속도제한 궤적 문제가 되면 NP-hard가 된다(Canny·Reif)</button><button class="mcq-option" data-correct="false">동적 환경에는 충돌검사가 불가능하기 때문</button><button class="mcq-option" data-correct="false">시간 차원을 추가하면 항상 PSPACE-complete가 된다</button></div><div class="mcq-explanation">Canny와 Reif는 움직이는 다각형 장애물 사이의 속도제한 충돌회피 궤적 문제가 NP-hard임을 보였다—정적에서 쉽던 문제가 동적에선 어려워진다.</div></div>
 
 <div class="oq-card">
   <div class="mcq-q-num">주관식</div>
-  <div class="oq-question">만약 우리 파이프라인이 이미 정확한 3D tracker를 갖고 있다면, NeRF 기반 compositional 표현의 비용 문제 중 어떤 부분은 여전히 남고 어떤 부분은 완화될까?</div>
+  <div class="oq-question">경로계획이 본질적으로 NP-hard/PSPACE-hard라면, 우리 양산 플래너가 &#x27;실시간&#x27;으로 도는 것은 정확히 무엇을 포기한 대가인가?</div>
   <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
   <div class="oq-btn-row">
     <button class="oq-btn oq-hint-btn">힌트 보기</button>
@@ -247,11 +241,11 @@ EmerNeRF는 self-supervision으로 static/dynamic을 분리하지만 <strong>ins
   </div>
   <div class="oq-hint">
     <div class="oq-label">힌트</div>
-    <div>tracker가 좋아지면 &#x27;pose 정합 오차로 인한 흐림&#x27;은 줄어듭니다. 하지만 렌더링 속도를 결정하는 건 pose 품질이 아니라 무엇이었는지 다시 생각해 보세요.</div>
+    <div>실시간 보장과 최적성·완전성 보장 사이에서 무엇을 거래했는지 생각하라. 이산화 해상도, anytime 중단, 휴리스틱 steering을 떠올려보라.</div>
   </div>
   <div class="oq-takeaway">
     <div class="oq-label">꼭 짚고 가야 할 것</div>
-    <div>tracker 품질은 &#x27;정합 정확도&#x27; 문제를 완화할 뿐, 느린 속도의 근본 원인인 광선당 다중 샘플 적분(ray-marching)은 그대로 남는다. 표현(representation) 자체를 바꾸지 않으면 실시간은 오지 않는다.</div>
+    <div>실시간성은 공짜가 아니라 최적성·완전성 보장의 일부를 이산화·근사·휴리스틱으로 맞바꿔 얻은 것이다. 따라서 &#x27;우리 플래너가 빠르다&#x27;는 말의 이면에 어떤 보장을 포기했는지를 항상 명시해야 한다.</div>
   </div>
 </div></div>
 <div class="nav"><a href="day_1.html">← Day 1</a><a href="day_3.html">Day 3 →</a></div>
