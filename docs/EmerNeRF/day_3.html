@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 3 — 한 문장으로 보는 EmerNeRF</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 3</div>
+  <div class="hero-tag">개요</div>
+  <h1 class="hero-title">한 문장으로 보는 EmerNeRF</h1>
+  <div class="hero-subtitle">EmerNeRF의 핵심 설계를 한 문장과 직관 하나로 요약합니다.</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 30%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">한 문장 요약부터 가겠습니다. <strong>EmerNeRF</strong>는 정적 필드 $S$, 동적 필드 $D$, 그리고 동적 필드에서 유도된 flow 필드 $V$를 하나의 hash-grid 하이브리드 표현으로 결합하고, <strong>density regularization</strong> $\mathcal{L}_{\sigma_d} = E(\sigma_d)$ 과 <strong>temporal feature aggregation</strong> 두 가지 자기지도 신호만으로 정-동 분해와 scene flow가 emergent하게 떠오르게 만드는 4D 표현입니다. 직관은 두 줄로 충분합니다. (1) &#x27;세계는 대부분 정적이다&#x27;라는 prior를 동적 density에 페널티로 박아두면, 동적 분기는 &#x27;꼭 필요한 점&#x27;에서만 density를 만들도록 강요받습니다 — 정-동 분해가 라벨 없이 자라납니다. (2) 시간적으로 일관된 feature만이 다중 프레임 aggregation에서 이득을 보므로, $g&#x27;_d = 0.25 g_d(x+v_b, t{-}1) + 0.5 g_d(x, t) + 0.25 g_d(x+v_f, t{+}1)$ 를 손실에 흘리면, 잘못된 flow는 손해를 보고 옳은 flow만 보상을 받습니다 — flow도 라벨 없이 자라납니다. 왜 이 접근이 어제 본 선행보다 나은가? GT 박스 없이 동적 분리가 되고(NSG/UniSim 우회), pre-trained flow 없이 flow가 나오며(SUDS·DynIBaR 우회), canonical deformation 가정도 필요 없습니다(HyperNeRF 우회). 비유하자면 두 학생이 서로 답을 베껴 가며 같이 푸는 study group인데, 한 명은 &#x27;static&#x27;이고 한 명은 &#x27;flow&#x27;고, 둘 다 옳을 때만 같이 점수를 받도록 규칙이 짜여 있는 셈입니다. 마음속으로 한 번, 왜 이 두 신호가 &#x27;동시에&#x27; 필요해야만 collapse가 일어나지 않는지 떠올려보세요. 내일은 이 빈자리를 landscape 위에서 좌표화합니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 2(a) — EmerNeRF 파이프라인 개요</div><a href="figures/page_5.png" target="_blank"><img src="figures/page_5.png" alt="Figure" loading="lazy"></a><div class="figure-explain">좌측은 static field gs와 dynamic field gd를 보여주고, 중앙 flow field에서 forward/backward flow vf, vb가 가까운 timestep feature들을 가중합으로 묶음. 우측은 shared color head, shadow head, sky head로 흐름이 모임.</div></div>
+<div class="trigger">Trigger Type C</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Mutually reinforcing decomposition + flow</div><div class="concept-def">EmerNeRF의 핵심은 &#x27;정-동 분해&#x27;와 &#x27;flow 추정&#x27;이 서로의 supervision이 된다는 점입니다. 동적 분해가 잘 되어야 동적 분기에 들어오는 점들이 의미 있어지고, 그 위에서 flow가 학습 가치를 가집니다. 반대로 flow가 정확해야 temporal aggregation이 신호 대 잡음을 높여 정-동 분해를 더 또렷하게 만듭니다. 두 신호 중 하나만 있으면 collapse(예: 모든 점을 정적이라 부르거나, flow가 0으로 수렴)가 일어나며, 이는 Appendix C.2 ablation에서 &#x27;no temporal aggregation&#x27; 시 flow Acc5가 89.74%에서 4.53%로 무너지는 것으로 확인됩니다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">emerges naturally</div><div class="expr-ko">자연히 떠오르다 / 별도 감독 없이 생겨나다</div><div class="expr-example">EmerNeRF&#x27;s capability to estimate scene flow emerges naturally from temporal aggregation.</div><div class="expr-context">explicit supervision 없이도 능력이 나타났음을 강조할 때. self-supervised 논문의 시그니처 표현.</div></div>
+<div class="expr-card"><div class="expr-en">self-bootstrapping</div><div class="expr-ko">스스로 부트스트랩되는</div><div class="expr-example">EmerNeRF captures geometry, appearance, motion, and semantics via self-bootstrapping.</div><div class="expr-context">외부 라벨 없이 학습 신호가 내부에서 자라남을 묘사할 때. abstract에서 자주 쓰임.</div></div>
+<div class="expr-card"><div class="expr-en">hinge upon</div><div class="expr-ko">~에 의존하다 / ~을 핵심으로 하다</div><div class="expr-example">EmerNeRF hinges upon two core components: scene stratification and an induced flow field.</div><div class="expr-context">방법의 핵심 의존 요소를 명시할 때. &#x27;rely on&#x27;보다 학술적이고 결정적인 의미.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">EmerNeRF에서 &#x27;정-동 분해가 emergent하게 일어나는&#x27; 가장 직접적인 메커니즘은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">GT 동적 마스크를 weak supervision으로 사용</button><button class="mcq-option" data-correct="true">동적 density에 평균 페널티 $\mathcal{L}_{\sigma_d} = E(\sigma_d)$ 를 가해 &#x27;꼭 필요할 때만&#x27; density를 내도록 압박</button><button class="mcq-option" data-correct="false">사전학습된 segmentation 모델로 초기화</button><button class="mcq-option" data-correct="false">동적 분기에 더 큰 capacity를 부여</button></div><div class="mcq-explanation">단순하지만 강력한 prior: 세계는 대부분 정적이므로 동적 density에 mean 페널티를 걸면 자연스럽게 동적 객체에만 σd가 살아남습니다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">Flow가 explicit supervision 없이도 학습되는 핵심 직관은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">Optical flow 모델로부터 distillation</button><button class="mcq-option" data-correct="false">Cycle consistency만으로 충분</button><button class="mcq-option" data-correct="true">Temporally consistent feature만이 multi-frame aggregation에서 이득을 보므로 gradient가 올바른 flow를 보상</button><button class="mcq-option" data-correct="false">라이다 포인트 매칭으로 직접 감독</button></div><div class="mcq-explanation">잘못된 flow로 모은 feature는 reconstruction loss를 증가시키므로, 옳은 대응만 살아남도록 자연 선택이 일어납니다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">&#x27;두 신호가 서로 강화한다&#x27;는 설계 원리는 본인 도메인에서 어디에 이식할 수 있을까요? 예컨대 occupancy + flow, depth + segmentation 같은 쌍 중 어느 쪽이 가장 collapse가 적을까요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>두 신호가 서로의 noise를 평균내는 구조여야 하고, 둘 다 동시에 잘못될 때 손해가 더 커야 합니다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>Self-supervision의 안정성은 보통 &#x27;단일 천재 신호&#x27;가 아니라 &#x27;서로를 검증하는 두 신호의 닫힌 루프&#x27;에서 옵니다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_2.html">← Day 2</a><a href="day_4.html">Day 4 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

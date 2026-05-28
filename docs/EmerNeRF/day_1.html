@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 1 — 왜 동적 4D 재구성이 어려운가</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 1</div>
+  <div class="hero-tag">배경</div>
+  <h1 class="hero-title">왜 동적 4D 재구성이 어려운가</h1>
+  <div class="hero-subtitle">운전 시뮬레이션·데이터 증강이 왜 본질적으로 4D 장면 재구성 문제인지 합의합니다.</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 10%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">자율주행 연구의 가장 비싼 자산은 무엇일까요? 차량도, 라이다도 아닌 &#x27;다양한 시나리오의 실주행 로그&#x27;입니다. 그런데 한 번 수집한 시퀀스는 그 카메라 포즈, 그 타임스탬프, 그 객체 배치에서만 유효합니다. 비 오는 야간 좌회전 컷인을 한 번 만난 뒤 그 상황으로 다시 돌아갈 수 없다는 건, 모든 corner case가 일회용 자산이 된다는 뜻이죠. <strong>Sim2real</strong>, <strong>digital twin</strong>, <strong>data augmentation</strong> 모두 결국 &#x27;단 한 번의 traversal에서 카메라를 옮겨가며 다시 보기&#x27;를 요구합니다. 이게 가능해야 폐쇄루프 시뮬레이션, 정책 검증, 새 시나리오 증강이 동작합니다. NeRF가 그 그릇이 되어야 하지만, 실제 운전 로그는 NeRF의 <strong>multi-view consistency</strong> 가정을 정면으로 깨뜨립니다. 보행자와 차량은 도시 곳곳에서 빠르게 움직이고, <strong>space-time 부피</strong>의 각 점은 단 한 번만 관측되며, ego는 직진 트랙을 단 한 번 지나갈 뿐입니다. 한 번의 traversal로 4D 부피 전체를 메워야 한다는 게 본질입니다. UniSim·NSG처럼 객체별 GT 박스로 우회한 접근은 라벨 비용에서 막힙니다. 오늘은 method 없이 &#x27;이 문제가 왜 어렵고 왜 풀 가치가 있는가&#x27;부터 합의해두면 좋겠습니다. 내일은 NeRF 계열이 왜 이 벽 앞에서 무너졌는지부터 진단해봅니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 — EmerNeRF의 최종 출력 (RGB, 정적/동적 분해, scene flow)</div><a href="figures/page_2.png" target="_blank"><img src="figures/page_2.png" alt="Figure" loading="lazy"></a><div class="figure-explain">10개 패널 격자. (a) GT RGB부터 (g) emergent scene flow, (i) PE-free DINOv2 feature까지 한 장면을 다층으로 분해한 결과. 우리가 최종적으로 도달해야 할 그림.</div></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Single-traversal 4D 재구성 문제</div><div class="concept-def">ego가 한 번만 지나가는 운전 로그에서 시간 t와 공간 x로 정의되는 4D 부피 전체를 복원해야 하는 문제 설정입니다. 각 점 (x, t)는 정확히 한 번만 관측되므로 NeRF가 의존하는 다중 시점 일치 신호가 사라집니다. 동시에 sim2real·digital twin·data augmentation 같은 자율주행의 downstream 응용은 결국 &#x27;같은 장면을 다른 ego 경로에서 다시 렌더링하기&#x27;를 요구하므로, single-traversal 4D 재구성은 우회할 수 없는 병목입니다.</div></div>
+<div class="concept-card"><div class="concept-term">Static-dynamic imbalance</div><div class="concept-def">공개 AV 데이터셋(nuScenes, Waymo)은 대부분 ego가 정지하거나 단순 직진하는 시퀀스로 채워져 있어 빠른 동적 객체가 적습니다. 그래서 동적 모델을 학습·평가하면 평균은 좋아 보이지만 **고속·야간·악천후·exposure mismatch** 같은 corner case에서 실패가 가려집니다. 저자들이 NOTR(120 시퀀스, Static-32/Dynamic-32/Diverse-56)을 별도로 큐레이팅한 이유가 바로 이 imbalance를 노출시키기 위함입니다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">long-standing challenge</div><div class="expr-ko">오래된 난제</div><div class="expr-example">In this work, we tackle this long-standing challenge of building 4D representations from single-traversal logs.</div><div class="expr-context">도입부에서 문제의 무게감을 전달할 때 사용. &#x27;오래 풀리지 않은 문제를 정면 돌파한다&#x27;는 톤.</div></div>
+<div class="expr-card"><div class="expr-en">in-the-wild data</div><div class="expr-ko">실제 환경의 비정형 데이터</div><div class="expr-example">Our self-supervised design enables training on general, in-the-wild driving data without curated annotations.</div><div class="expr-context">라벨이 없거나 정제되지 않은 실세계 데이터를 강조할 때 사용. &#x27;in the wild&#x27;는 lab/synthetic의 반대 개념.</div></div>
+<div class="expr-card"><div class="expr-en">Cambrian explosion of NeRFs</div><div class="expr-ko">NeRF의 폭발적 확산</div><div class="expr-example">NeRFs have witnessed a Cambrian explosion in computer graphics, robotics, and autonomous driving.</div><div class="expr-context">한 분야가 짧은 기간에 다양한 변종으로 폭증한 상황을 비유적으로 묘사할 때 사용.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">운전 로그에서 NeRF의 multi-view consistency 가정이 깨지는 가장 본질적인 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">카메라 해상도가 낮기 때문</button><button class="mcq-option" data-correct="true">공간·시간 부피의 각 점이 단 한 번만 관측되기 때문</button><button class="mcq-option" data-correct="false">라이다 포인트가 sparse하기 때문</button><button class="mcq-option" data-correct="false">exposure가 자주 바뀌기 때문</button></div><div class="mcq-explanation">ego가 한 번만 traversal하므로 같은 (x, t) 점이 여러 시점에서 재관측되지 않습니다. 다른 보기들은 부차적 어려움일 뿐 본질적 가정 위반이 아닙니다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">Sim2real·digital twin·data augmentation이 공통으로 요구하는 핵심 능력은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">객체 단위의 6-DoF 포즈 라벨링</button><button class="mcq-option" data-correct="true">단일 traversal 로그로부터 임의의 ego 경로 재렌더링</button><button class="mcq-option" data-correct="false">더 큰 NeRF 모델 capacity</button><button class="mcq-option" data-correct="false">고프레임 RGB 영상 수집</button></div><div class="mcq-explanation">세 응용 모두 결국 &#x27;본 적 없는 카메라 경로에서 같은 장면을 다시 보기&#x27;로 환원됩니다. 4D 재구성이 이를 한 번에 해결합니다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">본인 연구에서 &#x27;한 번 수집된 corner case 로그&#x27;를 어떻게 더 많이 우려내고 있나요? 새 모델·라벨에 의존하지 않고도 같은 시퀀스로부터 추가 신호를 뽑을 여지가 있나요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>현재 파이프라인에서 한 traversal이 1회 사용 후 폐기되는 부분과, 그것을 다시 사용하려면 어떤 표현이 필요한지를 분리해 생각해보세요.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>운전 데이터의 진짜 가치는 raw 시퀀스가 아니라 &#x27;재시뮬레이션 가능한 4D 표현&#x27;에 잠재합니다. 표현이 없으면 모든 corner case는 일회용입니다.</div>
+  </div>
+</div></div>
+<div class="nav"><span class="disabled">← 이전</span><a href="day_2.html">Day 2 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

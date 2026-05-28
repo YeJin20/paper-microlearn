@@ -1,0 +1,648 @@
+{
+  "_meta": {
+    "goal": "applying this paper to autonomous driving research",
+    "generated_at": "2026-05-28T23:28:36.984067",
+    "source_pdf": "papers/EmerNeRF.pdf",
+    "paper_title": "EmerNeRF — 동적 운전 장면의 4D 자기지도 분해"
+  },
+  "day_1": {
+    "title": "왜 동적 4D 재구성이 어려운가",
+    "intent": "운전 시뮬레이션·데이터 증강이 왜 본질적으로 4D 장면 재구성 문제인지 합의합니다.",
+    "content": "자율주행 연구의 가장 비싼 자산은 무엇일까요? 차량도, 라이다도 아닌 '다양한 시나리오의 실주행 로그'입니다. 그런데 한 번 수집한 시퀀스는 그 카메라 포즈, 그 타임스탬프, 그 객체 배치에서만 유효합니다. 비 오는 야간 좌회전 컷인을 한 번 만난 뒤 그 상황으로 다시 돌아갈 수 없다는 건, 모든 corner case가 일회용 자산이 된다는 뜻이죠. **Sim2real**, **digital twin**, **data augmentation** 모두 결국 '단 한 번의 traversal에서 카메라를 옮겨가며 다시 보기'를 요구합니다. 이게 가능해야 폐쇄루프 시뮬레이션, 정책 검증, 새 시나리오 증강이 동작합니다. NeRF가 그 그릇이 되어야 하지만, 실제 운전 로그는 NeRF의 **multi-view consistency** 가정을 정면으로 깨뜨립니다. 보행자와 차량은 도시 곳곳에서 빠르게 움직이고, **space-time 부피**의 각 점은 단 한 번만 관측되며, ego는 직진 트랙을 단 한 번 지나갈 뿐입니다. 한 번의 traversal로 4D 부피 전체를 메워야 한다는 게 본질입니다. UniSim·NSG처럼 객체별 GT 박스로 우회한 접근은 라벨 비용에서 막힙니다. 오늘은 method 없이 '이 문제가 왜 어렵고 왜 풀 가치가 있는가'부터 합의해두면 좋겠습니다. 내일은 NeRF 계열이 왜 이 벽 앞에서 무너졌는지부터 진단해봅니다.",
+    "suggested_figure": "Figure 1 — EmerNeRF의 최종 출력 (RGB, 정적/동적 분해, scene flow)",
+    "figure_page": 2,
+    "figure_description": "10개 패널 격자. (a) GT RGB부터 (g) emergent scene flow, (i) PE-free DINOv2 feature까지 한 장면을 다층으로 분해한 결과. 우리가 최종적으로 도달해야 할 그림.",
+    "trigger_type": "A",
+    "key_concepts": [
+      {
+        "term": "Single-traversal 4D 재구성 문제",
+        "definition": "ego가 한 번만 지나가는 운전 로그에서 시간 t와 공간 x로 정의되는 4D 부피 전체를 복원해야 하는 문제 설정입니다. 각 점 (x, t)는 정확히 한 번만 관측되므로 NeRF가 의존하는 다중 시점 일치 신호가 사라집니다. 동시에 sim2real·digital twin·data augmentation 같은 자율주행의 downstream 응용은 결국 '같은 장면을 다른 ego 경로에서 다시 렌더링하기'를 요구하므로, single-traversal 4D 재구성은 우회할 수 없는 병목입니다."
+      },
+      {
+        "term": "Static-dynamic imbalance",
+        "definition": "공개 AV 데이터셋(nuScenes, Waymo)은 대부분 ego가 정지하거나 단순 직진하는 시퀀스로 채워져 있어 빠른 동적 객체가 적습니다. 그래서 동적 모델을 학습·평가하면 평균은 좋아 보이지만 **고속·야간·악천후·exposure mismatch** 같은 corner case에서 실패가 가려집니다. 저자들이 NOTR(120 시퀀스, Static-32/Dynamic-32/Diverse-56)을 별도로 큐레이팅한 이유가 바로 이 imbalance를 노출시키기 위함입니다."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "long-standing challenge",
+        "korean": "오래된 난제",
+        "example": "In this work, we tackle this long-standing challenge of building 4D representations from single-traversal logs.",
+        "context": "도입부에서 문제의 무게감을 전달할 때 사용. '오래 풀리지 않은 문제를 정면 돌파한다'는 톤."
+      },
+      {
+        "expression": "in-the-wild data",
+        "korean": "실제 환경의 비정형 데이터",
+        "example": "Our self-supervised design enables training on general, in-the-wild driving data without curated annotations.",
+        "context": "라벨이 없거나 정제되지 않은 실세계 데이터를 강조할 때 사용. 'in the wild'는 lab/synthetic의 반대 개념."
+      },
+      {
+        "expression": "Cambrian explosion of NeRFs",
+        "korean": "NeRF의 폭발적 확산",
+        "example": "NeRFs have witnessed a Cambrian explosion in computer graphics, robotics, and autonomous driving.",
+        "context": "한 분야가 짧은 기간에 다양한 변종으로 폭증한 상황을 비유적으로 묘사할 때 사용."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "운전 로그에서 NeRF의 multi-view consistency 가정이 깨지는 가장 본질적인 이유는?",
+        "options": [
+          "카메라 해상도가 낮기 때문",
+          "공간·시간 부피의 각 점이 단 한 번만 관측되기 때문",
+          "라이다 포인트가 sparse하기 때문",
+          "exposure가 자주 바뀌기 때문"
+        ],
+        "correct": 1,
+        "explanation": "ego가 한 번만 traversal하므로 같은 (x, t) 점이 여러 시점에서 재관측되지 않습니다. 다른 보기들은 부차적 어려움일 뿐 본질적 가정 위반이 아닙니다."
+      },
+      {
+        "question": "Sim2real·digital twin·data augmentation이 공통으로 요구하는 핵심 능력은?",
+        "options": [
+          "객체 단위의 6-DoF 포즈 라벨링",
+          "단일 traversal 로그로부터 임의의 ego 경로 재렌더링",
+          "더 큰 NeRF 모델 capacity",
+          "고프레임 RGB 영상 수집"
+        ],
+        "correct": 1,
+        "explanation": "세 응용 모두 결국 '본 적 없는 카메라 경로에서 같은 장면을 다시 보기'로 환원됩니다. 4D 재구성이 이를 한 번에 해결합니다."
+      }
+    ],
+    "open_question": {
+      "question": "본인 연구에서 '한 번 수집된 corner case 로그'를 어떻게 더 많이 우려내고 있나요? 새 모델·라벨에 의존하지 않고도 같은 시퀀스로부터 추가 신호를 뽑을 여지가 있나요?",
+      "hint": "현재 파이프라인에서 한 traversal이 1회 사용 후 폐기되는 부분과, 그것을 다시 사용하려면 어떤 표현이 필요한지를 분리해 생각해보세요.",
+      "key_takeaway": "운전 데이터의 진짜 가치는 raw 시퀀스가 아니라 '재시뮬레이션 가능한 4D 표현'에 잠재합니다. 표현이 없으면 모든 corner case는 일회용입니다."
+    }
+  },
+  "day_2": {
+    "title": "선행 NeRF가 깨진 지점",
+    "intent": "동적 NeRF·AV NeRF 계열이 어떤 가정에서 운전 로그에 무너졌는지를 진단합니다.",
+    "content": "어제 '단일 traversal 4D'가 본질적 어려움임을 합의했죠. 그럼 기존 NeRF 계열은 왜 이 벽 앞에서 무너졌을까요. 네 갈래로 정리됩니다. 첫째, **Nerfies/HyperNeRF** 같은 deformation 기반은 모든 관측을 첫 프레임에서 만든 canonical space로 워핑해 매핑한다고 가정합니다. 그러나 운전 장면에서 객체는 프레임 중간에 시야에 진입했다가 빠져나가므로 단일 canonical space로 모일 수가 없습니다. 둘째, **D²NeRF**는 monocular 동적 분해를 시도했지만 야외에서 hyperparameter에 과도하게 민감하고 capacity가 부족해 정적·동적 분리에 실패합니다(Table 1a에서 24.35 PSNR로 가장 낮음). 셋째, **NSG**·**UniSim**은 객체별 GT bounding box와 트래킹에 의존해 동적 객체를 따로 모델링합니다 — 성능은 나오지만 라벨 비용으로 인해 규모가 막힙니다. 넷째, **SUDS**는 multi-traversal 가정을 두고 pre-trained optical flow에 강하게 의존하며, flow warping loss가 비싸고 cycle-consistency 필터링이 깨지면 최적화가 발산합니다. 마지막으로 scene flow 쪽 **NSFP**는 각 타임스텝마다 작은 네트워크를 매번 다시 최적화하느라 사실상 실시간 사용이 불가능합니다. 즉 '자기지도 + 단일 traversal + flow도 직접 학습'을 동시에 만족하는 방법이 없었다는 게 빈자리입니다. 내일은 EmerNeRF가 이 빈자리를 어떤 한 문장의 아이디어로 채우는지부터 봅니다.",
+    "suggested_figure": "Table 1 — 정적/동적 장면 재구성 비교",
+    "figure_page": 8,
+    "figure_description": "D²NeRF, HyperNeRF, iNGP, StreetSurf와 EmerNeRF의 PSNR/SSIM 비교 표. Dynamic-32 split에서 D²NeRF(24.35)와 HyperNeRF(25.17)가 EmerNeRF(28.87)에 비해 얼마나 뒤처지는지 한눈에 보임.",
+    "trigger_type": "B",
+    "key_concepts": [
+      {
+        "term": "Canonical-space deformation 가정",
+        "definition": "Nerfies/HyperNeRF가 모든 시점의 관측을 첫 프레임 기준의 '정칙 공간(canonical space)'으로 deformation 매핑해 다시 NeRF로 학습한다는 설계입니다. 인물 얼굴 같은 닫힌 토폴로지에서는 잘 동작하지만, 운전 장면처럼 객체가 enter/exit하며 canonical에 존재하지 않을 수도 있는 토폴로지에서는 매핑 자체가 정의되지 않아 무너집니다. '항상 시작 프레임에 등장한다'는 암묵 가정이 도시 주행에서는 거의 위반됩니다."
+      },
+      {
+        "term": "Pre-trained optical flow 의존성",
+        "definition": "SUDS·DynIBaR 같은 동적 NeRF는 외부 optical flow 모델(RAFT 등) 출력을 flow warping loss로 주입합니다. 문제는 (1) cycle-consistency로 잘못된 flow를 걸러내지 못하면 최적화가 발산하고, (2) flow warping 비용이 매우 커서 학습이 느려지며, (3) flow 모델 자체의 도메인 편향이 그대로 NeRF에 전이된다는 점입니다. EmerNeRF가 'flow도 emergent'를 노린 이유가 정확히 이 의존성을 끊기 위해서입니다."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "fall short",
+        "korean": "부족함을 드러내다 / 미치지 못하다",
+        "example": "These methods fall short in single-traversal driving logs because they assume canonical-space deformation.",
+        "context": "선행 연구의 한계를 비판할 때 부드럽게 쓰는 표준 표현. 'fail'보다 톤이 덜 공격적."
+      },
+      {
+        "expression": "incur high computational costs",
+        "korean": "큰 계산 비용을 초래하다",
+        "example": "SUDS incurs high computational costs due to its expensive flow-based warping losses.",
+        "context": "선행 방법의 효율성 단점을 지적할 때. 'is slow'보다 학술적."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "HyperNeRF·Nerfies가 운전 로그에서 실패하는 핵심 가정은?",
+        "options": [
+          "단일 카메라만 사용한다는 가정",
+          "모든 관측이 canonical reference space로 deformation 매핑된다는 가정",
+          "라이다가 항상 동기화되어 있다는 가정",
+          "장면이 정적이라는 가정"
+        ],
+        "correct": 1,
+        "explanation": "객체가 enter/exit하는 운전 장면에서는 canonical space에 존재하지 않는 객체가 흔하므로 deformation 매핑 자체가 정의되지 않습니다."
+      },
+      {
+        "question": "NSG와 UniSim의 공통 약점은?",
+        "options": [
+          "정적 장면 재구성 품질이 낮음",
+          "GT bounding box·트래킹 라벨에 의존하여 확장성이 떨어짐",
+          "동적 객체를 모델링하지 못함",
+          "optical flow에 강하게 의존함"
+        ],
+        "correct": 1,
+        "explanation": "두 방법은 객체별 분리를 GT 라벨에 의존하므로, 데이터 양이 늘어날수록 라벨 비용이 비례해 증가합니다. SUDS와는 다른 종류의 의존성입니다."
+      }
+    ],
+    "open_question": {
+      "question": "본인 팀의 NeRF/3DGS 파이프라인이 '외부 모델 출력'에 의존하는 지점은 어디인가요? 그 의존성을 self-supervision으로 대체하면 어떤 비용이 사라지고 어떤 위험이 생길까요?",
+      "hint": "외부 모델 의존은 종종 학습 시작점을 안정화해주지만 도메인 시프트의 통로가 되기도 합니다. EmerNeRF는 후자를 끊는 쪽을 택했습니다.",
+      "key_takeaway": "외부 신호 없이 학습이 부트스트랩되려면 '서로 강화하는 두 신호'(여기서는 분해와 flow)가 필요합니다. 단일 신호만으로 self-supervised를 하면 보통 collapse합니다."
+    }
+  },
+  "day_3": {
+    "title": "한 문장으로 보는 EmerNeRF",
+    "intent": "EmerNeRF의 핵심 설계를 한 문장과 직관 하나로 요약합니다.",
+    "content": "한 문장 요약부터 가겠습니다. **EmerNeRF**는 정적 필드 $S$, 동적 필드 $D$, 그리고 동적 필드에서 유도된 flow 필드 $V$를 하나의 hash-grid 하이브리드 표현으로 결합하고, **density regularization** $\\mathcal{L}_{\\sigma_d} = E(\\sigma_d)$ 과 **temporal feature aggregation** 두 가지 자기지도 신호만으로 정-동 분해와 scene flow가 emergent하게 떠오르게 만드는 4D 표현입니다. 직관은 두 줄로 충분합니다. (1) '세계는 대부분 정적이다'라는 prior를 동적 density에 페널티로 박아두면, 동적 분기는 '꼭 필요한 점'에서만 density를 만들도록 강요받습니다 — 정-동 분해가 라벨 없이 자라납니다. (2) 시간적으로 일관된 feature만이 다중 프레임 aggregation에서 이득을 보므로, $g'_d = 0.25 g_d(x+v_b, t{-}1) + 0.5 g_d(x, t) + 0.25 g_d(x+v_f, t{+}1)$ 를 손실에 흘리면, 잘못된 flow는 손해를 보고 옳은 flow만 보상을 받습니다 — flow도 라벨 없이 자라납니다. 왜 이 접근이 어제 본 선행보다 나은가? GT 박스 없이 동적 분리가 되고(NSG/UniSim 우회), pre-trained flow 없이 flow가 나오며(SUDS·DynIBaR 우회), canonical deformation 가정도 필요 없습니다(HyperNeRF 우회). 비유하자면 두 학생이 서로 답을 베껴 가며 같이 푸는 study group인데, 한 명은 'static'이고 한 명은 'flow'고, 둘 다 옳을 때만 같이 점수를 받도록 규칙이 짜여 있는 셈입니다. 마음속으로 한 번, 왜 이 두 신호가 '동시에' 필요해야만 collapse가 일어나지 않는지 떠올려보세요. 내일은 이 빈자리를 landscape 위에서 좌표화합니다.",
+    "suggested_figure": "Figure 2(a) — EmerNeRF 파이프라인 개요",
+    "figure_page": 5,
+    "figure_description": "좌측은 static field gs와 dynamic field gd를 보여주고, 중앙 flow field에서 forward/backward flow vf, vb가 가까운 timestep feature들을 가중합으로 묶음. 우측은 shared color head, shadow head, sky head로 흐름이 모임.",
+    "trigger_type": "C",
+    "key_concepts": [
+      {
+        "term": "Mutually reinforcing decomposition + flow",
+        "definition": "EmerNeRF의 핵심은 '정-동 분해'와 'flow 추정'이 서로의 supervision이 된다는 점입니다. 동적 분해가 잘 되어야 동적 분기에 들어오는 점들이 의미 있어지고, 그 위에서 flow가 학습 가치를 가집니다. 반대로 flow가 정확해야 temporal aggregation이 신호 대 잡음을 높여 정-동 분해를 더 또렷하게 만듭니다. 두 신호 중 하나만 있으면 collapse(예: 모든 점을 정적이라 부르거나, flow가 0으로 수렴)가 일어나며, 이는 Appendix C.2 ablation에서 'no temporal aggregation' 시 flow Acc5가 89.74%에서 4.53%로 무너지는 것으로 확인됩니다."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "emerges naturally",
+        "korean": "자연히 떠오르다 / 별도 감독 없이 생겨나다",
+        "example": "EmerNeRF's capability to estimate scene flow emerges naturally from temporal aggregation.",
+        "context": "explicit supervision 없이도 능력이 나타났음을 강조할 때. self-supervised 논문의 시그니처 표현."
+      },
+      {
+        "expression": "self-bootstrapping",
+        "korean": "스스로 부트스트랩되는",
+        "example": "EmerNeRF captures geometry, appearance, motion, and semantics via self-bootstrapping.",
+        "context": "외부 라벨 없이 학습 신호가 내부에서 자라남을 묘사할 때. abstract에서 자주 쓰임."
+      },
+      {
+        "expression": "hinge upon",
+        "korean": "~에 의존하다 / ~을 핵심으로 하다",
+        "example": "EmerNeRF hinges upon two core components: scene stratification and an induced flow field.",
+        "context": "방법의 핵심 의존 요소를 명시할 때. 'rely on'보다 학술적이고 결정적인 의미."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "EmerNeRF에서 '정-동 분해가 emergent하게 일어나는' 가장 직접적인 메커니즘은?",
+        "options": [
+          "GT 동적 마스크를 weak supervision으로 사용",
+          "동적 density에 평균 페널티 $\\mathcal{L}_{\\sigma_d} = E(\\sigma_d)$ 를 가해 '꼭 필요할 때만' density를 내도록 압박",
+          "사전학습된 segmentation 모델로 초기화",
+          "동적 분기에 더 큰 capacity를 부여"
+        ],
+        "correct": 1,
+        "explanation": "단순하지만 강력한 prior: 세계는 대부분 정적이므로 동적 density에 mean 페널티를 걸면 자연스럽게 동적 객체에만 σd가 살아남습니다."
+      },
+      {
+        "question": "Flow가 explicit supervision 없이도 학습되는 핵심 직관은?",
+        "options": [
+          "Optical flow 모델로부터 distillation",
+          "Cycle consistency만으로 충분",
+          "Temporally consistent feature만이 multi-frame aggregation에서 이득을 보므로 gradient가 올바른 flow를 보상",
+          "라이다 포인트 매칭으로 직접 감독"
+        ],
+        "correct": 2,
+        "explanation": "잘못된 flow로 모은 feature는 reconstruction loss를 증가시키므로, 옳은 대응만 살아남도록 자연 선택이 일어납니다."
+      }
+    ],
+    "open_question": {
+      "question": "'두 신호가 서로 강화한다'는 설계 원리는 본인 도메인에서 어디에 이식할 수 있을까요? 예컨대 occupancy + flow, depth + segmentation 같은 쌍 중 어느 쪽이 가장 collapse가 적을까요?",
+      "hint": "두 신호가 서로의 noise를 평균내는 구조여야 하고, 둘 다 동시에 잘못될 때 손해가 더 커야 합니다.",
+      "key_takeaway": "Self-supervision의 안정성은 보통 '단일 천재 신호'가 아니라 '서로를 검증하는 두 신호의 닫힌 루프'에서 옵니다."
+    }
+  },
+  "day_4": {
+    "title": "Landscape에서의 좌표",
+    "intent": "동적 NeRF·AV NeRF·scene flow 계열을 비교축 위에 놓고 EmerNeRF의 빈자리를 명확히 합니다.",
+    "content": "오늘은 EmerNeRF를 지도 위에 좌표화합니다. 비교축은 세 개로 잡으면 깔끔합니다 — (1) 동적 객체를 모델링하는가, (2) 외부 라벨/사전학습 모델에 의존하는가, (3) 단일 traversal에서 동작하는가. 이걸로 다섯 그룹을 보겠습니다. **HyperNeRF/Nerfies**: 동적 O, 라벨 X, 단일 traversal O이지만 canonical deformation 가정으로 운전 enter/exit에 실패. **D²NeRF**: 동적 O, 라벨 X, monocular 가정. 도시 야외에서 분해 실패(Dynamic-32에서 24.35 PSNR). **NSG·UniSim**: 동적 O, GT 박스/트래킹 의존, 단일 traversal O. 라벨 비용에서 막힘. **SUDS**: 동적 O, pre-trained flow 의존, multi-traversal 가정. flow warping 비용 큼. **StreetSurf·iNGP**: 정적만, 라벨 X, 단일 traversal O — 정적 최고치(26.15 PSNR)이지만 동적은 손도 못 댐. **NSFP**: scene flow only, per-timestep optimization으로 매우 느림. EmerNeRF의 좌표는 '동적 O + 라벨 X + 사전학습 flow X + 단일 traversal O'라는 마지막 빈 칸입니다. 그 결과 Dynamic-32에서 +3.70 PSNR, Static-32에서 +2.93 PSNR, EPE3D 0.014m(NSFP 0.365m 대비)로 모든 축에서 SOTA를 가져갑니다. 핵심은 '한 가지를 잘하는 방법은 많지만, 네 조건을 동시에 만족하는 방법이 없었다'는 빈자리에 자기지도 + flow emergence라는 두 카드로 끼워 넣은 점입니다. 내일은 이 카드들이 어떻게 한 파이프라인으로 묶이는지 큰 그림을 펴봅니다.",
+    "suggested_figure": "Table 2 — Scene flow estimation NSFP vs EmerNeRF",
+    "figure_page": 8,
+    "figure_description": "EPE3D, Acc5, Acc10, θ 네 컬럼에서 NSFP(0.365m / 51.76% / 67.36% / 0.84)와 EmerNeRF(0.014m / 93.92% / 96.27% / 0.64)를 직접 비교. 한 행만 봐도 위치가 명확해짐.",
+    "trigger_type": "A",
+    "key_concepts": [
+      {
+        "term": "Annotation-free dynamic decomposition",
+        "definition": "정-동 분해를 GT bounding box나 사전학습 segmentation 없이 수행하는 능력입니다. NSG/UniSim이 라벨로 분해를 우회한 데 비해, EmerNeRF·D²NeRF·SUDS는 라벨 없이 분해를 시도합니다. 하지만 D²NeRF는 도시 야외에서 hyperparameter 민감도로, SUDS는 pre-trained flow 의존으로 한계가 분명합니다. EmerNeRF는 density regularization $\\mathcal{L}_{\\sigma_d} = E(\\sigma_d)$ 라는 단순한 prior 하나로 이 자리를 메웠다는 점이 핵심입니다."
+      },
+      {
+        "term": "NOTR benchmark",
+        "definition": "Waymo Open Dataset에서 손으로 큐레이팅한 120개 시퀀스 벤치마크로, Static-32 / Dynamic-32 / Diverse-56 세 split으로 나뉩니다. Diverse-56은 ego-static, high-speed, exposure mismatch, dusk/dawn, gloomy, rainy, night 7개 카테고리로 구성되어 도시 운전 환경의 imbalance를 정면으로 노출시킵니다. 또한 2D dynamic bounding box, GT 3D scene flow, 3D semantic occupancy까지 함께 제공해 reconstruction 외에도 motion·semantic 평가가 가능하다는 점이 차별점입니다."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "position our work",
+        "korean": "본 연구의 위치를 잡다",
+        "example": "We position our work at the intersection of self-supervision and dynamic scene reconstruction.",
+        "context": "Related work 정리 뒤 본인 방법의 좌표를 명시할 때 표준 표현."
+      },
+      {
+        "expression": "in contrast to / by contrast",
+        "korean": "이와 대조적으로",
+        "example": "In contrast to SUDS, our method does not rely on pre-trained optical flow models.",
+        "context": "이전 방법과의 차이를 부각할 때. 단락 시작에서 톤을 전환하는 데 유용."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "다음 중 EmerNeRF가 유일하게 동시에 만족하는 조건 조합은?",
+        "options": [
+          "동적 모델링 + GT 라벨 + 단일 traversal",
+          "동적 모델링 + 사전학습 flow + multi-traversal",
+          "동적 모델링 + 라벨/사전학습 X + 단일 traversal",
+          "정적만 + 라벨/사전학습 X + 단일 traversal"
+        ],
+        "correct": 2,
+        "explanation": "다른 조합은 NSG·UniSim(1), SUDS(2), StreetSurf(4)가 이미 점유. EmerNeRF는 셋 모두를 라벨 없이 푸는 빈자리를 차지했습니다."
+      },
+      {
+        "question": "NOTR가 기존 AV 데이터셋과 가장 다른 점은?",
+        "options": [
+          "라이다 점 밀도가 더 높음",
+          "Static·Dynamic·Diverse(7개 challenging 조건) 균형 split 제공",
+          "12 카메라 다중 시점 동기화 제공",
+          "도시가 아닌 고속도로 전용"
+        ],
+        "correct": 1,
+        "explanation": "기존 Waymo·nuScenes는 단순 시퀀스가 다수라 동적·악조건 평가를 가리지 못합니다. NOTR는 의도적으로 균형을 맞춘 120 시퀀스 큐레이션입니다."
+      }
+    ],
+    "open_question": {
+      "question": "본인 팀에서 운영 중인 운전 데이터셋의 imbalance는 어디에 있나요? Diverse-56의 7개 카테고리 중 가장 부족한 것은 무엇이고, 그것을 NeRF로 합성 보강할 때 어떤 신호가 가장 먼저 깨질까요?",
+      "hint": "야간·exposure mismatch는 색 일관성을, 고속·ego-static은 flow 학습 신호를 비대칭적으로 흔듭니다.",
+      "key_takeaway": "Benchmark imbalance는 모델 평가의 평균에 가려져 거의 항상 corner case 실패를 숨깁니다. Diverse split을 따로 들고 다니는 습관이 곧 안전 마진입니다."
+    }
+  },
+  "day_5": {
+    "title": "전체 파이프라인 지도",
+    "intent": "EmerNeRF의 표현·헤드·렌더링·손실을 한 흐름으로 펼쳐 큰 그림을 잡습니다.",
+    "content": "오늘은 method 지도 한 장을 머릿속에 그립니다. EmerNeRF는 세 개의 hash-grid 필드를 씁니다. 정적 $S = H_s(x)$, 동적 $D = H_d(x, t)$, flow $V = H_v(x, t)$. 쿼리 $(x, t)$가 들어오면 정적·동적에서 각각 feature·density $(g_s, \\sigma_s), (g_d, \\sigma_d)$ 를 뽑고, $V$가 출력하는 forward·backward flow $v_f, v_b$로 인접 timestep의 동적 feature를 가중합 $g'_d = 0.25 g_d(x+v_b, t-1) + 0.5 g_d(x, t) + 0.25 g_d(x+v_f, t+1)$ 로 묶습니다. 그다음 네 개의 헤드가 갈라집니다. **shared color head**가 정적·동적 color $c_s, c_d$ 를 같은 가중치로 예측(정적의 dense supervision을 동적이 빌려쓰는 트릭), **sky head**는 ray 방향에서 sky 색 $c_{sky}$ 를, **shadow head**는 동적 객체의 shadow ratio $\\rho \\in [0,1]$ 를, **feature head**는 DINOv2 lifted feature $f$ 를 뽑습니다. 최종 색은 density-weighted blending $c = \\frac{\\sigma_s}{\\sigma_s + \\sigma_d}(1-\\rho) c_s + \\frac{\\sigma_d}{\\sigma_s + \\sigma_d} c_d$ 로 합쳐지고, ray를 따라 volume rendering으로 적분됩니다. 학습은 RGB L2, sky BCE, shadow sparsity, dynamic density 페널티, cycle consistency, depth + line-of-sight, feature L2가 모두 한 번에 흐르는 end-to-end. 모델은 약 **30M parameters**, A100 1장에서 정적 33분, 동적 2시간, feature 추가 시 +5~15분이면 끝납니다. 큰 그림은 'hash-grid 3개 + head 4개 + 손실 7개를 한 backbone에 박았다'입니다. 내일부터 3일은 이 지도의 세 핵심 구역(분해 / flow / feature)을 한 구역씩 확대해서 봅니다.",
+    "suggested_figure": "Figure 2 — 전체 파이프라인",
+    "figure_page": 5,
+    "figure_description": "좌측에 static/dynamic/flow 세 hash-grid가 (x,t) 쿼리를 받고, 중앙 temporal aggregation 후 우측 4개 head(color, sky, shadow, feature)로 분기. 우상단에는 PE map과 PE head가 별도 박스로 표시됨.",
+    "trigger_type": "B",
+    "key_concepts": [
+      {
+        "term": "Hybrid hash-grid 3-field 표현",
+        "definition": "EmerNeRF는 시간 독립 feature($H_s$, 정적)와 시간 의존 feature($H_d$, 동적), 그리고 flow($H_v$)를 모두 iNGP 스타일 multi-resolution hash grid로 표현합니다. 정적은 2^4~2^13 해상도 10 레벨, feature dim 4, 레벨당 max 2^20 entry. 동적은 거의 동일하지만 max 2^18. 이 분리는 (1) 시간에 무관한 정적 구조에 dense gradient를 모아 표현 효율을 높이고, (2) 동적 분기는 '꼭 필요한 곳'에서만 capacity를 쓰게 만들어, 라벨 없는 분해의 inductive bias로 작동합니다. 총 파라미터 약 30M로 StreetSurf보다 18M 작습니다."
+      },
+      {
+        "term": "Density-weighted static-dynamic blending",
+        "definition": "정적·동적 분기 모두에서 density가 나올 수 있으므로, 한 점의 최종 색은 $c = \\frac{\\sigma_s}{\\sigma_s + \\sigma_d}(1-\\rho) c_s + \\frac{\\sigma_d}{\\sigma_s + \\sigma_d} c_d$ 로 두 분기를 density 비율로 섞습니다. 여기서 $\\rho$ 는 shadow head 출력으로, 동적 객체가 정적 배경 위에 드리우는 그림자 강도를 조절합니다. 이 형태는 '정적이 dominant일 땐 정적 색, 동적이 살아 있을 땐 동적 색'을 부드럽게 보간하면서, 그림자라는 정-동 결합 효과까지 한 식에 담는다는 점이 우아한 부분입니다."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "At a high level",
+        "korean": "큰 그림에서 보면 / 개략적으로",
+        "example": "At a high level, EmerNeRF builds a hybrid static-dynamic world representation via a density-regularized objective.",
+        "context": "Method 섹션 시작에서 본격적인 식 전에 직관을 먼저 던질 때 표준 표현."
+      },
+      {
+        "expression": "consume X as input",
+        "korean": "X를 입력으로 받다",
+        "example": "The shared color head consumes (gs, d) and (gd, d) as input.",
+        "context": "모듈 사이의 데이터 흐름을 묘사할 때. 'takes ... as input'보다 동적 톤."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "EmerNeRF의 shared color head가 정적·동적 분기에 동시에 적용되는 가장 큰 이유는?",
+        "options": [
+          "파라미터 수를 줄이기 위해",
+          "정적 분기의 dense self-supervision을 동적 분기가 빌려쓰게 하기 위해",
+          "RGB 도메인을 통일하기 위해",
+          "Sky head와 호환을 맞추기 위해"
+        ],
+        "correct": 1,
+        "explanation": "동적 관측은 sparse하므로, 정적 분기에서 풍부하게 들어오는 RGB gradient를 같은 color head를 통해 동적도 함께 학습합니다."
+      },
+      {
+        "question": "Density-weighted blending 식에서 shadow ratio $\\rho$ 의 역할은?",
+        "options": [
+          "정적 색 $c_s$ 의 채도를 낮춰 그림자 효과를 재현",
+          "동적 density를 직접 감소",
+          "Sky 색의 가중치를 조절",
+          "Flow의 크기를 정규화"
+        ],
+        "correct": 0,
+        "explanation": "$(1-\\rho)c_s$ 형태로 정적 분기의 색을 modulate함으로써, 동적 객체가 정적 배경에 드리우는 그림자를 표현합니다."
+      }
+    ],
+    "open_question": {
+      "question": "본인이 운영 중인 reconstruction 파이프라인에서 '정적·동적 분기에 공유할 수 있는 헤드'는 어디가 있을까요? 공유하면 동적 sparse supervision 문제가 줄어들 모듈이 있나요?",
+      "hint": "Geometry head, semantic head, BRDF/material head 같이 시간에 약한 의존성을 갖는 출력이 후보가 됩니다.",
+      "key_takeaway": "정-동 분기 사이의 공유는 단순 경량화가 아니라 supervision 전이의 채널입니다. 어디를 공유하느냐가 곧 정-동 학습 균형의 핵심 설계입니다."
+    }
+  },
+  "day_6": {
+    "title": "정-동 분해 deep dive",
+    "intent": "정적/동적 hash field와 density regularization이 어떻게 분해를 emergent하게 만드는지 깊이 봅니다.",
+    "content": "오늘은 분해 모듈만 확대합니다. 정적 분기는 $g_s, \\sigma_s = g_s(H_s(x))$ 로 시간 무관 feature를 뽑고, 동적 분기는 $g_d, \\sigma_d = g_d(H_d(x, t))$ 로 시간 의존 feature를 뽑습니다. 정적·동적 모두에서 density가 동시에 나올 수 있다는 게 핵심 디자인 선택입니다. 한 점이 동적 객체에 속하면 $\\sigma_d$ 가 살아남고, 배경이면 $\\sigma_s$ 가 살아남으며, density-weighted blending이 자연스럽게 양쪽을 섞습니다. 분해를 라벨 없이 만들려면 'tiebreaker'가 필요합니다. 저자들은 단순한 prior 하나로 해결합니다 — **dynamic density regularization** $\\mathcal{L}_{\\sigma_d} = E(\\sigma_d)$ 를 모든 점 평균에 걸어, 동적 분기가 '필요한 곳에만' density를 만들도록 압박합니다. '세계는 대부분 정적'이라는 사실을 그대로 inductive bias로 박은 것이죠. 여기에 LiDAR 쪽에도 같은 페널티($\\mathcal{L}_{\\sigma_d(\\text{LiDAR})}$)를 따로 걸어, 정적 표면에서는 동적 density가 거의 0이 되게 강제합니다. 또 하나의 직관적 트릭은 **line-of-sight loss**입니다. LiDAR 종단점 앞쪽은 자유공간으로 density 0을 강요하고, 종단점 ε 근방에는 truncated Gaussian으로 density를 모읍니다(ε는 6.0→2.5로 linear decay). 이 unimodal density 분포가 곧 정-동 경계를 또렷하게 합니다 — 저자들도 'clear static-dynamic decomposition에 결정적'이라 명시. Ablation은 솔직합니다: 정적 분기를 빼고 4D-only iNGP만 쓰면 PSNR 26.55로 가장 낮음(Table C.1 a). 즉 분해는 '있어도 그만'이 아니라 표현의 골격입니다. 내일은 이 골격 위에 떠 있는 flow가 어떻게 emergent하는지로 넘어갑니다.",
+    "suggested_figure": "Figure C.3 — Scene decomposition 비교",
+    "figure_page": 19,
+    "figure_description": "녹색 배경 위에 EmerNeRF가 분리한 동적 객체와, 흰 배경 위 D²NeRF의 분해 결과를 나란히 배치. EmerNeRF는 차량 윤곽이 깔끔하고, D²NeRF는 정적 배경이 동적으로 새어 나옴.",
+    "trigger_type": "C",
+    "key_concepts": [
+      {
+        "term": "Dynamic density regularization $\\mathcal{L}_{\\sigma_d} = E(\\sigma_d)$",
+        "definition": "모든 샘플 점에 대해 동적 분기의 density 평균에 페널티를 거는 매우 단순한 정규화입니다. 가중치는 pixel ray와 LiDAR ray 양쪽에 0.01로 부여됩니다. 형태가 단순한 만큼 작동 원리도 직관적입니다 — RGB·depth reconstruction은 정적 분기만으로도 대부분 풀리므로, 동적 분기는 정적이 설명 못 하는 잔차에 한해서만 density를 생성하는 게 손해를 덜 봅니다. '오컴의 면도날'을 손실에 직접 박은 셈입니다. 주의할 점은 페널티가 너무 강하면 진짜 동적 객체까지 죽어버리므로 0.01이라는 작은 계수가 중요합니다."
+      },
+      {
+        "term": "Line-of-sight depth loss",
+        "definition": "Rematas et al. (2022)에서 차용한 LiDAR ray 손실로, 두 항으로 구성됩니다. (1) free-space 항: LiDAR 종단점 $Z(r)-\\epsilon$ 이전까지 density weight $w(t)^2$ 를 0으로 누름. (2) near-surface 항: 종단점 $\\pm\\epsilon$ 구간에서 truncated Gaussian $K_\\epsilon$ 를 따라 density를 집중시킴. 결과적으로 ray 따라 density 분포가 unimodal이 되어 정적·동적 경계가 또렷해지고, NeRF의 'fluffy density' 문제도 함께 완화됩니다. ε는 학습 초반 6.0에서 후반 2.5로 linear decay해 초반 over-regularization을 피합니다."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "regularize X by Y",
+        "korean": "Y로 X를 정규화하다",
+        "example": "We regularize dynamic density by minimizing the expectation of $\\sigma_d$.",
+        "context": "수식 정규화 항을 도입할 때 표준 형태. Loss 섹션 첫 줄에 쓰기 좋음."
+      },
+      {
+        "expression": "as needed / only when necessary",
+        "korean": "꼭 필요한 만큼만 / 필요할 때만",
+        "example": "The regularization prompts the dynamic field to produce density only when necessary.",
+        "context": "sparsity·minimal activation을 강조할 때. 정규화 의도를 직관적으로 전달."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "Dynamic density regularization이 정-동 분해를 라벨 없이 가능하게 하는 핵심 메커니즘은?",
+        "options": [
+          "동적 분기에 추가 capacity 부여",
+          "RGB reconstruction을 정적 분기만으로도 풀 수 있을 때 동적 분기에 density 생성 비용을 부과해 최소화 압박",
+          "Optical flow loss 추가",
+          "사전학습 동적 마스크로 초기화"
+        ],
+        "correct": 1,
+        "explanation": "정적 분기로 설명되는 영역에서는 동적 분기가 density를 내지 않는 것이 손해가 적으므로, 자연스럽게 동적 객체에만 σd가 살아남습니다."
+      },
+      {
+        "question": "Line-of-sight loss의 가장 직접적인 효과는?",
+        "options": [
+          "Density 분포를 ray를 따라 unimodal로 만들어 정-동 경계를 또렷하게 함",
+          "RGB 색 균일성 강화",
+          "Flow의 크기 정규화",
+          "Sky 영역 마스크 정확도 향상"
+        ],
+        "correct": 0,
+        "explanation": "Free-space 항과 near-surface 항이 함께 작용해 LiDAR 종단점 부근에 density가 집중되는 unimodal 분포를 강요합니다."
+      }
+    ],
+    "open_question": {
+      "question": "'세계는 대부분 정적'이라는 prior가 본인이 다루는 도메인에서도 성립할까요? 예컨대 군집 보행자 환경, 콘서트 군중, 차량 데모 행사 같은 곳에서는 이 prior가 어떻게 흔들릴까요?",
+      "hint": "Prior가 약해지면 동적 분기가 capacity 부족으로 정적까지 흡수해버릴 수 있습니다. 페널티 계수와 동적 hash 크기를 함께 봐야 합니다.",
+      "key_takeaway": "정규화는 단순함이 미덕이지만, 그 단순함이 깔고 있는 통계적 가정이 도메인과 어긋나면 그대로 손해로 돌아옵니다. 이식 전에는 항상 prior의 ground truth 비율을 점검하세요."
+    }
+  },
+  "day_7": {
+    "title": "Emergent scene flow",
+    "intent": "Flow field가 어떻게 라벨 없이도 정확히 학습되는지 식과 ablation으로 풀어봅니다.",
+    "content": "오늘은 EmerNeRF에서 가장 마법 같은 부분, scene flow가 어떻게 'emergent'하는지를 봅니다. Flow field는 $V := H_v(x, t)$ 와 작은 MLPv로 구성되며 출력은 6-dim — forward $v_f$ 와 backward $v_b$. 핵심은 이 flow를 어떻게 supervise하느냐인데, 저자들은 어떤 explicit flow loss도 쓰지 않습니다. 대신 동적 feature를 인접 timestep과 묶는 **temporal aggregation** 식 $g'_d = 0.25 g_d(H_d(x+v_b, t-1)) + 0.5 g_d(H_d(x, t)) + 0.25 g_d(H_d(x+v_f, t+1))$ 한 줄이 모든 일을 합니다. 이 $g'_d$ 가 color/feature/shadow head로 흘러가 RGB reconstruction loss를 만들어내므로, gradient가 자연스럽게 flow까지 거슬러 올라옵니다. 왜 emergent가 일어날까? 저자들의 가설은 명확합니다 — '시간적으로 일관된 feature만 multi-frame aggregation에서 이득을 본다'. 잘못된 flow로 모은 feature는 reconstruction loss를 증가시키므로 손해를 보고, 옳은 flow는 보상을 받습니다. 자연 선택입니다. 보조로 cycle consistency $\\mathcal{L}_{cycle}$ 가 forward $v_f$ 와 그 다음 프레임의 backward $v_b$ 사이 일관성을 stop-gradient를 끼워 가볍게 강제합니다. Ablation이 이 가설을 깔끔하게 입증합니다(Table C.1). 'no temporal aggregation' 또는 '인접 feature 그래디언트 정지' 설정에서는 flow Acc5가 각각 **4.53%, 3.87%**로 무너지지만, 디폴트는 **89.74%**입니다. 결과적으로 EPE3D 0.014m로 NSFP의 0.365m를 압도(약 26배), Acc5는 51.76→93.92%(약 42% 절대 향상). 라벨 없는 flow가 SOTA의 supervised baseline을 넘어선 거의 첫 사례라는 점에서, 이 한 줄의 aggregation 식이 논문 전체에서 가장 비싼 줄입니다. 내일은 flow와 무관한 또 다른 축, ViT feature 통합과 PE 문제로 갑니다.",
+    "suggested_figure": "Table C.1 — Flow emergence ablation",
+    "figure_page": 18,
+    "figure_description": "5행 ablation: (a) 4D-only iNGP, (b) no flow, (c) no temporal aggregation, (d) freeze temporal feature, (e) default. Flow Acc5 컬럼이 c=4.53%, d=3.87%, e=89.74%로 극적으로 갈림.",
+    "trigger_type": "A",
+    "key_concepts": [
+      {
+        "term": "Temporal feature aggregation (식 8)",
+        "definition": "동적 feature를 forward/backward flow로 인접 timestep과 가중합 $g'_d = 0.25 g_d(x+v_b, t-1) + 0.5 g_d(x, t) + 0.25 g_d(x+v_f, t+1)$ 하는 매우 단순한 모듈입니다. 가중치 0.25/0.5/0.25는 단순한 prior이고 학습되지 않습니다. 이 한 식이 세 일을 동시에 합니다 — (1) flow field가 scene reconstruction loss에 연결, (2) 인접 프레임 feature를 denoise해 동적 표현 안정화, (3) shared gradient를 통해 점 단위 feature가 시간적 이웃과 정보를 공유. ablation에서 이걸 빼면 flow가 0 근처로 collapse하므로 emergence의 직접 원인입니다."
+      },
+      {
+        "term": "Cycle consistency loss $\\mathcal{L}_{cycle}$",
+        "definition": "Forward flow $v_f(x, t)$ 로 점을 t+1로 옮긴 뒤, 그 위치의 backward flow $v'_b(x+v_f, t+1)$ 가 원래 $-v_f$ 와 같아야 한다는 제약을 stop-gradient(sg)와 함께 평균제곱으로 부과: $\\mathcal{L}_{cycle} = \\frac{0.01}{2} E[(sg(v_f) + v'_b)^2 + (sg(v_b) + v'_f)^2]$ . Stop-gradient가 한쪽에만 들어가 학습이 한 방향으로만 흐르도록 비대칭을 만들고, 계수 0.01로 약하게 걸려 over-regularization을 피합니다. 보조 역할이며, 진짜 학습 신호는 어디까지나 aggregation을 통한 reconstruction loss입니다."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "emerges from",
+        "korean": "~로부터 자연히 나오다",
+        "example": "EmerNeRF's flow estimation capability emerges from temporal feature aggregation.",
+        "context": "Emergent ability를 강조하는 논문에서 시그니처 동사. abstract·intro·결론에 반복 등장."
+      },
+      {
+        "expression": "self-improving loop",
+        "korean": "스스로 개선되는 순환",
+        "example": "EmerNeRF refines its own intrinsic flow predictions, enabling a self-improving loop.",
+        "context": "Bootstrap·iterative refinement를 묘사할 때. self-supervision 논문에서 자주."
+      },
+      {
+        "expression": "without any explicit X",
+        "korean": "어떤 명시적 X도 없이",
+        "example": "Our flow estimation requires no explicit flow supervision.",
+        "context": "감독 신호의 부재를 강조할 때. 'without using' 보다 단호한 톤."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "Temporal aggregation 식의 가중치 (0.25, 0.5, 0.25)는 어떻게 결정되는가?",
+        "options": [
+          "학습되는 attention 가중치",
+          "이웃 timestep의 LiDAR density로부터 계산",
+          "학습되지 않는 고정 prior",
+          "Flow magnitude에 비례"
+        ],
+        "correct": 2,
+        "explanation": "논문은 단순한 가중합으로 고정해두며, 학습되지 않습니다. 단순함이 emergence를 막지 않는다는 점이 흥미로운 부분입니다."
+      },
+      {
+        "question": "Ablation에서 'no temporal aggregation' 설정 시 flow Acc5가 4.53%로 무너지는 이유는?",
+        "options": [
+          "Cycle consistency loss가 너무 약해서",
+          "Flow가 reconstruction loss에 연결되는 경로가 사라져 gradient가 흐르지 않기 때문",
+          "Hash grid 해상도 부족",
+          "LiDAR 감독이 제거되어서"
+        ],
+        "correct": 1,
+        "explanation": "Aggregation을 빼면 flow는 어떤 손실에도 연결되지 않아 학습 신호가 0이 됩니다. Cycle만으로는 학습이 일어나지 않음을 의미합니다."
+      }
+    ],
+    "open_question": {
+      "question": "'단순한 가중합 한 줄로 라벨 없이 flow가 학습된다'는 결과가 본인 도메인의 어떤 모듈에 영감을 줄까요? 동등한 'self-supervised correspondence' 자리가 어디에 있을까요?",
+      "hint": "Stereo depth, optical flow, multi-frame BEV, point tracking 등 모두 'temporally consistent feature' 가설이 살아있는 자리입니다.",
+      "key_takeaway": "Aggregation은 평균화 도구가 아니라 supervision의 통로입니다. 어디서 무엇을 aggregate하느냐가 곧 학습할 신호를 결정합니다."
+    }
+  },
+  "day_8": {
+    "title": "ViT feature lifting + PE 제거",
+    "intent": "DINOv2를 4D로 끌어올리는 모듈과 positional embedding artifact를 제거하는 트릭을 봅니다.",
+    "content": "오늘은 EmerNeRF의 두 번째 카드, vision foundation model feature를 4D로 끌어올리는 부분입니다. 동기는 단순합니다 — NeRF는 color·density는 잘하지만 semantic이 비어 있어 occupancy prediction 같은 perception에 못 씁니다. 그래서 DINOv2(ViT-B/14, stride 7, PCA로 768→64) 또는 DINOv1을 2D feature로 뽑은 뒤, feature head $f_* = MLP_{feat}(g_*)$ 와 feature sky head로 volume render해 학습합니다. 여기서 저자들이 발견한 비자명한 문제가 **positional embedding pattern**입니다. Transformer 기반 ViT는 PE 때문에 같은 텍스처라도 이미지 좌표에 따라 다른 feature를 내놓습니다. 그 결과 PE 패턴이 이미지에 고정된 채로 viewpoint와 무관하게 따라다녀 **3D multi-view consistency**를 정면으로 깨뜨립니다. Fig 1(h)에서 이 격자 무늬가 또렷이 보입니다. 해법은 우아합니다 — PE 패턴은 거의 모든 이미지에서 동일하므로 'shared learnable additive prior' 하나로 충분하다는 관찰. 학습 가능한 2D feature map $U$ (80×120×32)를 두고, 픽셀 좌표 $(u, v)$ 에서 bilinear interpolation 후 한 층 MLPPE로 PE feature를 디코드해, volume-render된 PE-free feature에 더해 ground truth와 매칭합니다: $\\hat{F} = (\\text{PE-free rendered}) + MLP_{PE}(\\text{interp}(U, (u,v)))$. 이 단순한 additive decomposition으로 어떤 일이 일어나는가? Occupancy prediction에서 PE 제거만으로 DINOv2 micro-accuracy가 45.13%→**62.05%**, 평균 **+37.50% relative improvement**, 최대(Static-32) **+63.22%**. Feature-PSNR도 DINOv2에서 +0.83~+0.42 일관 향상(Table 4). 더 흥미로운 부분은 시각적으로 'PE에 안 영향받는 듯한' DINOv1도 PE 제거 후 +24.95% 평균 향상이 나옵니다 — 즉 눈에 안 보여도 PE는 항상 3D 표현을 갉아먹고 있었다는 얘기. 내일은 이 결과들의 숫자를 어떻게 자기 연구에 인용할지 봅니다.",
+    "suggested_figure": "Table 3 — PE 제거의 few-shot occupancy 효과",
+    "figure_page": 9,
+    "figure_description": "DINOv1/DINOv2 × Static/Dynamic/Diverse split × PE 제거 여부 격자표. DINOv2 Static-32 micro acc 38.73%→63.21%(+63.22%), 평균 45.13→62.05(+37.50%) 등 큰 폭의 상대 향상.",
+    "trigger_type": "B",
+    "key_concepts": [
+      {
+        "term": "Positional embedding (PE) artifact in ViT features",
+        "definition": "ViT는 패치 토큰에 위치 임베딩을 더해 attention을 계산하므로, 출력 feature에 이미지 좌표에 의존하는 잔류 패턴이 새깁니다. 이 패턴은 viewpoint가 바뀌어도 픽셀 좌표 기준으로 거의 동일하게 유지되어, NeRF가 의존하는 3D multi-view consistency를 깨뜨립니다. 결과적으로 PE를 그대로 4D로 lifting하면 동일한 3D 점이 시점마다 다른 semantic feature를 갖게 되어 occupancy classification·few-shot perception에서 정확도가 크게 떨어집니다. DINOv2가 시각적으로도 격자 무늬가 더 또렷하고 영향도 큽니다(최대 +63.22% 상대 향상)."
+      },
+      {
+        "term": "Shared learnable additive prior $U$",
+        "definition": "PE 패턴이 이미지 사이에 거의 동일하다는 관찰에 기반해, 전역적으로 공유되는 학습 가능한 2D feature map $U \\in \\mathbb{R}^{80 \\times 120 \\times 32}$ 하나로 PE 성분을 흡수합니다. 각 픽셀에서 $U$ 를 bilinear interpolation해 단일 층 $MLP_{PE}$ 로 디코드한 결과를 volume-render된 PE-free feature에 더해 GT와 매칭. 핵심 가정은 'PE는 additive noise'이므로 분리 가능하다는 것. 학습이 끝나면 $U$ 만 빼서 PE-free feature를 얻고, 이게 3D 일관성 있는 semantic 표현이 됩니다. 단순하면서 ablation 없이도 작동 원리가 또렷한 트릭."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "lift X into Y",
+        "korean": "X를 Y 공간으로 들어올리다",
+        "example": "We lift 2D visual foundation model features into 4D space-time.",
+        "context": "차원·도메인 상승을 묘사하는 NeRF 분야 표준 동사. distillation 논문 자주."
+      },
+      {
+        "expression": "address a general challenge",
+        "korean": "일반적 난제를 해결하다",
+        "example": "We address a general positional bias in modern Transformers.",
+        "context": "본 연구의 부수 기여를 명시할 때. '특정 데이터셋에 한정되지 않음'을 함의."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "ViT PE 패턴이 4D feature lifting을 망치는 본질적 이유는?",
+        "options": [
+          "Feature dimension이 너무 커서 PCA 손실이 큼",
+          "PE 패턴이 viewpoint와 무관하게 이미지 좌표에 고정되어 3D multi-view consistency를 깨뜨림",
+          "ViT가 stride 8/7로 동작해 해상도가 부족함",
+          "Sky head와 충돌함"
+        ],
+        "correct": 1,
+        "explanation": "같은 3D 점이 시점마다 픽셀 좌표가 달라지면서 다른 PE 성분을 받게 되므로, 4D 일관성을 직접 위반합니다."
+      },
+      {
+        "question": "Shared learnable additive prior $U$ 의 핵심 가정은?",
+        "options": [
+          "PE는 multiplicative noise이며 픽셀별로 다르다",
+          "PE는 거의 모든 이미지에서 동일한 additive 패턴이라 단일 2D map으로 흡수 가능",
+          "PE는 학습할 수 없고 분석적으로만 제거 가능",
+          "PE는 dynamic field에만 영향"
+        ],
+        "correct": 1,
+        "explanation": "Additive 가정이 식 11의 분해를 정당화하며, 단일 U로 PE를 흡수해도 충분히 작동함을 실험이 확인합니다."
+      }
+    ],
+    "open_question": {
+      "question": "본인이 쓰는 ViT 백본(DINOv2, SAM, EVA-CLIP 등)에서 PE artifact가 downstream 3D 태스크에 영향을 줄 가능성은 어디인가요? Occupancy·BEV detection·NeRF distillation 중 어느 자리가 가장 위험할까요?",
+      "hint": "Per-image grid pattern이 viewpoint와 무관하게 따라다니는지 한 장면을 다른 시점에서 PCA 시각화해 보세요.",
+      "key_takeaway": "Foundation model을 3D로 lifting할 때, 2D에서는 보이지 않던 PE 잔류가 거의 항상 multi-view 일관성을 갉아먹습니다. 'PE-free'는 옵션이 아니라 기본기여야 합니다."
+    }
+  },
+  "day_9": {
+    "title": "숫자가 말하는 것",
+    "intent": "EmerNeRF의 핵심 결과 수치를 짚고, 각 숫자가 무엇을 가능하게 하는지 정리합니다.",
+    "content": "이제 숫자를 한 번에 정리합니다. **Static-32**: iNGP 24.46 → StreetSurf 26.15 → EmerNeRF **29.08 PSNR**(+2.93). 정적 전용 SOTA였던 StreetSurf를 정적 측면에서도 이긴 게 흥미로운데, 정적 분기만 켰을 때조차 hybrid 표현·loss 설계가 더 우수했다는 신호입니다. **Dynamic-32 reconstruction**(full image): D²NeRF 24.35, HyperNeRF 25.17 → EmerNeRF **28.87 PSNR**(+3.70). dynamic-only는 21.78/22.93 → **26.19 PSNR**로 약 +3.26~4.41 PSNR. **Novel view synthesis**(매 10번째 frame omit)에서도 full **27.62**, dynamic-only **24.18**로 동급 차이. **Scene flow**(Table 2): NSFP 대비 EPE3D **0.365m → 0.014m**(약 26배 감소), Acc5 **51.76% → 93.92%**(절대 +42.16%p), Acc10 67.36 → 96.27%, θ 0.84 → 0.64 rad. 라벨 없는 self-emerged flow가 supervised SOTA를 한 자릿수가 아니라 한 자릿수 곱하기 한 자릿수로 넘어선 결과입니다. **Few-shot semantic occupancy**(Table 3, 10%만 라벨링): DINOv2 PE-제거 시 micro acc 평균 45.13% → **62.05%**, 평균 +**37.50% relative**, 최대 +**63.22%**(Static-32). DINOv1도 +24.95% 평균. 이 숫자가 의미하는 바를 다운스트림 응용으로 옮겨봅시다 — (a) 정적 +2.93 PSNR은 단순 시각 품질이 아니라 nearby novel-view에서 차선·표지 같은 thin structure가 살아남는다는 뜻. (b) Dynamic flow Acc5 93.92%는 라벨링 비용 없이 motion forecasting의 weak supervision 소스로 쓸 수 있다는 뜻. (c) Occupancy +37.50%는 10%만 라벨링하면 90% 라벨링과 견줄 만한 perception이 가능해진다는 뜻. 학습 비용도 무거운 편이 아닙니다 — A100 한 장에서 정적 33분, 동적 + feature 2.25시간. 내일은 이 숫자들을 본인의 AD 연구에 어떻게 가져갈지 마무리합니다.",
+    "suggested_figure": "Table 3 (occupancy) + Table 2 (flow) 함께",
+    "figure_page": 9,
+    "figure_description": "두 표를 같이 보면 'reconstruction 외에 motion·semantic 양쪽이 동시에 자기지도로 향상되었다'는 메시지가 한눈에 들어옴. PE 제거의 occupancy 효과가 가장 큰 셀(63.22%)에 주목.",
+    "trigger_type": "A",
+    "key_concepts": [
+      {
+        "term": "+2.93 / +3.70 PSNR이 의미하는 것",
+        "definition": "PSNR 1dB 차이는 실제 운전 장면에서 thin structure(차선, 표지, 가로등 폴, 신호 와이어)의 가시성을 좌우합니다. 정적 +2.93 PSNR(StreetSurf 대비)·동적 +3.70 PSNR(HyperNeRF 대비)은 단순 평균 향상이 아니라 fine geometry가 살아남는 시각 품질의 질적 변화를 의미합니다. 특히 dynamic-only PSNR이 21.78에서 26.19로 오른 것은 동적 차량의 윤곽·번호판·바퀴 같이 movement에 민감한 영역에서 reconstruction이 또렷해진다는 뜻. closed-loop simulation에서 perception 모델이 거짓 양성을 덜 내는 데 직결되는 수치입니다."
+      },
+      {
+        "term": "Self-emerged flow vs NSFP (EPE3D 0.014m vs 0.365m)",
+        "definition": "NSFP는 Chamfer loss로 timestep마다 작은 MLP를 optimize하는 SOTA scene flow estimator입니다. EmerNeRF는 어떤 explicit flow loss도 없이 reconstruction loss만으로 EPE3D 0.014m를 달성 — 약 26배 정확. Acc5는 51.76→93.92%로 42%p 절대 향상. 이 차이의 출처는 두 가지로 해석됩니다. (1) NSFP는 점 단위 chamfer만 보지만, EmerNeRF는 RGB·feature·LiDAR 모두를 통한 dense supervision을 받습니다. (2) NSFP는 timestep마다 독립 최적화지만, EmerNeRF는 시퀀스 전체를 한 표현에 담아 시간적 일관성을 공유합니다. 즉 표현이 곧 정확도였다는 결과."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "by a substantial margin",
+        "korean": "상당한 차이로",
+        "example": "EmerNeRF outperforms NSFP by a substantial margin in scene flow accuracy.",
+        "context": "결과 우위를 정량적으로 강조할 때. 'significantly'와 함께 결과 섹션 단골."
+      },
+      {
+        "expression": "relative improvement of X%",
+        "korean": "X% 상대 향상",
+        "example": "Removing PE patterns yields a 37.50% relative improvement in occupancy accuracy.",
+        "context": "절대 차이가 크지 않을 때 상대 비교로 임팩트를 전달. baseline 자체가 낮을 때 흔히."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "Dynamic-32 split에서 EmerNeRF의 dynamic-only reconstruction PSNR(26.19)이 의미하는 가장 직접적인 응용 가치는?",
+        "options": [
+          "Sky color 정확도 향상",
+          "동적 차량·보행자의 thin geometry가 살아남는 novel-view 합성",
+          "LiDAR sparsity 보정",
+          "Ego pose calibration"
+        ],
+        "correct": 1,
+        "explanation": "dynamic-only PSNR은 동적 객체 영역에서만 계산되므로 직접적으로 차량/보행자 렌더링 품질을 반영합니다."
+      },
+      {
+        "question": "PE 제거로 인한 +37.50% 평균 occupancy 향상의 핵심 함의는?",
+        "options": [
+          "Ground truth 100% 라벨을 가정한 결과",
+          "10% 라벨만으로도 풍부한 semantic perception이 가능해짐(few-shot)",
+          "Static scene에만 적용 가능",
+          "ViT backbone을 교체해야만 얻을 수 있음"
+        ],
+        "correct": 1,
+        "explanation": "실험 세팅이 10% 라벨 few-shot이므로, PE 제거의 효과는 라벨 효율성을 직접적으로 끌어올린다는 의미입니다."
+      }
+    ],
+    "open_question": {
+      "question": "본인 팀의 perception/simulation 파이프라인에서 'EmerNeRF의 어느 숫자'가 가장 즉시 가치를 줄 것 같나요? +3.70 PSNR(시각 품질), Acc5 93.92%(flow weak supervision), +37.50%(few-shot occupancy) 중 어느 쪽인가요?",
+      "hint": "현재 가장 큰 비용 항목(라벨링·시뮬레이션·평가)을 떠올린 뒤, 어느 숫자가 그 비용을 직접 깎는지를 보세요.",
+      "key_takeaway": "논문의 숫자는 절대값이 아니라 '본인 파이프라인에서 어떤 비용을 어느 만큼 깎는가'로 번역되어야 의미가 있습니다. 평균 PSNR보다 응용 단위 비용 매핑이 더 중요합니다."
+    }
+  },
+  "day_10": {
+    "title": "내 AD 연구로 가져가기",
+    "intent": "EmerNeRF를 자율주행 연구·개발 파이프라인에 어떻게 접목할지 구체 응용 각도를 그립니다.",
+    "content": "마지막 날입니다. 9일간 본 모든 신호를 본인의 AD 연구로 끌어와봅시다. 가장 즉시적인 응용은 네 가지입니다. **(1) Closed-loop sensor simulation**: 한 traversal 로그를 EmerNeRF로 학습해두면, 같은 장면에서 ego 경로를 perturb한 novel view를 합성할 수 있습니다. 정적 +2.93·동적 +3.70 PSNR은 thin structure(차선·표지)가 살아남아 perception SUT의 false positive가 덜 튄다는 뜻이라, 폐쇄루프 정책 검증·corner case 재현·라벨링 비용 절감에 직결됩니다. **(2) Auto-labeling**: PE-free DINOv2 lift로 10% 라벨 few-shot occupancy에서 +37.50% 상대 향상. 즉 '소량 라벨 + 4D 표현'이 풀라벨 supervision의 대안이 될 수 있습니다. open-vocabulary detection 쪽으로도 자연 확장이 가능. **(3) Self-supervised scene flow source**: GT scene flow 없이 EPE3D 0.014m, Acc5 93.92%의 flow를 뽑을 수 있으므로, motion forecasting/trajectory prediction에 weak supervision 신호로 주입 가능. NSFP의 per-timestep 비용을 피하면서 더 정확합니다. **(4) Diverse 데이터 증강**: NOTR의 Diverse-56 카테고리(고속·야간·rainy·dusk/dawn 등)에서도 동작이 검증되었으므로, 본인 fleet의 long-tail 시퀀스를 같은 파이프라인으로 4D화 후 perturb-resample하는 augmentation이 가능. **한계도 명시**합니다 — 저자들이 직접 언급한 것은 (a) 카메라 pose joint optimization 미지원, (b) 카메라·LiDAR rolling shutter 미보정, (c) ego가 빠르고 slow-moving object일 때 motion 추정이 약함. follow-up 방향으로는 'foundation model feature 활용한 few-shot·zero-shot·open-vocabulary auto-labeling' 정도가 본문에 명시됩니다(그 외 후속작은 추정 영역이므로 본인이 확인할 것). 마지막으로 마음속에 한 번 시뮬레이션해보세요 — 본인의 가장 비싼 corner case 로그 한 개를 골라, EmerNeRF로 4D화하고, ego 경로를 1m 옆으로 옮겨 다시 렌더링한다면, 어떤 perception/planning 실험이 새로 가능해질까요? 그 답이 본 연구의 진짜 가치입니다.",
+    "suggested_figure": "Figure 1 + Figure C.4 (novel view synthesis)",
+    "figure_page": 2,
+    "figure_description": "Figure 1 전체 분해 결과와 Figure C.4의 novel temporal view 합성 결과를 함께 보면, '한 traversal에서 ego·시점을 자유롭게 옮긴 합성'이라는 응용 가치가 시각적으로 분명해짐.",
+    "trigger_type": "C",
+    "key_concepts": [
+      {
+        "term": "Closed-loop simulation as the killer app",
+        "definition": "EmerNeRF의 응용 중 가장 큰 시장 가치를 가지는 자리는 closed-loop sensor simulation입니다. 운전 정책을 평가할 때 SUT가 만든 ego 경로는 원본 로그와 달라지므로, 그 perturb된 ego에서 본 RGB·LiDAR를 시뮬레이션해야 합니다. 기존엔 GT 박스로 객체를 분리하고 별도 mesh를 합성하는 비싼 파이프라인이 필요했지만(NSG/UniSim), EmerNeRF는 self-supervised로 단일 traversal에서 정-동 분해와 flow까지 한 번에 학습하므로 라벨링 비용을 크게 덜고도 비교할 만한 시각 품질(+3.70 PSNR)을 제공합니다. 한계는 ego가 원본 경로에서 너무 멀어지면(>5m 옆) extrapolation 오류가 누적된다는 점."
+      },
+      {
+        "term": "Foundation feature lifting → few-shot auto-labeling",
+        "definition": "DINOv2 같은 visual foundation model의 feature를 4D로 끌어올리고 PE를 제거한 뒤 voxel별 centroid 분류로 semantic occupancy를 얻는 방식입니다. 핵심 수치는 평균 +37.50% relative micro-accuracy 향상이며, 10%만 라벨링한 few-shot 세팅이라는 점이 결정적입니다. 즉 fleet 규모 라벨링 예산이 한정된 상황에서 일부 시퀀스만 정밀 라벨링하고 나머지는 4D feature centroid로 propagate하는 auto-labeling 파이프라인이 그려집니다. Open-vocabulary detection·zero-shot semantic·active learning 등으로 자연 확장 가능. 본문에서 후속 방향으로 명시된 거의 유일한 분야."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "an exciting area of future work",
+        "korean": "흥미로운 후속 연구 방향",
+        "example": "An exciting area of future work is open-vocabulary auto-labeling enabled by lifted foundation features.",
+        "context": "Conclusion·Discussion에서 follow-up을 시사할 때 표준 표현. 과한 약속 없이 톤 조절."
+      },
+      {
+        "expression": "directly applicable to",
+        "korean": "~에 곧바로 적용 가능한",
+        "example": "Our PE decomposition is directly applicable to other tasks that lift ViT features to 3D.",
+        "context": "본 연구 기여의 일반성을 강조할 때. method 섹션 끝이나 conclusion에 잘 어울림."
+      },
+      {
+        "expression": "leaves X for future research",
+        "korean": "X는 후속 연구 과제로 남긴다",
+        "example": "We leave joint camera pose optimization and rolling shutter compensation for future research.",
+        "context": "Limitations 단락의 표준 마무리. 솔직함과 학술적 절제를 동시에 전달."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "EmerNeRF를 closed-loop simulation에 쓸 때 가장 먼저 깨질 신호는?",
+        "options": [
+          "Sky head 출력",
+          "원 경로에서 멀리 떨어진 ego 위치에서의 thin structure 외삽",
+          "정적 배경의 hash grid 해상도",
+          "DINOv2 feature의 PCA 차원"
+        ],
+        "correct": 1,
+        "explanation": "관측이 단일 traversal이므로 원 경로에서 멀어질수록 extrapolation 오류가 누적되고, 차선·표지 같은 thin structure가 가장 먼저 무너집니다."
+      },
+      {
+        "question": "본문에서 저자들이 명시한 한계(Limitations)가 아닌 것은?",
+        "options": [
+          "Camera pose joint optimization 미지원",
+          "Rolling shutter 보정 미수행",
+          "ego가 빠르고 slow-moving 객체일 때 motion 추정 약화",
+          "Foundation model feature lifting 미지원"
+        ],
+        "correct": 3,
+        "explanation": "Foundation feature lifting은 본 논문의 핵심 기여 중 하나입니다. 한계로 명시된 것은 pose 최적화, rolling shutter, slow-moving 객체 세 가지입니다."
+      }
+    ],
+    "open_question": {
+      "question": "본인이 가진 가장 비싼 corner case 운전 로그 한 개를 골라, EmerNeRF로 4D화한 뒤 ego 경로를 1m 옆으로 옮겨 다시 렌더링한다면 — 어떤 perception 또는 planning 실험이 새로 가능해질까요? 그리고 그 실험을 위해 EmerNeRF에 어떤 추가 기능(예: pose 최적화, rolling shutter 보정)이 필요할까요?",
+      "hint": "본인 파이프라인에서 '이 로그를 또 한 번만 다른 카메라 자세로 볼 수 있다면'이라고 아쉬워했던 순간을 떠올려보세요.",
+      "key_takeaway": "EmerNeRF는 단일 traversal을 무한히 재시뮬레이션 가능한 자산으로 바꾸는 그릇입니다. 본인 연구의 진짜 질문은 '어떤 corner case를 어떤 perturb로 다시 보고 싶은가'이며, 이 질문이 곧 본 연구를 본인 work에 접목하는 첫 줄입니다."
+    }
+  }
+}

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 6 — 정-동 분해 deep dive</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 6</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">정-동 분해 deep dive</h1>
+  <div class="hero-subtitle">정적/동적 hash field와 density regularization이 어떻게 분해를 emergent하게 만드는지 깊이 봅니다.</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 60%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">오늘은 분해 모듈만 확대합니다. 정적 분기는 $g_s, \sigma_s = g_s(H_s(x))$ 로 시간 무관 feature를 뽑고, 동적 분기는 $g_d, \sigma_d = g_d(H_d(x, t))$ 로 시간 의존 feature를 뽑습니다. 정적·동적 모두에서 density가 동시에 나올 수 있다는 게 핵심 디자인 선택입니다. 한 점이 동적 객체에 속하면 $\sigma_d$ 가 살아남고, 배경이면 $\sigma_s$ 가 살아남으며, density-weighted blending이 자연스럽게 양쪽을 섞습니다. 분해를 라벨 없이 만들려면 &#x27;tiebreaker&#x27;가 필요합니다. 저자들은 단순한 prior 하나로 해결합니다 — <strong>dynamic density regularization</strong> $\mathcal{L}_{\sigma_d} = E(\sigma_d)$ 를 모든 점 평균에 걸어, 동적 분기가 &#x27;필요한 곳에만&#x27; density를 만들도록 압박합니다. &#x27;세계는 대부분 정적&#x27;이라는 사실을 그대로 inductive bias로 박은 것이죠. 여기에 LiDAR 쪽에도 같은 페널티($\mathcal{L}_{\sigma_d(\text{LiDAR})}$)를 따로 걸어, 정적 표면에서는 동적 density가 거의 0이 되게 강제합니다. 또 하나의 직관적 트릭은 <strong>line-of-sight loss</strong>입니다. LiDAR 종단점 앞쪽은 자유공간으로 density 0을 강요하고, 종단점 ε 근방에는 truncated Gaussian으로 density를 모읍니다(ε는 6.0→2.5로 linear decay). 이 unimodal density 분포가 곧 정-동 경계를 또렷하게 합니다 — 저자들도 &#x27;clear static-dynamic decomposition에 결정적&#x27;이라 명시. Ablation은 솔직합니다: 정적 분기를 빼고 4D-only iNGP만 쓰면 PSNR 26.55로 가장 낮음(Table C.1 a). 즉 분해는 &#x27;있어도 그만&#x27;이 아니라 표현의 골격입니다. 내일은 이 골격 위에 떠 있는 flow가 어떻게 emergent하는지로 넘어갑니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure C.3 — Scene decomposition 비교</div><a href="figures/page_19.png" target="_blank"><img src="figures/page_19.png" alt="Figure" loading="lazy"></a><div class="figure-explain">녹색 배경 위에 EmerNeRF가 분리한 동적 객체와, 흰 배경 위 D²NeRF의 분해 결과를 나란히 배치. EmerNeRF는 차량 윤곽이 깔끔하고, D²NeRF는 정적 배경이 동적으로 새어 나옴.</div></div>
+<div class="trigger">Trigger Type C</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Dynamic density regularization $\mathcal{L}_{\sigma_d} = E(\sigma_d)$</div><div class="concept-def">모든 샘플 점에 대해 동적 분기의 density 평균에 페널티를 거는 매우 단순한 정규화입니다. 가중치는 pixel ray와 LiDAR ray 양쪽에 0.01로 부여됩니다. 형태가 단순한 만큼 작동 원리도 직관적입니다 — RGB·depth reconstruction은 정적 분기만으로도 대부분 풀리므로, 동적 분기는 정적이 설명 못 하는 잔차에 한해서만 density를 생성하는 게 손해를 덜 봅니다. &#x27;오컴의 면도날&#x27;을 손실에 직접 박은 셈입니다. 주의할 점은 페널티가 너무 강하면 진짜 동적 객체까지 죽어버리므로 0.01이라는 작은 계수가 중요합니다.</div></div>
+<div class="concept-card"><div class="concept-term">Line-of-sight depth loss</div><div class="concept-def">Rematas et al. (2022)에서 차용한 LiDAR ray 손실로, 두 항으로 구성됩니다. (1) free-space 항: LiDAR 종단점 $Z(r)-\epsilon$ 이전까지 density weight $w(t)^2$ 를 0으로 누름. (2) near-surface 항: 종단점 $\pm\epsilon$ 구간에서 truncated Gaussian $K_\epsilon$ 를 따라 density를 집중시킴. 결과적으로 ray 따라 density 분포가 unimodal이 되어 정적·동적 경계가 또렷해지고, NeRF의 &#x27;fluffy density&#x27; 문제도 함께 완화됩니다. ε는 학습 초반 6.0에서 후반 2.5로 linear decay해 초반 over-regularization을 피합니다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">regularize X by Y</div><div class="expr-ko">Y로 X를 정규화하다</div><div class="expr-example">We regularize dynamic density by minimizing the expectation of $\sigma_d$.</div><div class="expr-context">수식 정규화 항을 도입할 때 표준 형태. Loss 섹션 첫 줄에 쓰기 좋음.</div></div>
+<div class="expr-card"><div class="expr-en">as needed / only when necessary</div><div class="expr-ko">꼭 필요한 만큼만 / 필요할 때만</div><div class="expr-example">The regularization prompts the dynamic field to produce density only when necessary.</div><div class="expr-context">sparsity·minimal activation을 강조할 때. 정규화 의도를 직관적으로 전달.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Dynamic density regularization이 정-동 분해를 라벨 없이 가능하게 하는 핵심 메커니즘은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">동적 분기에 추가 capacity 부여</button><button class="mcq-option" data-correct="true">RGB reconstruction을 정적 분기만으로도 풀 수 있을 때 동적 분기에 density 생성 비용을 부과해 최소화 압박</button><button class="mcq-option" data-correct="false">Optical flow loss 추가</button><button class="mcq-option" data-correct="false">사전학습 동적 마스크로 초기화</button></div><div class="mcq-explanation">정적 분기로 설명되는 영역에서는 동적 분기가 density를 내지 않는 것이 손해가 적으므로, 자연스럽게 동적 객체에만 σd가 살아남습니다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">Line-of-sight loss의 가장 직접적인 효과는?</div><div class="mcq-options"><button class="mcq-option" data-correct="true">Density 분포를 ray를 따라 unimodal로 만들어 정-동 경계를 또렷하게 함</button><button class="mcq-option" data-correct="false">RGB 색 균일성 강화</button><button class="mcq-option" data-correct="false">Flow의 크기 정규화</button><button class="mcq-option" data-correct="false">Sky 영역 마스크 정확도 향상</button></div><div class="mcq-explanation">Free-space 항과 near-surface 항이 함께 작용해 LiDAR 종단점 부근에 density가 집중되는 unimodal 분포를 강요합니다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">&#x27;세계는 대부분 정적&#x27;이라는 prior가 본인이 다루는 도메인에서도 성립할까요? 예컨대 군집 보행자 환경, 콘서트 군중, 차량 데모 행사 같은 곳에서는 이 prior가 어떻게 흔들릴까요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>Prior가 약해지면 동적 분기가 capacity 부족으로 정적까지 흡수해버릴 수 있습니다. 페널티 계수와 동적 hash 크기를 함께 봐야 합니다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>정규화는 단순함이 미덕이지만, 그 단순함이 깔고 있는 통계적 가정이 도메인과 어긋나면 그대로 손해로 돌아옵니다. 이식 전에는 항상 prior의 ground truth 비율을 점검하세요.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_5.html">← Day 5</a><a href="day_7.html">Day 7 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 4 — Landscape에서의 좌표</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 4</div>
+  <div class="hero-tag">개요</div>
+  <h1 class="hero-title">Landscape에서의 좌표</h1>
+  <div class="hero-subtitle">동적 NeRF·AV NeRF·scene flow 계열을 비교축 위에 놓고 EmerNeRF의 빈자리를 명확히 합니다.</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 40%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">오늘은 EmerNeRF를 지도 위에 좌표화합니다. 비교축은 세 개로 잡으면 깔끔합니다 — (1) 동적 객체를 모델링하는가, (2) 외부 라벨/사전학습 모델에 의존하는가, (3) 단일 traversal에서 동작하는가. 이걸로 다섯 그룹을 보겠습니다. <strong>HyperNeRF/Nerfies</strong>: 동적 O, 라벨 X, 단일 traversal O이지만 canonical deformation 가정으로 운전 enter/exit에 실패. <strong>D²NeRF</strong>: 동적 O, 라벨 X, monocular 가정. 도시 야외에서 분해 실패(Dynamic-32에서 24.35 PSNR). <strong>NSG·UniSim</strong>: 동적 O, GT 박스/트래킹 의존, 단일 traversal O. 라벨 비용에서 막힘. <strong>SUDS</strong>: 동적 O, pre-trained flow 의존, multi-traversal 가정. flow warping 비용 큼. <strong>StreetSurf·iNGP</strong>: 정적만, 라벨 X, 단일 traversal O — 정적 최고치(26.15 PSNR)이지만 동적은 손도 못 댐. <strong>NSFP</strong>: scene flow only, per-timestep optimization으로 매우 느림. EmerNeRF의 좌표는 &#x27;동적 O + 라벨 X + 사전학습 flow X + 단일 traversal O&#x27;라는 마지막 빈 칸입니다. 그 결과 Dynamic-32에서 +3.70 PSNR, Static-32에서 +2.93 PSNR, EPE3D 0.014m(NSFP 0.365m 대비)로 모든 축에서 SOTA를 가져갑니다. 핵심은 &#x27;한 가지를 잘하는 방법은 많지만, 네 조건을 동시에 만족하는 방법이 없었다&#x27;는 빈자리에 자기지도 + flow emergence라는 두 카드로 끼워 넣은 점입니다. 내일은 이 카드들이 어떻게 한 파이프라인으로 묶이는지 큰 그림을 펴봅니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 2 — Scene flow estimation NSFP vs EmerNeRF</div><a href="figures/page_8.png" target="_blank"><img src="figures/page_8.png" alt="Figure" loading="lazy"></a><div class="figure-explain">EPE3D, Acc5, Acc10, θ 네 컬럼에서 NSFP(0.365m / 51.76% / 67.36% / 0.84)와 EmerNeRF(0.014m / 93.92% / 96.27% / 0.64)를 직접 비교. 한 행만 봐도 위치가 명확해짐.</div></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Annotation-free dynamic decomposition</div><div class="concept-def">정-동 분해를 GT bounding box나 사전학습 segmentation 없이 수행하는 능력입니다. NSG/UniSim이 라벨로 분해를 우회한 데 비해, EmerNeRF·D²NeRF·SUDS는 라벨 없이 분해를 시도합니다. 하지만 D²NeRF는 도시 야외에서 hyperparameter 민감도로, SUDS는 pre-trained flow 의존으로 한계가 분명합니다. EmerNeRF는 density regularization $\mathcal{L}_{\sigma_d} = E(\sigma_d)$ 라는 단순한 prior 하나로 이 자리를 메웠다는 점이 핵심입니다.</div></div>
+<div class="concept-card"><div class="concept-term">NOTR benchmark</div><div class="concept-def">Waymo Open Dataset에서 손으로 큐레이팅한 120개 시퀀스 벤치마크로, Static-32 / Dynamic-32 / Diverse-56 세 split으로 나뉩니다. Diverse-56은 ego-static, high-speed, exposure mismatch, dusk/dawn, gloomy, rainy, night 7개 카테고리로 구성되어 도시 운전 환경의 imbalance를 정면으로 노출시킵니다. 또한 2D dynamic bounding box, GT 3D scene flow, 3D semantic occupancy까지 함께 제공해 reconstruction 외에도 motion·semantic 평가가 가능하다는 점이 차별점입니다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">position our work</div><div class="expr-ko">본 연구의 위치를 잡다</div><div class="expr-example">We position our work at the intersection of self-supervision and dynamic scene reconstruction.</div><div class="expr-context">Related work 정리 뒤 본인 방법의 좌표를 명시할 때 표준 표현.</div></div>
+<div class="expr-card"><div class="expr-en">in contrast to / by contrast</div><div class="expr-ko">이와 대조적으로</div><div class="expr-example">In contrast to SUDS, our method does not rely on pre-trained optical flow models.</div><div class="expr-context">이전 방법과의 차이를 부각할 때. 단락 시작에서 톤을 전환하는 데 유용.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">다음 중 EmerNeRF가 유일하게 동시에 만족하는 조건 조합은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">동적 모델링 + GT 라벨 + 단일 traversal</button><button class="mcq-option" data-correct="false">동적 모델링 + 사전학습 flow + multi-traversal</button><button class="mcq-option" data-correct="true">동적 모델링 + 라벨/사전학습 X + 단일 traversal</button><button class="mcq-option" data-correct="false">정적만 + 라벨/사전학습 X + 단일 traversal</button></div><div class="mcq-explanation">다른 조합은 NSG·UniSim(1), SUDS(2), StreetSurf(4)가 이미 점유. EmerNeRF는 셋 모두를 라벨 없이 푸는 빈자리를 차지했습니다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">NOTR가 기존 AV 데이터셋과 가장 다른 점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">라이다 점 밀도가 더 높음</button><button class="mcq-option" data-correct="true">Static·Dynamic·Diverse(7개 challenging 조건) 균형 split 제공</button><button class="mcq-option" data-correct="false">12 카메라 다중 시점 동기화 제공</button><button class="mcq-option" data-correct="false">도시가 아닌 고속도로 전용</button></div><div class="mcq-explanation">기존 Waymo·nuScenes는 단순 시퀀스가 다수라 동적·악조건 평가를 가리지 못합니다. NOTR는 의도적으로 균형을 맞춘 120 시퀀스 큐레이션입니다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">본인 팀에서 운영 중인 운전 데이터셋의 imbalance는 어디에 있나요? Diverse-56의 7개 카테고리 중 가장 부족한 것은 무엇이고, 그것을 NeRF로 합성 보강할 때 어떤 신호가 가장 먼저 깨질까요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>야간·exposure mismatch는 색 일관성을, 고속·ego-static은 flow 학습 신호를 비대칭적으로 흔듭니다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>Benchmark imbalance는 모델 평가의 평균에 가려져 거의 항상 corner case 실패를 숨깁니다. Diverse split을 따로 들고 다니는 습관이 곧 안전 마진입니다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_3.html">← Day 3</a><a href="day_5.html">Day 5 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

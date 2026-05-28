@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 8 — ViT feature lifting + PE 제거</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 8</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">ViT feature lifting + PE 제거</h1>
+  <div class="hero-subtitle">DINOv2를 4D로 끌어올리는 모듈과 positional embedding artifact를 제거하는 트릭을 봅니다.</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 80%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">오늘은 EmerNeRF의 두 번째 카드, vision foundation model feature를 4D로 끌어올리는 부분입니다. 동기는 단순합니다 — NeRF는 color·density는 잘하지만 semantic이 비어 있어 occupancy prediction 같은 perception에 못 씁니다. 그래서 DINOv2(ViT-B/14, stride 7, PCA로 768→64) 또는 DINOv1을 2D feature로 뽑은 뒤, feature head $f_* = MLP_{feat}(g_*)$ 와 feature sky head로 volume render해 학습합니다. 여기서 저자들이 발견한 비자명한 문제가 <strong>positional embedding pattern</strong>입니다. Transformer 기반 ViT는 PE 때문에 같은 텍스처라도 이미지 좌표에 따라 다른 feature를 내놓습니다. 그 결과 PE 패턴이 이미지에 고정된 채로 viewpoint와 무관하게 따라다녀 <strong>3D multi-view consistency</strong>를 정면으로 깨뜨립니다. Fig 1(h)에서 이 격자 무늬가 또렷이 보입니다. 해법은 우아합니다 — PE 패턴은 거의 모든 이미지에서 동일하므로 &#x27;shared learnable additive prior&#x27; 하나로 충분하다는 관찰. 학습 가능한 2D feature map $U$ (80×120×32)를 두고, 픽셀 좌표 $(u, v)$ 에서 bilinear interpolation 후 한 층 MLPPE로 PE feature를 디코드해, volume-render된 PE-free feature에 더해 ground truth와 매칭합니다: $\hat{F} = (\text{PE-free rendered}) + MLP_{PE}(\text{interp}(U, (u,v)))$. 이 단순한 additive decomposition으로 어떤 일이 일어나는가? Occupancy prediction에서 PE 제거만으로 DINOv2 micro-accuracy가 45.13%→<strong>62.05%</strong>, 평균 <strong>+37.50% relative improvement</strong>, 최대(Static-32) <strong>+63.22%</strong>. Feature-PSNR도 DINOv2에서 +0.83~+0.42 일관 향상(Table 4). 더 흥미로운 부분은 시각적으로 &#x27;PE에 안 영향받는 듯한&#x27; DINOv1도 PE 제거 후 +24.95% 평균 향상이 나옵니다 — 즉 눈에 안 보여도 PE는 항상 3D 표현을 갉아먹고 있었다는 얘기. 내일은 이 결과들의 숫자를 어떻게 자기 연구에 인용할지 봅니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 3 — PE 제거의 few-shot occupancy 효과</div><a href="figures/page_9.png" target="_blank"><img src="figures/page_9.png" alt="Figure" loading="lazy"></a><div class="figure-explain">DINOv1/DINOv2 × Static/Dynamic/Diverse split × PE 제거 여부 격자표. DINOv2 Static-32 micro acc 38.73%→63.21%(+63.22%), 평균 45.13→62.05(+37.50%) 등 큰 폭의 상대 향상.</div></div>
+<div class="trigger">Trigger Type B</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Positional embedding (PE) artifact in ViT features</div><div class="concept-def">ViT는 패치 토큰에 위치 임베딩을 더해 attention을 계산하므로, 출력 feature에 이미지 좌표에 의존하는 잔류 패턴이 새깁니다. 이 패턴은 viewpoint가 바뀌어도 픽셀 좌표 기준으로 거의 동일하게 유지되어, NeRF가 의존하는 3D multi-view consistency를 깨뜨립니다. 결과적으로 PE를 그대로 4D로 lifting하면 동일한 3D 점이 시점마다 다른 semantic feature를 갖게 되어 occupancy classification·few-shot perception에서 정확도가 크게 떨어집니다. DINOv2가 시각적으로도 격자 무늬가 더 또렷하고 영향도 큽니다(최대 +63.22% 상대 향상).</div></div>
+<div class="concept-card"><div class="concept-term">Shared learnable additive prior $U$</div><div class="concept-def">PE 패턴이 이미지 사이에 거의 동일하다는 관찰에 기반해, 전역적으로 공유되는 학습 가능한 2D feature map $U \in \mathbb{R}^{80 \times 120 \times 32}$ 하나로 PE 성분을 흡수합니다. 각 픽셀에서 $U$ 를 bilinear interpolation해 단일 층 $MLP_{PE}$ 로 디코드한 결과를 volume-render된 PE-free feature에 더해 GT와 매칭. 핵심 가정은 &#x27;PE는 additive noise&#x27;이므로 분리 가능하다는 것. 학습이 끝나면 $U$ 만 빼서 PE-free feature를 얻고, 이게 3D 일관성 있는 semantic 표현이 됩니다. 단순하면서 ablation 없이도 작동 원리가 또렷한 트릭.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">lift X into Y</div><div class="expr-ko">X를 Y 공간으로 들어올리다</div><div class="expr-example">We lift 2D visual foundation model features into 4D space-time.</div><div class="expr-context">차원·도메인 상승을 묘사하는 NeRF 분야 표준 동사. distillation 논문 자주.</div></div>
+<div class="expr-card"><div class="expr-en">address a general challenge</div><div class="expr-ko">일반적 난제를 해결하다</div><div class="expr-example">We address a general positional bias in modern Transformers.</div><div class="expr-context">본 연구의 부수 기여를 명시할 때. &#x27;특정 데이터셋에 한정되지 않음&#x27;을 함의.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">ViT PE 패턴이 4D feature lifting을 망치는 본질적 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">Feature dimension이 너무 커서 PCA 손실이 큼</button><button class="mcq-option" data-correct="true">PE 패턴이 viewpoint와 무관하게 이미지 좌표에 고정되어 3D multi-view consistency를 깨뜨림</button><button class="mcq-option" data-correct="false">ViT가 stride 8/7로 동작해 해상도가 부족함</button><button class="mcq-option" data-correct="false">Sky head와 충돌함</button></div><div class="mcq-explanation">같은 3D 점이 시점마다 픽셀 좌표가 달라지면서 다른 PE 성분을 받게 되므로, 4D 일관성을 직접 위반합니다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">Shared learnable additive prior $U$ 의 핵심 가정은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">PE는 multiplicative noise이며 픽셀별로 다르다</button><button class="mcq-option" data-correct="true">PE는 거의 모든 이미지에서 동일한 additive 패턴이라 단일 2D map으로 흡수 가능</button><button class="mcq-option" data-correct="false">PE는 학습할 수 없고 분석적으로만 제거 가능</button><button class="mcq-option" data-correct="false">PE는 dynamic field에만 영향</button></div><div class="mcq-explanation">Additive 가정이 식 11의 분해를 정당화하며, 단일 U로 PE를 흡수해도 충분히 작동함을 실험이 확인합니다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">본인이 쓰는 ViT 백본(DINOv2, SAM, EVA-CLIP 등)에서 PE artifact가 downstream 3D 태스크에 영향을 줄 가능성은 어디인가요? Occupancy·BEV detection·NeRF distillation 중 어느 자리가 가장 위험할까요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>Per-image grid pattern이 viewpoint와 무관하게 따라다니는지 한 장면을 다른 시점에서 PCA 시각화해 보세요.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>Foundation model을 3D로 lifting할 때, 2D에서는 보이지 않던 PE 잔류가 거의 항상 multi-view 일관성을 갉아먹습니다. &#x27;PE-free&#x27;는 옵션이 아니라 기본기여야 합니다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_7.html">← Day 7</a><a href="day_9.html">Day 9 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

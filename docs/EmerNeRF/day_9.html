@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 9 — 숫자가 말하는 것</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 9</div>
+  <div class="hero-tag">결과</div>
+  <h1 class="hero-title">숫자가 말하는 것</h1>
+  <div class="hero-subtitle">EmerNeRF의 핵심 결과 수치를 짚고, 각 숫자가 무엇을 가능하게 하는지 정리합니다.</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 90%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">이제 숫자를 한 번에 정리합니다. <strong>Static-32</strong>: iNGP 24.46 → StreetSurf 26.15 → EmerNeRF <strong>29.08 PSNR</strong>(+2.93). 정적 전용 SOTA였던 StreetSurf를 정적 측면에서도 이긴 게 흥미로운데, 정적 분기만 켰을 때조차 hybrid 표현·loss 설계가 더 우수했다는 신호입니다. <strong>Dynamic-32 reconstruction</strong>(full image): D²NeRF 24.35, HyperNeRF 25.17 → EmerNeRF <strong>28.87 PSNR</strong>(+3.70). dynamic-only는 21.78/22.93 → <strong>26.19 PSNR</strong>로 약 +3.26~4.41 PSNR. <strong>Novel view synthesis</strong>(매 10번째 frame omit)에서도 full <strong>27.62</strong>, dynamic-only <strong>24.18</strong>로 동급 차이. <strong>Scene flow</strong>(Table 2): NSFP 대비 EPE3D <strong>0.365m → 0.014m</strong>(약 26배 감소), Acc5 <strong>51.76% → 93.92%</strong>(절대 +42.16%p), Acc10 67.36 → 96.27%, θ 0.84 → 0.64 rad. 라벨 없는 self-emerged flow가 supervised SOTA를 한 자릿수가 아니라 한 자릿수 곱하기 한 자릿수로 넘어선 결과입니다. <strong>Few-shot semantic occupancy</strong>(Table 3, 10%만 라벨링): DINOv2 PE-제거 시 micro acc 평균 45.13% → <strong>62.05%</strong>, 평균 +<strong>37.50% relative</strong>, 최대 +<strong>63.22%</strong>(Static-32). DINOv1도 +24.95% 평균. 이 숫자가 의미하는 바를 다운스트림 응용으로 옮겨봅시다 — (a) 정적 +2.93 PSNR은 단순 시각 품질이 아니라 nearby novel-view에서 차선·표지 같은 thin structure가 살아남는다는 뜻. (b) Dynamic flow Acc5 93.92%는 라벨링 비용 없이 motion forecasting의 weak supervision 소스로 쓸 수 있다는 뜻. (c) Occupancy +37.50%는 10%만 라벨링하면 90% 라벨링과 견줄 만한 perception이 가능해진다는 뜻. 학습 비용도 무거운 편이 아닙니다 — A100 한 장에서 정적 33분, 동적 + feature 2.25시간. 내일은 이 숫자들을 본인의 AD 연구에 어떻게 가져갈지 마무리합니다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 3 (occupancy) + Table 2 (flow) 함께</div><a href="figures/page_9.png" target="_blank"><img src="figures/page_9.png" alt="Figure" loading="lazy"></a><div class="figure-explain">두 표를 같이 보면 &#x27;reconstruction 외에 motion·semantic 양쪽이 동시에 자기지도로 향상되었다&#x27;는 메시지가 한눈에 들어옴. PE 제거의 occupancy 효과가 가장 큰 셀(63.22%)에 주목.</div></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">+2.93 / +3.70 PSNR이 의미하는 것</div><div class="concept-def">PSNR 1dB 차이는 실제 운전 장면에서 thin structure(차선, 표지, 가로등 폴, 신호 와이어)의 가시성을 좌우합니다. 정적 +2.93 PSNR(StreetSurf 대비)·동적 +3.70 PSNR(HyperNeRF 대비)은 단순 평균 향상이 아니라 fine geometry가 살아남는 시각 품질의 질적 변화를 의미합니다. 특히 dynamic-only PSNR이 21.78에서 26.19로 오른 것은 동적 차량의 윤곽·번호판·바퀴 같이 movement에 민감한 영역에서 reconstruction이 또렷해진다는 뜻. closed-loop simulation에서 perception 모델이 거짓 양성을 덜 내는 데 직결되는 수치입니다.</div></div>
+<div class="concept-card"><div class="concept-term">Self-emerged flow vs NSFP (EPE3D 0.014m vs 0.365m)</div><div class="concept-def">NSFP는 Chamfer loss로 timestep마다 작은 MLP를 optimize하는 SOTA scene flow estimator입니다. EmerNeRF는 어떤 explicit flow loss도 없이 reconstruction loss만으로 EPE3D 0.014m를 달성 — 약 26배 정확. Acc5는 51.76→93.92%로 42%p 절대 향상. 이 차이의 출처는 두 가지로 해석됩니다. (1) NSFP는 점 단위 chamfer만 보지만, EmerNeRF는 RGB·feature·LiDAR 모두를 통한 dense supervision을 받습니다. (2) NSFP는 timestep마다 독립 최적화지만, EmerNeRF는 시퀀스 전체를 한 표현에 담아 시간적 일관성을 공유합니다. 즉 표현이 곧 정확도였다는 결과.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">by a substantial margin</div><div class="expr-ko">상당한 차이로</div><div class="expr-example">EmerNeRF outperforms NSFP by a substantial margin in scene flow accuracy.</div><div class="expr-context">결과 우위를 정량적으로 강조할 때. &#x27;significantly&#x27;와 함께 결과 섹션 단골.</div></div>
+<div class="expr-card"><div class="expr-en">relative improvement of X%</div><div class="expr-ko">X% 상대 향상</div><div class="expr-example">Removing PE patterns yields a 37.50% relative improvement in occupancy accuracy.</div><div class="expr-context">절대 차이가 크지 않을 때 상대 비교로 임팩트를 전달. baseline 자체가 낮을 때 흔히.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Dynamic-32 split에서 EmerNeRF의 dynamic-only reconstruction PSNR(26.19)이 의미하는 가장 직접적인 응용 가치는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">Sky color 정확도 향상</button><button class="mcq-option" data-correct="true">동적 차량·보행자의 thin geometry가 살아남는 novel-view 합성</button><button class="mcq-option" data-correct="false">LiDAR sparsity 보정</button><button class="mcq-option" data-correct="false">Ego pose calibration</button></div><div class="mcq-explanation">dynamic-only PSNR은 동적 객체 영역에서만 계산되므로 직접적으로 차량/보행자 렌더링 품질을 반영합니다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">PE 제거로 인한 +37.50% 평균 occupancy 향상의 핵심 함의는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">Ground truth 100% 라벨을 가정한 결과</button><button class="mcq-option" data-correct="true">10% 라벨만으로도 풍부한 semantic perception이 가능해짐(few-shot)</button><button class="mcq-option" data-correct="false">Static scene에만 적용 가능</button><button class="mcq-option" data-correct="false">ViT backbone을 교체해야만 얻을 수 있음</button></div><div class="mcq-explanation">실험 세팅이 10% 라벨 few-shot이므로, PE 제거의 효과는 라벨 효율성을 직접적으로 끌어올린다는 의미입니다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">본인 팀의 perception/simulation 파이프라인에서 &#x27;EmerNeRF의 어느 숫자&#x27;가 가장 즉시 가치를 줄 것 같나요? +3.70 PSNR(시각 품질), Acc5 93.92%(flow weak supervision), +37.50%(few-shot occupancy) 중 어느 쪽인가요?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>현재 가장 큰 비용 항목(라벨링·시뮬레이션·평가)을 떠올린 뒤, 어느 숫자가 그 비용을 직접 깎는지를 보세요.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>논문의 숫자는 절대값이 아니라 &#x27;본인 파이프라인에서 어떤 비용을 어느 만큼 깎는가&#x27;로 번역되어야 의미가 있습니다. 평균 PSNR보다 응용 단위 비용 매핑이 더 중요합니다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_8.html">← Day 8</a><a href="day_10.html">Day 10 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>
