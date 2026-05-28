@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 6 — 차량 모델: kinematic vs dynamic</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 6</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">차량 모델: kinematic vs dynamic</h1>
+  <div class="hero-subtitle">단일 트랙 모델과 타이어 슬립 모델의 가정·적용 영역</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 60%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">Planning과 control이 &quot;무엇 위에서&quot; 작동하는지를 결정하는 게 차량 모델이다. paper는 두 가족을 다룬다.
+
+<strong>1) Kinematic Single-Track (Bicycle) Model.</strong> 앞·뒤 바퀴 한 쌍이 길이 $l$의 강체로 연결되어 평면에서 운동한다. 뒷바퀴 기준 동역학:
+$$\dot{x}_r = v_r\cos\theta, \quad \dot{y}_r = v_r\sin\theta, \quad \dot{\theta} = \frac{v_r}{l}\tan\delta$$
+핵심 가정은 <strong>no-slip</strong> — 바퀴가 접지점에서 미끄러지지 않는다. 이게 곧 <strong>nonholonomic 제약</strong>으로, 차가 옆으로 평행 이동 못하는 직관과 일치. Dubins car($v_r$ 고정, 곡률 한정), Reeds-Shepp car(전·후진 한 쌍)는 이 모델의 유명 변종으로 최단 곡률 제한 경로를 해석적으로 푼다.
+
+언제 쓰나? <strong>저속 + 작은 횡가속</strong>(주차장, 도시 저속 주행). 단점: instantaneous steering change를 허용해 현실에서 안 나오는 trajectory를 만들 수 있다 — paper는 $\dot{\delta} = v_\delta$로 augment해 $(x_f, y_f, \theta, \delta)$ 4D 상태로 푸는 방식을 제시.
+
+<strong>2) Dynamic Model (with Tire Slip).</strong> 가속이 커지면 노슬립이 깨진다. 뉴턴 운동 방정식 $m\ddot{p}_c = F_f + F_r$로 가고, 타이어 마찰은 <strong>Pacejka magic formula</strong>의 단순화 버전 $\mu(\|s_r\|/(\Omega_r r)) = D\sin(C\arctan(B \|s_r\|/(\Omega_r r)))$. 슬립 비가 커질수록 마찰이 비선형으로 증가하다 <strong>friction circle</strong> peak에서 포화 — 어떤 방향이든 한 타이어가 낼 수 있는 힘의 최대치가 원으로 제한된다(Figure III.4).
+
+<strong>왜 둘 다 필요한가?</strong> 빙판·급조향 같은 극한에서는 dynamic 모델 없으면 control이 빙글빙글 돈다. 그러나 dynamic 모델은 state 차원이 커지고(상하 6D+), planning이 더 비싸진다. 그래서 보통 &quot;motion planner는 kinematic, low-level controller는 dynamic&quot;으로 계층 분리.
+
+Sim2real 관점에서 정직한 한 줄: <strong>모델 fidelity를 어디서 끊을지는 작동 영역(operational design domain)에 의해 결정된다</strong>. 도심 25 km/h라면 kinematic으로 충분하지만, 회피 기동·악천후를 다룬다면 dynamic이 필수.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure III.4 — Friction circle</div><a href="figures/page_7.png" target="_blank"><img src="figures/page_7.png" alt="Figure" loading="lazy"></a><div class="figure-explain">위 패널은 wheel slip 대비 traction force의 확대 그래프(Pacejka), 아래 패널은 zoom-out으로 peak가 만드는 friction circle을 보여준다. 어떤 방향이든 타이어가 낼 수 있는 힘의 최대치가 원으로 제한된다는 핵심 직관을 한 장에 담음.</div></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Nonholonomic Constraint</div><div class="concept-def">위치·각도의 변화 자체가 아니라 **속도(differential)**에 제약이 있는 조건. Bicycle 모델에선 $\dot{p}_r \cdot \hat{e}_y \cos\theta - \dot{p}_r \cdot \hat{e}_x \sin\theta = 0$ — 뒷바퀴 속도가 차체 방향과 정렬되어야 함. 의미: configuration space에서 도달 가능한 영역이 줄어드는 게 아니라 **도달하는 경로 모양**이 제한된다 — 평행주차에서 옆으로 미는 단순 동작이 안 되고 전·후진 조합이 필요한 이유. 이 제약 때문에 보행자(holonomic)에선 polynomial이던 최단 경로가 차량에선 NP-hard가 된다. Holonomic vs nonholonomic의 구분이 곧 motion planning 복잡도 점프의 경계다.</div></div>
+<div class="concept-card"><div class="concept-term">Friction Circle &amp; Pacejka Magic Formula</div><div class="concept-def">타이어가 지면에 가할 수 있는 힘은 슬립 ratio($\|s\|/(\Omega r)$)에 비선형적으로 의존. Pacejka의 단순형: $\mu(s) = D\sin(C\arctan(B s))$ — 작은 슬립에선 거의 선형, 임계 슬립 부근에서 peak, 그 뒤로 감소. 회전 대칭이라 한 타이어가 낼 수 있는 종·횡 합력의 최대치가 **원**(friction circle)으로 제한된다. 직관: 급제동 중에는 횡력을 못 내고, 급선회 중에는 가속·제동을 못 한다 — racing line 이론의 핵심. Sim2real에서 도로 마찰계수·노면 상태 추정 오차가 직접 이 circle 반경을 흔들어 trajectory tracking을 무너뜨린다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">render the assumption invalid</div><div class="expr-ko">그 가정을 무효화하다</div><div class="expr-example">When the acceleration is sufficiently large, the no-slip assumption between the tire and ground becomes invalid.</div><div class="expr-context">모델 가정의 적용 한계를 설명할 때; modeling 단락의 정형 표현</div></div>
+<div class="expr-card"><div class="expr-en">with the assumption that</div><div class="expr-ko">~라는 가정 하에</div><div class="expr-example">We tacitly neglect the motion of the center of mass with the assumption that the road is level.</div><div class="expr-context">가정을 명시적으로 나열할 때; derivation 시작부에 자주 등장</div></div>
+<div class="expr-card"><div class="expr-en">lend itself to</div><div class="expr-ko">~에 적합하다, ~에 자연스럽게 들어맞다</div><div class="expr-example">The kinematic model lends itself to low-speed urban planning, while dynamic models suit emergency maneuvers.</div><div class="expr-context">기법·도구의 적합성을 유연하게 표현; conclusion에서 권장 사항을 적을 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">kinematic single-track 모델의 nonholonomic 제약을 가장 직관적으로 설명한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">차량이 모든 방향으로 자유롭게 평행 이동할 수 있다</button><button class="mcq-option" data-correct="true">차량이 전진 동작 없이 옆으로 직접 평행 이동할 수 없다</button><button class="mcq-option" data-correct="false">차량의 위치는 항상 정수 좌표여야 한다</button><button class="mcq-option" data-correct="false">차량의 속도 크기가 일정하다</button></div><div class="mcq-explanation">평행주차에서 한 번에 옆으로 못 들어가고 전·후진을 반복하는 이유 — 그게 nonholonomic의 일상 직관.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">friction circle이 motion planning에 주는 가장 중요한 함의는?</div><div class="mcq-options"><button class="mcq-option" data-correct="true">타이어가 낼 수 있는 종·횡 합력의 최대치가 원으로 제한된다</button><button class="mcq-option" data-correct="false">타이어 마찰계수는 항상 1이다</button><button class="mcq-option" data-correct="false">곡선 주행에서 마찰은 항상 0이다</button><button class="mcq-option" data-correct="false">정지 마찰과 운동 마찰이 같다</button></div><div class="mcq-explanation">Pacejka 곡선의 peak가 회전 대칭이라 종·횡 합력의 최대치가 원으로 제한된다 — 따라서 급제동 중엔 횡력 여유가 없다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">여러분의 시뮬레이터(예: CARLA, AirSim, IsaacSim)는 어떤 차량 모델을 쓰는가? 그 모델의 friction circle 가정과 실차의 노면 마찰 변동이 sim2real gap의 어느 부분을 만들고 있다고 보는가?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>시뮬레이터별 타이어 모델은 매우 다르다 — Pacejka, brush model, 단순 마찰 등. 노면 마찰 추정은 실차에서는 별도 perception 문제다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>Sim2real gap의 큰 부분은 &quot;동일한 노면 마찰&quot;이라는 잘못된 가정에서 온다. 모델 fidelity를 올리기 전에 어디가 깨지는지부터 매핑해야 한다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_5.html">← Day 5</a><a href="day_7.html">Day 7 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

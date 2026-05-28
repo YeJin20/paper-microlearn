@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 3 — 한 문장 요약: 계층화된 trade-off 지도</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 3</div>
+  <div class="hero-tag">개요</div>
+  <h1 class="hero-title">한 문장 요약: 계층화된 trade-off 지도</h1>
+  <div class="hero-subtitle">survey의 통일된 메시지를 한 줄로 압축</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 30%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content"><strong>한 문장 요약</strong>: &quot;자율주행 motion planning·control은 *model fidelity × 계산 시간 × 최적성 보장*의 3축 trade-off이며, 하나의 알고리즘이 모든 영역을 덮을 수 없으므로 <strong>계층적 분해 + 계층별 알고리즘 선택</strong>이 실용적 해법이다.&quot;
+
+<strong>직관</strong>: 의사 진료에 비유하면 깔끔하다. 응급실 의사(control, 수십 ms)는 빠르게 반응해야 하니까 자세한 병력보다 vital sign에 의존한다. 외래 진료(motion planning, 수백 ms)는 더 종합적이고, 종합검진(behavioral, 수 초)은 더 전략적이며, 보험 가입(route planning, 분 단위)은 전 생애 계획이다. 같은 환자(차량)지만 각 단계가 다른 fidelity의 데이터·다른 알고리즘을 쓴다.
+
+<strong>왜 이게 이전보다 나은가?</strong> 기존 연구들은 한 단일 paper로 &quot;end-to-end RRT*&quot; 또는 &quot;end-to-end MPC&quot;식으로 자기 기법을 변호하는 데 집중했다. 본 survey는 <strong>side-by-side 비교표</strong>(Table I, Table II)로 가정·완전성·최적성·복잡도를 같은 축에서 정리해, 시스템 설계자가 &quot;내가 가진 compute, 내가 가정할 model fidelity, 내가 요구하는 안전 보장&quot;이라는 세 좌표를 입력하면 후보 알고리즘 부분집합이 자동으로 좁혀지도록 만든다.
+
+이게 단순한 카탈로그를 넘어 가치를 갖는 이유는, DARPA Urban Challenge 상위 4개 팀(Boss/Junior/Odin/MIT)이 각각 다른 조합(variational+Anytime D* / Hybrid A* / 모션 프리미티브 A* / closed-loop RRT)을 썼다는 사실이 보여주듯, &quot;하나의 정답&quot;이 없는 분야이기 때문이다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure II.1 — Hierarchy of decision-making processes</div><a href="figures/page_3.png" target="_blank"><img src="figures/page_3.png" alt="Figure" loading="lazy"></a><div class="figure-explain">동일한 4단 hierarchy 다이어그램이지만 이번에는 각 layer의 시간 스케일과 출력 자료형에 주목한다. 위쪽 layer일수록 추상도가 높고 update 주기가 길며, 아래쪽일수록 구체적이고 빠르게 도는 구조를 시각적으로 확인.</div></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Side-by-side Comparison Framework</div><div class="concept-def">survey 전체를 관통하는 도구로, 알고리즘마다 (1) **model assumption**, (2) **completeness**(해 발견 보장), (3) **optimality** 보장, (4) **time complexity**, (5) **anytime** 여부의 5축에서 정리한다. 단순 카탈로그가 아닌 이유는 5축이 서로 trade-off 관계라는 점에 있다 — 예컨대 visibility graph는 O(n²) 다항이지만 곡률 제약을 못 다룬다(arbitrary diff. constraints 불가). 시스템 설계자는 자신의 요구(예: &quot;60 Hz 이내, 곡률 제약, asymptotic optimal&quot;)를 입력으로 보고 후보를 좁혀가는 방식으로 활용. 이는 통계학에서 bias-variance trade-off가 가지는 위치와 비슷하다 — 절대 우열이 아닌 작업 부합도 평가의 축.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">side-by-side comparison</div><div class="expr-ko">나란히 비교, 직접 비교</div><div class="expr-example">The side-by-side comparison presented in this survey helps to gain insight into the strengths and limitations of the reviewed approaches.</div><div class="expr-context">여러 기법을 동일 기준에서 비교한 표·그림을 가리킬 때; 본 paper의 abstract에 직접 등장</div></div>
+<div class="expr-card"><div class="expr-en">trade-off between A and B</div><div class="expr-ko">A와 B 사이의 절충</div><div class="expr-example">There is a trade-off between model fidelity and computational tractability.</div><div class="expr-context">두 바람직한 성질을 동시 달성 불가할 때; 시스템 설계 논의 단락 핵심 표현</div></div>
+<div class="expr-card"><div class="expr-en">assist with system level design choices</div><div class="expr-ko">시스템 수준 설계 선택을 돕다</div><div class="expr-example">This survey assists with system level design choices for self-driving stacks.</div><div class="expr-context">engineering contribution을 강조하는 abstract/conclusion 마무리 표현</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">본 paper가 &quot;single best algorithm&quot;이 존재하지 않는다고 주장하는 가장 강한 근거는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">DARPA Urban Challenge 상위 팀들이 모두 동일 알고리즘을 사용했다</button><button class="mcq-option" data-correct="true">DARPA Urban Challenge 상위 4개 팀이 서로 다른 motion planning 조합을 채택했다</button><button class="mcq-option" data-correct="false">최적 알고리즘이 아직 발견되지 않았다</button><button class="mcq-option" data-correct="false">ROS 구현체가 통일되지 않았기 때문이다</button></div><div class="mcq-explanation">Boss(variational + 4D lattice + Anytime D*), Junior(Hybrid A*), Odin(motion primitive A*), MIT(closed-loop RRT) — 같은 대회 우승권에서도 조합이 다 달랐음을 paper가 명시한다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">본 survey의 비교 프레임워크에서 &#x27;anytime&#x27; 속성이 별도 축으로 강조되는 가장 큰 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">구현이 가장 어렵기 때문</button><button class="mcq-option" data-correct="true">실시간 driverless 시스템은 계산 예산이 가변이라 중간 해라도 반환해야 하기 때문</button><button class="mcq-option" data-correct="false">academic publication에서 가장 화제이기 때문</button><button class="mcq-option" data-correct="false">RRT 계열만이 anytime 성질을 가지기 때문</button></div><div class="mcq-explanation">실차는 매 제어 주기마다 결과가 필요하므로 &quot;끝까지 못 풀면 의미 없음&quot;이 아닌 &quot;중간이라도 feasible&quot;이 핵심 운영 요구가 된다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">여러분의 시스템 설계 좌표 — (가용 compute, 가정 model fidelity, 요구 safety guarantee) — 를 한 줄로 적어보라. 그 좌표에서 본 paper의 표에 등장하는 알고리즘 중 어느 부분집합이 후보가 되는가?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>예: &quot;GPU 1대, kinematic + linearized dynamic, 95% 차선 유지&quot;라면 LTV-MPC + lattice planner 조합이 후보다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>알고리즘 선택은 &quot;가장 좋은 것&quot;이 아니라 &quot;좌표에 부합하는 것&quot;을 고르는 작업이다. 좌표를 명시하지 않으면 비교 자체가 무의미하다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_2.html">← Day 2</a><a href="day_4.html">Day 4 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

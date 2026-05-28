@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 8 — Control: Pure Pursuit부터 MPC까지</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 8</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">Control: Pure Pursuit부터 MPC까지</h1>
+  <div class="hero-subtitle">Path stabilization·trajectory tracking·predictive control의 스펙트럼</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 80%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">Motion planner가 reference를 만들면 controller가 그걸 <strong>실제로 따라가게</strong> 한다. paper는 단순한 것에서 복잡한 것 순으로 정리한다.
+
+<strong>1) Pure Pursuit.</strong> 차량의 rear axle에서 reference path까지 lookahead distance $L$만큼 떨어진 점을 잡고, 그 점과 차량을 잇는 원호를 따라간다. 곡률 $\kappa = 2\sin\alpha / L$, heading rate $\omega = 2v_r \sin\alpha / L$. DARPA Grand Challenge·Urban Challenge 다수 팀이 채택한 검증된 기법. 약점: 곡률 변화에 정상상태 오차, $L$이 속도 민감 → 보통 $L \propto v_r$로 스케줄.
+
+<strong>2) Rear/Front Wheel Position Feedback.</strong> Path에서 가장 가까운 점을 찾아 transverse error $e$와 heading error $\theta_e$를 정의. Rear-wheel 기반은 후진에서도 안정($v_r \neq 0$ 어떤 부호든), front-wheel(Stanford <strong>Stanley</strong>)은 $\delta = \arctan(-ke/v_f) - \theta_e$로 직관적 — 앞바퀴를 path 쪽으로 돌리는 양이 path까지 거리에 비례. 단점: 후진 불가.
+
+<strong>3) Control Lyapunov / Output Feedback Linearization.</strong> Lyapunov 함수 $V = \frac{1}{2}(x_e^2 + y_e^2) + (1-\cos\theta_e)/k_2$로 안정성 증명. Output linearization은 &quot;앞쪽으로 $d$ 떨어진 점&quot;의 출력을 잡으면 $(\dot{x}_p, \dot{y}_p) = (u_x, u_y)$로 단순화([144]) — 비선형 시스템을 선형으로 보이게 만드는 마법.
+
+<strong>4) MPC.</strong> 짧은 horizon $N$ 동안 NLP를 풀고 첫 step만 적용한 뒤 다시 푼다. Linear LTV-MPC는 reference 주변 1차 expansion으로 QP화 — interior-point로 다항 시간. paper는 빙판에서 <strong>21 m/s, 20 Hz</strong> 제어 주파수로 실증된 결과를 인용([148]–[150]). Nonlinear MPC는 정확하지만 실시간 보장 어려움.
+
+<strong>5) LPV / Gain Scheduling.</strong> 횡 동역학 linearization은 속도 $v_r$이 system matrix에 그대로 들어간다(Eq. V.30). 단일 PD gain은 한 속도에서만 좋다 — closed-loop pole이 $(-k_d \pm \sqrt{k_d^2 - 4k_p v_r})/2$로 속도에 따라 출렁. 해법: $k_p$를 $v_r$의 함수로 스케줄 → LPV controller. 학계는 robust control + convex optimization으로 일반화.
+
+핵심 통찰: 모델이 복잡할수록 <strong>stability 증명이 어렵다</strong>. Nonlinear MPC는 실무에서 잘 되지만 stability not guaranteed라고 paper가 명시. 이 &quot;실용 vs 보장&quot; 긴장이 학계의 영원한 화두다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure V.5 — Tracking performance comparison</div><a href="figures/page_20.png" target="_blank"><img src="figures/page_20.png" alt="Figure" loading="lazy"></a><div class="figure-explain">(a) Pure pursuit: 곡률 구간에서 reference에서 이탈, (b) Rear-wheel feedback: 2차 응답 특성으로 overshoot 후 수렴, (c) Front-wheel feedback: 1차 응답으로 부드럽게 추종. 동일 lane change 시나리오에서 세 controller의 응답을 한 화면에 비교.</div></div>
+<div class="trigger">Trigger Type B</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Linear Time-Varying MPC with Reference Trajectory Linearization</div><div class="concept-def">Nonlinear vehicle dynamics $x_{k+1} = F_k(x_k, u_k)$를 reference trajectory $x_\text{ref}$ 주변에서 1차 Taylor expansion: $\xi_{k+1} = A_k \xi_k + B_k \eta_k$, 여기서 $A_k = \nabla_x F_k(x_\text{ref,k}, u_\text{ref,k})$, $B_k = \nabla_u F_k(\cdot)$, $\xi = x - x_\text{ref}$, $\eta = u - u_\text{ref}$. 결과는 LTV 시스템이라 quadratic objective + polyhedral constraint하에 **QP**가 되며 interior-point로 다항 시간에 풀린다. 왜 작동하나: reference 자체가 dynamically feasible이라면 perturbation $\xi$는 작게 유지되고 1차 근사가 valid. 함정: linearization point가 reference인지(이상적) 현재 operating point인지(robust하지만 myopic)에 따라 stability 성질이 갈린다([148] vs [150]).</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">owing to its simple implementation</div><div class="expr-ko">구현의 간단함 덕분에</div><div class="expr-example">Pure pursuit has proven to be an indispensable tool owing to its simple implementation and satisfactory performance.</div><div class="expr-context">기법의 채택 이유를 설명할 때; engineering paper에서 자주 사용</div></div>
+<div class="expr-card"><div class="expr-en">in the special case that</div><div class="expr-ko">~인 특수한 경우에</div><div class="expr-example">In the special case that h and g_n are quadratic, the problem becomes a quadratic program.</div><div class="expr-context">일반론에서 특수 경우의 단순화를 도출할 때; theoretical 단락의 전형</div></div>
+<div class="expr-card"><div class="expr-en">not guaranteed</div><div class="expr-ko">보장되지 않은</div><div class="expr-example">For nonlinear MPC, stability is not guaranteed in general, although it works well in practice.</div><div class="expr-context">이론 보장과 실용 성능의 간극을 인정할 때; conclusion·discussion에 적합</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Pure pursuit controller에서 lookahead distance $L$을 차량 속도에 따라 스케일링하는 가장 정확한 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">메모리 사용을 줄이기 위해</button><button class="mcq-option" data-correct="true">heading rate command가 속도가 커질수록 feedback angle에 더 민감해지기 때문</button><button class="mcq-option" data-correct="false">곡률을 정확히 계산하기 위해</button><button class="mcq-option" data-correct="false">후진 주행을 가능하게 하기 위해</button></div><div class="mcq-explanation">$\omega = 2v_r \sin\alpha / L$이므로 $v_r$이 커지면 동일한 $\alpha$에서 $\omega$가 폭증, $L$을 함께 키워 sensitivity를 잡는다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">LTV-MPC에서 reference trajectory 주변 linearization이 작동하는 이유로 가장 정확한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">reference가 항상 직선이라서</button><button class="mcq-option" data-correct="true">reference가 dynamically feasible하다면 perturbation이 작게 유지되어 1차 근사가 유효하기 때문</button><button class="mcq-option" data-correct="false">MPC가 항상 비선형 NLP보다 빠르기 때문</button><button class="mcq-option" data-correct="false">Quadratic objective가 자동으로 stability를 보장하기 때문</button></div><div class="mcq-explanation">feasible reference이면 closed-loop trajectory가 그 주변에 머물고 $\|\xi\|$가 작으니 1차 근사가 유효. reference가 infeasible이면 이 가정 자체가 깨진다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">여러분의 시스템이 nonlinear MPC를 채택한다면, stability not guaranteed라는 사실을 production safety case에 어떻게 반영할 것인가?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>Safety case는 실증 데이터로 보강 가능하지만, 어떤 영역(operating envelope)에 한정해서 보장하는지 명시해야 한다. 영역 밖이면 fallback controller로 강제 이양.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>이론적 stability 보장이 없어도 production은 가능하지만, 그 영역과 fallback 구조를 명시적으로 정의·검증해야 한다. &quot;실증에서 잘 됐다&quot;만으로는 safety case가 되지 않는다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_7.html">← Day 7</a><a href="day_9.html">Day 9 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

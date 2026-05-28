@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 2 — 이전 방법들이 깨지던 지점</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 2</div>
+  <div class="hero-tag">배경</div>
+  <h1 class="hero-title">이전 방법들이 깨지던 지점</h1>
+  <div class="hero-subtitle">왜 단일 알고리즘으로는 도시 주행이 안 풀렸나</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 20%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">도시 자율주행이 안 풀린 이유는 &quot;좋은 알고리즘이 없어서&quot;가 아니라 <strong>각 알고리즘이 잘 동작하는 가정 범위가 좁아서</strong>다. 대표적인 깨짐을 보자.
+
+첫째, geometry 기반 path planning. 곡률 제한이 있는 차량(car-like)에 대해 다각형 장애물 사이 최단 경로를 찾는 문제는 <strong>NP-hard</strong>다(Lazard, Reif, Wang 1998). 즉 도시처럼 장애물이 많은 환경에선 exact 알고리즘이 실용적이지 않다.
+
+둘째, 고전 RRT. 차원이 높은 비홀로노믹 시스템에서도 빠르게 feasible path를 찾는 것으로 유명하지만, <strong>확률 1로 suboptimal solution에 수렴</strong>한다(Karaman &amp; Frazzoli). 즉 무한히 시간을 줘도 최적이 아니다. RRT*가 이를 고치지만 매 반복마다 rewiring 비용을 떠안는다.
+
+셋째, variational(궤적 최적화). Newton/SQP 류는 빠르게 수렴하지만 <strong>local minimum</strong>에 갇힌다. 좋은 initial guess가 없으면 도로 한가운데 장애물을 그냥 뚫고 지나가는 trajectory가 최소가 되기도 한다.
+
+넷째, control 쪽. <strong>Pure pursuit</strong>은 단순하고 DARPA 우승팀들도 썼지만, 경로 곡률이 변하면 정상상태 추종 오차가 남고 lookahead distance L이 속도에 민감하다. 동역학을 무시한 kinematic 모델은 가속이 커지면(빙판·급조향) 노슬립 가정이 깨져 빙글빙글 돈다.
+
+다섯째, single operating point 기반 linear MPC. 속도 영역이 좁으면 잘 되지만 도시 주행처럼 0–60 km/h를 오가면 closed-loop pole이 출렁이며 진동한다 — 그래서 <strong>gain scheduling/LPV</strong>가 등장한다.
+
+핵심은: 어떤 한 기법도 모든 영역을 안 덮는다. 이 paper의 가치는 그 깨짐 지점들을 한 표로 정리해 &quot;무엇을 쓰면 어디서 깨지나&quot;를 보여주는 데 있다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table I — Comparison of path planning methods</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a><div class="figure-explain">행은 알고리즘(Visibility graph, Variational, Lane graph + Dijkstra, PRM*, RRT, RRT*, SST*), 열은 model assumption / completeness / optimality / time complexity / anytime 여부. 빈칸과 ∗·† 각주가 &quot;이 가정 하에서만 성립&quot;임을 드러내 한계 지점을 한 장으로 비교 가능하다.</div></div>
+<div class="trigger">Trigger Type B</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Probabilistic Completeness vs Asymptotic Optimality</div><div class="concept-def">Probabilistically complete란 해가 존재할 때 샘플 수가 늘면 해를 찾을 확률이 1로 수렴한다는 보장. Asymptotically optimal은 더 강해서, 찾은 해의 cost가 최적해의 cost로 수렴해야 한다. RRT는 전자만 만족하고 **확률 1로 suboptimal**에 수렴(Karaman &amp; Frazzoli, IJRR 2011). RRT*는 새 노드 추가 시 반경 $r = \gamma(\log n / n)^{1/d}$ 내 이웃을 rewiring해 후자까지 보장. 헷갈리기 쉬운 지점: &#x27;complete&#x27;는 해 발견에 대한 보장이고, optimality는 cost에 대한 보장이라 별개 속성이다. 실제 구현에서 heuristic steering을 쓰면 completeness조차 깨질 수 있다(Kunz &amp; Stilman 2015).</div></div>
+<div class="concept-card"><div class="concept-term">Local Minima in Variational Trajectory Optimization</div><div class="concept-def">Variational 방법은 trajectory를 유한 차원 vector로 parametrize하고 nonlinear program을 풀어 빠르게 locally optimal solution을 얻는다. 그러나 obstacle penalty가 비볼록이므로 **초기값 의존성**이 극단적이다. 예컨대 장애물 양쪽으로 갈 수 있는 상황에서 잘못된 쪽으로 잡힌 initial guess는 그 쪽 local minimum에 머문다. 실무 해법: graph search로 coarse path를 먼저 뽑아 warm-start([74], [75]). Barrier function은 항상 feasible하지만 feasible initial 필요, penalty는 임의 initial 가능하나 수렴된 해가 제약을 위배할 수 있다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">fall short</div><div class="expr-ko">(요구·기대에) 미치지 못하다</div><div class="expr-example">These approaches fall short when the underlying assumptions break in urban driving.</div><div class="expr-context">prior work의 한계를 명시할 때 자주 쓰는 비격식 표현; abstract보단 motivation 단락에 적합</div></div>
+<div class="expr-card"><div class="expr-en">render X intractable</div><div class="expr-ko">X를 계산적으로 다루기 어렵게 만들다</div><div class="expr-example">Curvature constraints render shortest-path computation intractable in polygonal environments.</div><div class="expr-context">복잡도 결과를 인용해 문제의 본질적 난이도를 강조할 때</div></div>
+<div class="expr-card"><div class="expr-en">with probability one</div><div class="expr-ko">확률 1로 (거의 확실하게)</div><div class="expr-example">Vanilla RRT converges to a suboptimal solution with probability one.</div><div class="expr-context">확률적 보장을 정량 진술할 때; almost surely와 호환</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">vanilla RRT가 RRT*로 발전한 이론적 동기로 가장 정확한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="true">RRT가 확률 1로 suboptimal solution에 수렴하기 때문</button><button class="mcq-option" data-correct="false">RRT는 확률적 완전성(probabilistic completeness)조차 보장하지 못하기 때문</button><button class="mcq-option" data-correct="false">RRT가 NP-hard라서 다항 시간이 필요했기 때문</button><button class="mcq-option" data-correct="false">RRT는 동적 환경에서 재계획이 불가능했기 때문</button></div><div class="mcq-explanation">RRT는 probabilistically complete이지만 asymptotically optimal은 아니다 — 확률 1로 suboptimal에 수렴. RRT*는 rewiring으로 asymptotic optimality를 회복한다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">Pure pursuit controller의 한계로 paper가 명시하는 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">후진 주행 시 발산한다</button><button class="mcq-option" data-correct="true">경로 곡률이 0이 아닐 때 정상상태 tracking 오차가 남는다</button><button class="mcq-option" data-correct="false">비선형 타이어 모델에서만 정의된다</button><button class="mcq-option" data-correct="false">computational cost가 O(n²)이라 실시간 불가하다</button></div><div class="mcq-explanation">paper는 fixed nonzero curvature에서 small steady-state tracking error가 남는다고 명시한다. 후진은 오히려 가능. 복잡도는 O(n)이다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">여러분이 학습 기반 planner(e.g., neural motion planner)를 평가할 때, 위에 나열된 5가지 깨짐 지점 중 어느 것이 학습 모델에서 다시 나타날 가능성이 가장 큰가?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>Local minima는 비볼록 loss에서, distribution shift는 single operating point linearization과 비슷한 구조를 만든다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>고전 기법의 깨짐 지점은 학습 기반에서도 사라지지 않고 다른 이름으로 다시 등장한다 — 평가 metric을 짤 때 이 사실을 반영해야 한다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_1.html">← Day 1</a><a href="day_3.html">Day 3 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

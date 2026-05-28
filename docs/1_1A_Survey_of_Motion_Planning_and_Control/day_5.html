@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 5 — 전체 파이프라인 한 장</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 5</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">전체 파이프라인 한 장</h1>
+  <div class="hero-subtitle">4단 계층의 입출력과 시간 스케일을 머릿속에 고정</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 50%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">오늘은 deep dive 전에 &quot;지도&quot;를 머릿속에 새겨두자. Figure II.1을 다시 보면 4개 블록이 위에서 아래로 흐른다.
+
+<strong>1) Route Planning</strong> (입력: 도착지 + 도로망, 출력: waypoint sequence). 도로망 그래프는 edge 수가 수백만 단위라 Dijkstra는 비실용 — Contraction Hierarchies 같은 pre-processing 알고리즘이 대륙 규모를 ms 단위로 푼다.
+
+<strong>2) Behavioral Decision Making</strong> (입력: route + 주변 agent 인지, 출력: &quot;차선 유지/차선 변경/교차로 양보&quot; 같은 motion spec). DARPA 우승팀들은 대부분 <strong>FSM</strong>(finite state machine)을 썼지만, 보행자 의도 같은 불확실성을 다루기 위해 MDP·<strong>POMDP</strong> formulation이 학계에선 표준화 중이다. Google은 의도 예측에 학습 기법을 쓴다고 보고됨.
+
+<strong>3) Motion Planning</strong> (입력: motion spec + 자유 공간 + 자차 상태, 출력: reference path $\sigma: [0,1] \to X$ 또는 trajectory $\pi: [0,T] \to X$). path vs trajectory의 차이는 <strong>시간 의존성</strong> — 동적 장애물·동역학을 다루려면 trajectory 필요. PSPACE-hard지만 numerical 방법으로 우회.
+
+<strong>4) Feedback Control</strong> (입력: reference + 차량 measurement, 출력: steering/throttle/brake). 모델 mismatch와 외란을 흡수하는 마지막 방어선. Pure pursuit ~ LPV-MPC까지 스펙트럼이 넓다.
+
+<strong>왜 이 분할이 작동하는가?</strong> 각 layer가 <strong>다른 시간 스케일</strong>에서 도므로 한 layer의 latency가 다른 layer의 정확도를 직접 깎지 않는다. 그리고 layer 간 인터페이스가 단순(waypoint·spec·path·command)해 모듈 교체가 가능하다. 이게 &quot;end-to-end는 통합 학습이 가능하지만 안전 검증이 어렵다&quot;는 현재 학계 논쟁의 출발점이다.
+
+중요한 보너스 정보: paper는 perception을 <strong>명시적으로 제외</strong>한다. 즉 본 paper의 stack은 perception output(map·obstacle·pose)이 정확하다는 가정 위에 선다. Sim2real에서 이 가정이 깨지는 양상은 perception 논문에서 따로 다뤄야 한다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure II.1 — Decision-making hierarchy with interfaces</div><a href="figures/page_3.png" target="_blank"><img src="figures/page_3.png" alt="Figure" loading="lazy"></a><div class="figure-explain">동일한 hierarchy 그림이지만 이번에는 layer 간 화살표 위 라벨에 집중. &quot;Sequence of waypoints&quot;, &quot;Motion specification&quot;, &quot;Reference path or trajectory&quot;, &quot;Steering/throttle/brake commands&quot;라는 4가지 인터페이스 자료형이 모듈 분리의 핵심이다.</div></div>
+<div class="trigger">Trigger Type B</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Path vs Trajectory 구분</div><div class="concept-def">Path는 $\sigma(\alpha): [0,1] \to X$로 **순수 기하**만 정의 — 어떻게 그 위를 갈지는 미지정. Trajectory는 $\pi(t): [0,T] \to X$로 **시간 parametrize**되어 속도/가속·동적 장애물·차량 동역학을 모두 표현. 변환은 가능: trajectory planning을 $X^P := X^T \times [0,T]$ 공간의 path planning으로 mapping하고 시간 monotonicity $t(\sigma&#x27;(\alpha))&gt;0$을 differential constraint로 추가하면 된다([86]). 함정: trajectory가 더 표현력 있지만, dynamic obstacle이 있으면 path planning(2D)에서 polynomial이던 문제가 trajectory planning(2D+t)에선 NP-hard로 점프한다(Canny &amp; Reif 1987). 즉 시간축을 추가하는 비용이 이론적으로 거대하다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">is responsible for</div><div class="expr-ko">~을 담당하다</div><div class="expr-example">The behavioral layer is responsible for selecting an appropriate driving behavior.</div><div class="expr-context">모듈·컴포넌트의 역할을 명시할 때; architecture 설명 단락 표준 표현</div></div>
+<div class="expr-card"><div class="expr-en">the partitioning of these levels are rather blurred</div><div class="expr-ko">이 계층들의 구분은 다소 모호하다</div><div class="expr-example">The partitioning of these levels are, however, rather blurred with different variations occurring in the literature.</div><div class="expr-context">엄격한 정의가 어려운 분류를 인정할 때; survey paper의 균형 잡힌 hedging</div></div>
+<div class="expr-card"><div class="expr-en">we tacitly neglect</div><div class="expr-ko">암묵적으로 무시한다</div><div class="expr-example">We tacitly neglect the motion of the center of mass in the vertical direction.</div><div class="expr-context">가정·단순화를 명시할 때; 수식 derivation 단락에 적합</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">path planning에서 trajectory planning으로 넘어갈 때 발생하는 이론적 비용의 가장 정확한 표현은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">정확도가 떨어지지만 항상 빨라진다</button><button class="mcq-option" data-correct="true">2D polynomial 문제가 2D+t 환경에서는 NP-hard로 변할 수 있다</button><button class="mcq-option" data-correct="false">trajectory planning이 path planning보다 항상 더 쉬워진다</button><button class="mcq-option" data-correct="false">차원이 추가되어도 복잡도는 동일하다</button></div><div class="mcq-explanation">Canny &amp; Reif(1987)가 보였듯 dynamic obstacle 사이 velocity-bounded trajectory 찾기는 NP-hard. 시간축 추가는 표현력과 복잡도를 동시에 끌어올린다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">본 paper가 perception을 stack에서 제외한 이유로 가장 적절한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">perception이 motion planning보다 덜 중요해서</button><button class="mcq-option" data-correct="true">scope 제한; perception은 별도 survey가 충분히 있어 본 paper는 motion planning·control에 집중</button><button class="mcq-option" data-correct="false">perception이 결정론적이라 다룰 가치가 없어서</button><button class="mcq-option" data-correct="false">perception이 아직 충분한 연구가 없어서</button></div><div class="mcq-explanation">paper는 명시적으로 &quot;To limit the scope... the broad field of perception is omitted&quot;라며 별도 survey([28]–[31])를 참고하라고 한다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">여러분이 어떤 모듈을 개선했을 때, 그것이 인접 layer의 인터페이스 계약(자료형·주기·정확도)을 깨지 않는지 어떻게 검증하는가?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>예컨대 prediction 출력을 multimodal trajectory에서 occupancy로 바꾸면 motion planner의 input 채널을 다 갈아엎어야 한다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>모듈 단독 metric을 개선해도 인터페이스를 깨면 시스템 전체 성능은 하락한다 — 계층 간 contract을 명시적으로 정의·테스트하는 것이 통합의 첫 단계.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_4.html">← Day 4</a><a href="day_6.html">Day 6 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 7 — Motion Planning 알고리즘 deep dive</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 7</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">Motion Planning 알고리즘 deep dive</h1>
+  <div class="hero-subtitle">RRT*·PRM*·lattice·variational의 내부 메커니즘</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 70%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">어제는 &quot;세 가문&quot;이라 큰 그림을 그렸으니, 오늘은 <strong>내부 메커니즘</strong>을 들어가자.
+
+<strong>Variational — Direct vs Indirect.</strong> Direct는 trajectory를 basis로 parametrize($\pi \approx \sum \pi_i \phi_i$)하고 NLP로 푼다. <strong>Collocation + Euler/Runge-Kutta</strong>가 가장 흔한 조합. Bertha-Benz가 Euler collocation을 실차에 썼다. Indirect는 Pontryagin minimum principle을 만족하는 해를 직접 찾는다 — shooting method가 주차 기동에서 쓰인 예가 있다([90]). 장점: state 차원으로 축소. 단점: 2-point BVP가 수치적으로 까다롭다.
+
+<strong>Graph Search — 4D Lattice의 영리함.</strong> CMU Boss는 (x, y, θ, v) 4차원 lattice를 만들어 Anytime D*로 풀었다. 핵심은 <strong>lattice-generating motion primitives</strong> — primitive 끝점이 정수 격자에 정확히 떨어지도록 설계해 같은 위치에 도착하는 trajectory들이 같은 노드로 합쳐진다. 89°가 아닌 90° 호를 쓰는 이유(Figure IV.2).
+
+**Sampling-based — PRM* vs RRT* 핵심 차이.** PRM*는 미리 $n$개 sample을 뿌리고 각 점을 반경 $r = \gamma(\log n / n)^{1/d}$ 내 이웃과 연결해 graph를 만든 뒤 Dijkstra. <strong>batch 처리</strong>라 사전 계산엔 좋지만 anytime이 안 된다. RRT*는 매 iteration마다 (1) tree에서 가장 가까운 노드 선택, (2) 새 sample 방향으로 extend, (3) 같은 반경 $r$ 내 이웃을 <strong>rewiring</strong>해 더 짧은 부모로 갈아치운다. 이 rewiring이 asymptotic optimality를 만든다.
+
+<strong>SST\</strong>* (Li et al. 2015)는 exact steering 없이도 asymptotic near-optimality를 보장하는 방향으로 발전 — 랜덤 control을 forward propagate하고 locally suboptimal branch를 가지치기. dynamic 모델처럼 BVP가 안 풀리는 시스템에 결정적이다.
+
+<strong>복잡도 한 줄 요약</strong>: PRM* $O(n\log n)$, RRT $O(n\log n)$, visibility graph $O(n^2)$, variational $O(1/\epsilon)$ to local minimum. 다 비교 가능한 단위가 아니라 &quot;같은 가정에서 무엇이 더 빠른가&quot;가 아닌 &quot;어떤 가정에서 무엇이 성립하나&quot;를 봐야 한다.
+
+실용 팁: **RRT*는 anytime이라 실시간에 강하다**. PRM*는 사전 계산이 가능한 정적 환경(주차장)에 좋다. Variational은 좋은 warm-start만 있으면 매우 빠르다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table I — Comparison of path planning methods</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a><div class="figure-explain">각 알고리즘(visibility graph, variational, lane graph + Dijkstra, PRM, PRM*, RRG, RRT, RRT*, SST*)에 대해 model assumption, completeness, optimality, time complexity, anytime 여부를 한 표로 정리. 각주(∗, †)가 &quot;이 가정 하에서만&quot; 성립함을 명시.</div></div>
+<div class="trigger">Trigger Type C</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">RRT* Rewiring &amp; Shrinking Ball</div><div class="concept-def">RRT는 새 노드를 가장 가까운 부모에 무조건 붙이지만, RRT*는 새 노드 $x_\text{new}$ 추가 시 반경 $r = \gamma(\log|V|/|V|)^{1/d}$ 내 이웃 $X_\text{near}$를 모두 보고: (1) $x_\text{new}$의 부모를 $X_\text{near}$ 중 cost-to-come이 최소인 노드로 선택, (2) $X_\text{near}$의 각 노드에 대해 $x_\text{new}$ 경유가 더 짧으면 부모를 $x_\text{new}$로 **rewire**. 핵심: 반경이 $n$에 따라 **로그적으로 줄어들어** 이웃 평균 수가 $O(\log n)$으로 유지되며 동시에 점근적 최적성이 보장된다(Karaman &amp; Frazzoli 2011). 함정: differential constraint가 있는 시스템에서 exact steering이 없으면 rewiring이 의미가 흐려져 SST* 같은 변형이 필요해진다.</div></div>
+<div class="concept-card"><div class="concept-term">Exact Steering vs Heuristic Steering</div><div class="concept-def">Sampling-based planner의 핵심 building block. **Exact steering** $\text{steer}_\text{exact}(x,y)$는 $x$에서 $y$로 도달하는 동역학적으로 feasible한 path를 정확히 반환 — 2-point BVP를 푼다. holonomic은 직선, Dubins/Reeds-Shepp은 해석해, differentially flat 시스템도 해석해. 동역학 모델 같은 일반 시스템은 BVP solver 필요. **Heuristic steering**은 BVP를 안 풀고 &quot;$y$ 방향으로 일정 시간 propagate&quot; 같이 근사. 함정: heuristic steering으로 한 RRT는 fixed time step일 때 **probabilistically complete조차 아닐 수 있다**(Kunz &amp; Stilman 2015) — 실무에서 흔히 간과되는 무덤. PRM*/RRT*의 이론 보장은 exact steering 전제가 깔려 있다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">in turn</div><div class="expr-ko">차례로, 이어서</div><div class="expr-example">The motion planner output is passed to the local feedback control layer. In turn, feedback controllers generate an input signal.</div><div class="expr-context">절차적 흐름을 자연스럽게 연결할 때; pipeline 설명에 적합</div></div>
+<div class="expr-card"><div class="expr-en">be designed in such a way that</div><div class="expr-ko">~하도록 설계되다</div><div class="expr-example">The edges are constructed in such a way that the path segments lie completely in X_free.</div><div class="expr-context">구조적 보장의 메커니즘을 설명할 때; algorithm 설명 단락</div></div>
+<div class="expr-card"><div class="expr-en">concurrently attempt to</div><div class="expr-ko">동시에 ~하려고 시도하다</div><div class="expr-example">Incremental planners build finer discretization while concurrently attempting to determine if a path exists.</div><div class="expr-context">이중 목적의 동시 수행을 표현; anytime/incremental 알고리즘 설명에</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">RRT*의 shrinking ball 반경이 $r = \gamma(\log n / n)^{1/d}$로 설계된 이론적 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">메모리 사용을 줄이기 위해</button><button class="mcq-option" data-correct="true">이웃 평균 수를 로그적으로 유지하면서 asymptotic optimality를 동시에 확보하기 위해</button><button class="mcq-option" data-correct="false">수치 안정성을 위해 임의로 선택된 상수</button><button class="mcq-option" data-correct="false">RRT와의 단순 비교를 위해</button></div><div class="mcq-explanation">이 반경은 expected neighbor 수가 $\log n$이 되어 rewiring 비용이 $O(n\log n)$로 유지되면서도 almost sure convergence to optimal이 보장되는 가장 작은 반경.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">heuristic steering을 쓴 RRT가 fixed time step에서 가질 수 있는 약점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">더 빠르지만 메모리 사용이 항상 늘어난다</button><button class="mcq-option" data-correct="true">Probabilistic completeness조차 보장되지 않을 수 있다</button><button class="mcq-option" data-correct="false">Asymptotic optimality는 보장된다</button><button class="mcq-option" data-correct="false">Variational보다 항상 우월하다</button></div><div class="mcq-explanation">Kunz &amp; Stilman(2015)이 보였듯, kinodynamic RRT with fixed time step + best-input extension은 probabilistically complete가 아닐 수 있다 — 이론 보장과 실무 구현의 함정.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">여러분이 학습 기반 sampler(e.g., learned proposal distribution)를 RRT* 위에 얹는다면, 어떤 이론 보장이 깨질 위험이 있는가?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>RRT*의 보장은 sampling이 free configuration space에 dense하다는 전제 위에 선다. Learned sampler가 특정 영역을 비우면?</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>이론 보장은 가정 위에 서 있다. 학습 기반으로 sampling/steering을 대체할 때 어떤 가정이 깨지는지를 명시적으로 trace해야 &quot;잘 되는 거 같다&quot;에서 &quot;믿을 만하다&quot;로 넘어갈 수 있다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_6.html">← Day 6</a><a href="day_8.html">Day 8 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

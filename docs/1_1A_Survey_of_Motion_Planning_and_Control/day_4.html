@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 4 — Planner의 3대 가문 비교</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 4</div>
+  <div class="hero-tag">개요</div>
+  <h1 class="hero-title">Planner의 3대 가문 비교</h1>
+  <div class="hero-subtitle">variational vs graph search vs incremental의 위치 짓기</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 40%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">Motion planning 알고리즘은 크게 <strong>세 가문</strong>으로 나뉜다. 각 가문이 어떤 가정에서 강하고 어디서 깨지는지를 한 장에 그려보자.
+
+<strong>1. Variational</strong> (Sec IV-C). Trajectory를 유한 차원 basis $\{\phi_i(t)\}$로 표현해 $\pi(t) \approx \sum_i \pi_i \phi_i(t)$로 두고, NLP로 푼다. <strong>강점</strong>: 빠른 국소 수렴($O(1/\epsilon)$), continuous 변수 자연 처리. <strong>약점</strong>: local minimum, initial guess 필요. 대표 사례 — Bertha-Benz 100km 자율주행이 Euler collocation을 썼다.
+
+<strong>2. Graph Search</strong> (Sec IV-D). configuration space를 graph로 이산화한 뒤 Dijkstra/A*/Anytime D*로 탐색. <strong>강점</strong>: 국소 최소에 안 빠짐, heuristic으로 효율화 가능. <strong>약점</strong>: graph가 표현하는 path 집합 안에서만 최적 — discretization이 거칠면 진짜 최적과 멀어진다. Lane graph / lattice / sampling-based PRM이 모두 이 가문.
+
+<strong>3. Incremental Search</strong> (Sec IV-E). Tree를 점진적으로 키운다. <strong>RRT</strong>가 대표. <strong>RRT</strong>*는 새 노드 주변 반경 $r = \gamma(\log n/n)^{1/d}$ 내 이웃을 rewiring해 asymptotic optimality 회복. <strong>강점</strong>: anytime, 고차원 + 비홀로노믹 OK. <strong>약점</strong>: 메모리, branching factor가 sample 분포에 민감.
+
+<strong>중요한 통찰</strong>: 이 셋은 배타적이지 않다. 실용 시스템은 &quot;graph search로 warm-start → variational로 smoothing&quot;처럼 <strong>혼합</strong>한다([74], [75]). DARPA 우승팀 CMU Boss는 구조화된 도로에선 variational, 주차장에선 4D lattice + Anytime D*를 썼다. 한 차량 안에 두 가문이 공존한 것이다.
+
+수학적으로 흥미로운 점: PRM·RRT·FMT*가 모두 <strong>driftless control-affine</strong> 시스템(슬립 없는 wheeled vehicle 포함)에 대해 asymptotic optimality가 증명되었다(Schmerling et al. 2015). 즉 비홀로노믹이라도 driftless면 sampling-based가 이론적 안전판을 갖는다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure IV.2 — Lattice vs non-lattice graph</div><a href="figures/page_14.png" target="_blank"><img src="figures/page_14.png" alt="Figure" loading="lazy"></a><div class="figure-explain">(a) 90° 좌·우 호 + 직진으로 만든 lattice graph(균일 격자), (b) 89° 호로 만든 non-lattice graph(원점 주변에 루프가 몰림). 동일 5000 edges인데 (b)는 (a)보다 훨씬 좁은 영역만 커버. lattice 생성 primitive 설계의 중요성을 시각적으로 드러낸다.</div></div>
+<div class="trigger">Trigger Type C</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Lattice-generating Motion Primitives</div><div class="concept-def">Motion primitive를 재귀 적용했을 때 **regular graph(격자)**가 나오도록 설계된 primitive 집합. 일반 tree는 root 근처에 노드가 몰리고 멀리는 sparse해지지만, lattice는 configuration space를 균일하게 덮는다. Pivtoraiko et al.은 &quot;원점 주변에 균일하게 sampling한 후 각 점까지 2-point BVP를 풀어 만든 path가 lattice primitive&quot;라고 정의. 핵심 함정: 정확한 각도가 중요하다 — Figure IV.2에서 90°는 lattice를, 89°는 lattice가 아닌 tree를 만든다(같은 5000 edges로 훨씬 좁은 영역만 커버). 도시 주행에서 4D lattice(x,y,θ,v)는 CMU Boss의 주차장 planner 핵심이었다.</div></div>
+<div class="concept-card"><div class="concept-term">Driftless Control-Affine Systems</div><div class="concept-def">동역학이 $\dot{x} = \sum_i g_i(x) u_i$ 형태로 입력 affine이고, $u=0$일 때 정지(drift 없음)하는 시스템 클래스. 슬립 없는 wheeled vehicle (kinematic single-track)이 여기 속한다. 의미: Schmerling et al.이 이 클래스에 대해 PRM*/FMT*의 **asymptotic optimality**를 증명했다. 일반 비홀로노믹 시스템은 어렵지만 driftless로 좁히면 이론 보장이 회복된다. 함정: 동역학 모델(타이어 슬립 포함)로 가면 drift가 생기므로 이 이론이 직접 적용되지 않는다 — kinematic vs dynamic 경계가 이론 영역 경계와도 일치.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">exploit the advantages of each</div><div class="expr-ko">각각의 장점을 활용하다</div><div class="expr-example">It is possible to exploit the advantages of each method by combining them.</div><div class="expr-context">두 기법의 hybrid 접근을 정당화할 때; survey 종합 단락의 정형 표현</div></div>
+<div class="expr-card"><div class="expr-en">the rich literature on X</div><div class="expr-ko">X에 관한 방대한 선행 연구</div><div class="expr-example">Section IV surveys the rich literature on motion planning.</div><div class="expr-context">section을 열며 분야의 깊이를 인정할 때; survey paper introduction에 흔함</div></div>
+<div class="expr-card"><div class="expr-en">in contrast to A, B</div><div class="expr-ko">A와 대조적으로 B는</div><div class="expr-example">In contrast to RRT, RRT* is asymptotically optimal.</div><div class="expr-context">두 기법의 결정적 차이를 강조; 비교 분석 단락에서</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">variational, graph search, incremental(RRT 계열) 세 가문 중 &#x27;local minima에 빠지지 않음&#x27;을 가장 명확히 보장하는 가문은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">Variational</button><button class="mcq-option" data-correct="true">Graph search</button><button class="mcq-option" data-correct="false">Incremental(RRT 계열)</button><button class="mcq-option" data-correct="false">셋 모두 동일하게 보장한다</button></div><div class="mcq-explanation">Graph search는 그래프에 표현된 path 전체에 대한 global 최단 탐색이라 local minima가 원리적으로 없다. 단, graph 자체의 표현력 한계는 별개.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">Figure IV.2에서 89° 호로 만든 graph가 90°보다 좁은 영역만 커버하는 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">89° primitive는 collision-free 확률이 더 낮기 때문</button><button class="mcq-option" data-correct="true">재귀 적용이 lattice 대신 root 주변에 루프가 도는 tree를 만들기 때문</button><button class="mcq-option" data-correct="false">89°에서는 NLP가 항상 발산하기 때문</button><button class="mcq-option" data-correct="false">edge weight가 다르게 정의되기 때문</button></div><div class="mcq-explanation">정수배 각도(90°)는 격자 정렬을 만들지만 89°는 노드 정렬이 깨져 root 근처에 branch가 몰리는 tree가 된다. Lattice 생성 조건의 직관적 예시다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">여러분의 도메인(주차/고속도로/도시)에 어느 가문이 가장 잘 맞을지 한 줄로 답해보고, 그 선택의 가장 큰 약점이 무엇인지 함께 적어보라.</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>주차는 좁은 공간 + 정밀 → 4D lattice가 강하고, 고속도로는 짧은 horizon + 연속 변수 → variational MPC가 강하다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>도메인에 &quot;맞는&quot; 가문을 고르는 것 자체가 시스템 설계의 첫 행위이며, 약점을 의식적으로 인정해야 다른 가문과의 hybrid로 보완할 수 있다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_3.html">← Day 3</a><a href="day_5.html">Day 5 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

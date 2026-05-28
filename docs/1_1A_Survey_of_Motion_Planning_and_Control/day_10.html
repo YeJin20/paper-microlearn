@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 10 — 내 연구에 어떻게 꽂을까</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 10</div>
+  <div class="hero-tag">응용</div>
+  <h1 class="hero-title">내 연구에 어떻게 꽂을까</h1>
+  <div class="hero-subtitle">본 survey의 통찰을 reader의 AD 연구에 직접 적용</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 100%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">10일을 정리하며 묻자: 이 2016년 survey가 2026년의 여러분 연구에 어떻게 꽂히는가? 두 가지 직접적 적용 각도를 제안한다.
+
+<strong>적용 각도 1 — 학습 기반 planner의 평가 프레임워크.</strong> 본 paper의 Table I·II는 &quot;가정 / 완전성 / 최적성 / 복잡도 / anytime&quot;의 5축. 여러분이 neural motion planner를 만들 때 이 다섯 축으로 자신의 모델을 채점해 보자. 대부분 학습 기반 논문은 &quot;성능 +X%&quot;만 보고하지만, <strong>가정과 보장</strong>을 명시하지 않으면 시스템 통합 단계에서 깨진다. 예: imitation learned planner는 데이터 분포 밖에서 probabilistic completeness가 무너지는 식이다. RRT*의 shrinking ball 같은 이론적 안전판을 학습 모델에 어떻게 이식할지 — 이게 &quot;safe learning&quot; 연구의 한 갈래다.
+
+<strong>적용 각도 2 — Sim2real과 model fidelity의 경계 매핑.</strong> Sec III(kinematic vs dynamic)와 Sec V-D(LPV)는 같은 메시지를 다른 방식으로 말한다: <strong>모델은 영역(operating envelope) 안에서만 유효</strong>. 여러분의 시뮬레이터·실차 데이터로 &quot;어디서 kinematic이 무너지나&quot; 곡선을 직접 그려보자. 그 경계에서 perception noise를 합성하면 sim2real corner case 데이터셋이 된다. Digital twin의 가치는 결국 &quot;이 경계를 얼마나 정확히 재현하나&quot;로 측정된다.
+
+<strong>Follow-up work.</strong> 본 paper(2016) 이후 핵심 발전:
+- <strong>RRT_X</strong>: 동적 장애물에서의 real-time replanning (paper의 D* 계열을 sampling-based로 확장).
+- <strong>SST</strong>*: exact steering 없이 dynamic 모델에서 asymptotic optimality.
+- <strong>Neural motion planner</strong>: 학습된 sampler/heuristic으로 RRT*·MPC 가속.
+- <strong>Differentiable MPC</strong> (Amos &amp; Kolter): gradient를 MPC를 통해 흘려보내 end-to-end 학습.
+- <strong>Behavioral planning에서 POMDP 근사</strong>: DESPOT, Multi-Policy Decision Making (MPDM).
+- <strong>Learning-augmented Hybrid A</strong>*: cost map을 학습으로 보강.
+
+<strong>최종 통찰</strong>: 본 paper의 진짜 메시지는 &quot;이런 알고리즘이 있다&quot;가 아니라 &quot;<strong>알고리즘 선택은 system design choice</strong>&quot;라는 것. 학습 기반이든 고전이든, 자신의 ODD·계산 예산·요구 안전 보장을 명시하지 않으면 비교 자체가 무의미하다.
+
+앞으로 일주일, 머릿속으로 다음 실험을 해보길 권한다: 여러분의 가장 최근 연구를 본 paper의 5축 표에 추가한다면 어떻게 채워지나? 빈 칸이 많은 축이 바로 다음 연구의 방향이다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table I — Comparison of path planning methods (재방문)</div><a href="figures/page_10.png" target="_blank"><img src="figures/page_10.png" alt="Figure" loading="lazy"></a><div class="figure-explain">10일을 마무리하며 다시 보는 비교 표. 이제 각 항목이 &quot;왜 그 값인지&quot; 직관이 있다. 여러분의 연구 알고리즘을 행 하나로 추가해 다섯 축에 채워보면 빈 칸이 곧 연구 갭이다.</div></div>
+<div class="trigger">Trigger Type C</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">System Design Choice로서의 Algorithm Selection</div><div class="concept-def">본 survey가 최종적으로 도달하는 통찰. 알고리즘 우열은 &quot;성능 X% 높음&quot;이 아니라 **(operating envelope, compute budget, safety guarantee)** 좌표에서의 부합도다. 5축 채점표(model assumption, completeness, optimality, time complexity, anytime)를 자신의 연구에 적용하면 두 가지가 드러난다: (1) **자신의 ODD를 명시하지 않으면 비교가 무의미**, (2) **빈 축이 다음 연구의 갭**. 실무 적용: 학습 기반 planner를 종단간 metric만으로 평가하는 함정에서 벗어나려면 각 가정·보장을 명시적으로 진술해야 한다. 같은 sampling-based라도 PRM*(static, batch)와 RRT*(anytime)이 다른 시스템에 적합하듯, 자신의 연구도 &quot;어떤 system context에서 빛나는가&quot;를 먼저 정의해야 한다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">potential areas for future research</div><div class="expr-ko">향후 연구의 잠재적 방향</div><div class="expr-example">Section VI concludes with remarks on potential areas for future research.</div><div class="expr-context">survey conclusion의 표준 마무리 표현</div></div>
+<div class="expr-card"><div class="expr-en">serves as a reference for</div><div class="expr-ko">~을 위한 참고 자료로 기능하다</div><div class="expr-example">This survey serves as a reference for assessing compatibility and computational trade-offs.</div><div class="expr-context">본 paper의 utility를 강조; conclusion에서 자신의 기여를 정리할 때</div></div>
+<div class="expr-card"><div class="expr-en">the task is then to integrate</div><div class="expr-ko">그러면 남은 과제는 ~을 통합하는 것이다</div><div class="expr-example">The task is then to integrate these methods so that their interactions are semantically valid.</div><div class="expr-context">분해된 sub-problem들을 다시 모으는 통합의 어려움을 짚을 때</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">본 survey의 conclusion에서 paper가 가장 강조한 시스템 설계 통찰은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">RRT*가 모든 경우에서 최선이다</button><button class="mcq-option" data-correct="true">더 효율적인 planner는 더 비싼 controller(예: MPC)와만 호환되어 시스템 차원의 trade-off가 발생한다</button><button class="mcq-option" data-correct="false">Variational 방법은 항상 graph search보다 우월하다</button><button class="mcq-option" data-correct="false">Perception과 motion planning을 통합하면 모든 문제가 해결된다</button></div><div class="mcq-explanation">paper는 conclusion에서 &quot;more efficient motion planning algorithm may only be compatible with a computationally intensive feedback controller&quot;라고 명시 — 시스템 차원의 trade-off가 핵심.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">본 paper의 통찰을 학습 기반 motion planner 평가에 적용할 때 가장 중요한 권고는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">성능 metric(예: success rate) 한 가지에만 집중한다</button><button class="mcq-option" data-correct="true">model assumption / completeness / optimality / complexity / anytime의 5축에서 명시적으로 진술한다</button><button class="mcq-option" data-correct="false">이론 보장은 무시하고 실증에만 집중한다</button><button class="mcq-option" data-correct="false">고전 기법은 무시한다</button></div><div class="mcq-explanation">5축 채점표가 본 paper의 통일된 평가 프레임. 학습 기반도 이 다섯 축에서 자신을 정직히 진술하면 시스템 통합 시점의 실패를 사전 발견할 수 있다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">여러분의 가장 최근 연구(혹은 다음 연구 계획)를 본 paper의 Table I·II의 5축(model assumption / completeness / optimality / time complexity / anytime)에 추가한다면, 어떤 축이 가장 빈약하게 채워지는가? 그 빈 축을 채우는 것이 다음 연구의 한 챕터가 될 수 있을까?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>빈 축은 부끄러운 게 아니라 다음 연구의 방향 표지다. 예: 학습 기반 planner라면 &#x27;completeness&#x27;가 비어 있을 가능성이 크다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>자신의 연구를 동일한 5축 표 위에 올려놓고 비어 있는 축을 직시하는 것 — 그게 본 survey가 여러분의 책상 위에 남길 가장 가치 있는 도구다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_9.html">← Day 9</a><span class="disabled">다음 →</span></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>
