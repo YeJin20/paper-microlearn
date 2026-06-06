@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 1 — VLA가 왜 필요한가</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 1</div>
+  <div class="hero-tag">배경</div>
+  <h1 class="hero-title">VLA가 왜 필요한가</h1>
+  <div class="hero-subtitle">모듈러/VA 한계와 VLA 등장의 동기</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 10%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">자율주행 연구가 30년 가까이 의존해 온 <strong>모듈러 &#x27;Perception-Decision-Action&#x27; 파이프라인</strong>은 두 가지 근본 문제를 안고 있다. 첫째, <strong>cascaded error propagation</strong> — perception의 작은 검출 노이즈가 prediction·planning을 거치며 증폭되어, 결국 control 단계의 큰 사고로 이어진다. 둘째, 손으로 짠 인터페이스와 룰은 <strong>long-tail 시나리오</strong>에서 무력하다. 폭우 속에서 깜빡이는 신호등, 공사장의 임시 차선, 도로 한복판에 멈춘 킥보드 — 학습 분포 바깥의 사건들에서 정확히 가장 위험한 순간에 모듈러 시스템은 무너진다.
+
+이를 우회하려고 등장한 것이 <strong>Vision-Action(VA)</strong> 모델이다. UniAD·VAD·TransFuser 같은 end-to-end 시스템은 raw 센서를 직접 trajectory로 매핑해 cascade 자체를 제거했다. 그러나 VA는 또 다른 함정을 만든다. 블랙박스라 안전 critical 순간에 *왜* 그렇게 결정했는지 설명할 수 없다. 사전학습된 world knowledge가 부족해 long-tail에서 여전히 깨진다. 결정적으로 자연어 지시 — &quot;이번 출구 말고 다음에서 좌회전&quot; — 를 받을 채널이 없다.
+
+sim2real과 digital twin 관점에서 이는 치명적이다. 시뮬레이터에서 수만 시간을 돌려도 모델이 <strong>추론</strong>과 <strong>언어</strong>를 못하면, distribution shift 한 번에 무너지고 사람이 개입할 통로조차 없다. data augmentation도 *어떤* 케이스가 부족한지 시스템이 스스로 진단하지 못하면 효율이 떨어진다.
+
+이 서베이는 LLM/LMM 시대의 새 답인 <strong>Vision-Language-Action(VLA)</strong> 을 &#x27;Past-Present-Future&#x27; 관점에서 정리한다. 내일은 VA가 정확히 어디서, 왜 무너지는지 네 가지 한계를 짚는다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 — Outline</div><a href="figures/page_2.png" target="_blank"><img src="figures/page_2.png" alt="Figure" loading="lazy"></a><div class="figure-explain">논문 전체의 로드맵. Preliminary → VA Models → VLA Models → Datasets/Benchmarks → Challenges 흐름이 좌우로 펼쳐져 있고, VLA 내부가 End-to-End/Dual-System으로 갈라지는 계층 구조를 보여준다.</div></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Cascaded Error Propagation</div><div class="concept-def">모듈러 파이프라인에서 perception → prediction → planning → control로 정보가 한 방향으로만 흐를 때, 앞 단계의 작은 오차가 뒷 단계에서 비선형적으로 증폭되는 현상이다. 예컨대 객체 검출에서 1m 위치 오차가 motion forecasting에서 속도 추정 오차로 변환되고, 다시 planning의 cost map을 왜곡한다. **각 모듈이 독립적으로 최적화**되기 때문에 downstream의 견고성을 보장할 수 없고, end-to-end 학습이 가능한 시스템(VA, VLA)으로 진화한 핵심 동기다. 단, end-to-end도 학습 분포 안에서만 통한다는 한계는 남는다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">break down in complex or long-tailed scenarios</div><div class="expr-ko">복잡하거나 long-tail 시나리오에서 무너지다</div><div class="expr-example">Hand-crafted interfaces often break down in complex or long-tailed scenarios.</div><div class="expr-context">기존 방법의 한계를 지적할 때 motivation 단락에서 자주 쓰는 표현.</div></div>
+<div class="expr-card"><div class="expr-en">propagate errors downstream</div><div class="expr-ko">오차를 후속 단계로 전파하다</div><div class="expr-example">The cascaded design propagates perception errors downstream, degrading planning and control.</div><div class="expr-context">모듈러 시스템 비판이나 end-to-end 정당화 시 사용.</div></div>
+<div class="expr-card"><div class="expr-en">motivate the emergence of</div><div class="expr-ko">~의 등장을 촉발하다</div><div class="expr-example">Progress in LLMs has motivated the emergence of VLA frameworks for driving.</div><div class="expr-context">서론에서 새 패러다임을 도입할 때 자연스러운 연결어.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">이 논문이 모듈러 &#x27;Perception-Decision-Action&#x27; 파이프라인의 가장 근본적 약점으로 지목한 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">각 모듈이 너무 무거워 inference latency가 큰 점</button><button class="mcq-option" data-correct="true">단계 간 오차 전파(cascaded error propagation)와 long-tail 무력함</button><button class="mcq-option" data-correct="false">LiDAR 의존도가 너무 높은 점</button><button class="mcq-option" data-correct="false">BEV representation을 사용하지 않는 점</button></div><div class="mcq-explanation">논문은 cascade로 인한 error 전파와 hand-crafted rule의 long-tail 취약성을 두 축으로 명시한다. 다른 항목은 부차적이거나 논문 주장이 아니다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">VA 모델(UniAD, VAD 등)이 cascade 문제를 풀었지만 여전히 갖는 한계로 *틀린* 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">블랙박스라 의사결정 근거 설명이 어렵다</button><button class="mcq-option" data-correct="false">자연어 instruction을 직접 받을 채널이 없다</button><button class="mcq-option" data-correct="false">사전학습된 world knowledge가 부족해 long-tail에 약하다</button><button class="mcq-option" data-correct="true">Trajectory를 출력할 수 없어 control signal만 낸다</button></div><div class="mcq-explanation">VA 모델 다수는 정확히 trajectory를 출력한다(VAD, UniAD 등 REG 타입). 다른 셋은 본문이 명시한 VA의 한계와 일치한다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">당신의 AD 연구에서 사용하는 데이터셋과 시뮬레이터를 떠올렸을 때, &#x27;cascade error&#x27;와 &#x27;long-tail&#x27; 중 어느 쪽이 더 큰 병목인가? 그리고 VLA가 그 병목을 *직접* 해결한다고 보는가, 아니면 우회한다고 보는가?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>당신의 시스템에서 한 모듈의 정확도를 5%p 올렸을 때 전체 성능이 얼마나 따라 올라가는지를 떠올려 보라. 거의 안 올라간다면 cascade가 이미 평탄해진 상태고, 병목은 long-tail이다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>VLA는 cascade를 &#x27;제거&#x27;하는 게 아니라 *언어와 사전지식* 으로 long-tail 일반화를 보강하는 패러다임이다. 자신의 병목이 cascade라면 perception-action E2E도 충분하고, long-tail이라면 VLA 동기가 더 강해진다.</div>
+  </div>
+</div></div>
+<div class="nav"><span class="disabled">← 이전</span><a href="day_2.html">Day 2 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

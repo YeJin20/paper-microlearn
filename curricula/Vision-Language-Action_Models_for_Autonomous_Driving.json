@@ -1,0 +1,644 @@
+{
+  "_meta": {
+    "goal": "applying this paper to autonomous driving research",
+    "generated_at": "2026-06-06T13:43:00.246074",
+    "source_pdf": "papers/Vision-Language-Action_Models_for_Autonomous_Driving.pdf",
+    "paper_title": "VLA for Autonomous Driving: 서베이"
+  },
+  "day_1": {
+    "title": "VLA가 왜 필요한가",
+    "intent": "모듈러/VA 한계와 VLA 등장의 동기",
+    "content": "자율주행 연구가 30년 가까이 의존해 온 **모듈러 'Perception-Decision-Action' 파이프라인**은 두 가지 근본 문제를 안고 있다. 첫째, **cascaded error propagation** — perception의 작은 검출 노이즈가 prediction·planning을 거치며 증폭되어, 결국 control 단계의 큰 사고로 이어진다. 둘째, 손으로 짠 인터페이스와 룰은 **long-tail 시나리오**에서 무력하다. 폭우 속에서 깜빡이는 신호등, 공사장의 임시 차선, 도로 한복판에 멈춘 킥보드 — 학습 분포 바깥의 사건들에서 정확히 가장 위험한 순간에 모듈러 시스템은 무너진다.\n\n이를 우회하려고 등장한 것이 **Vision-Action(VA)** 모델이다. UniAD·VAD·TransFuser 같은 end-to-end 시스템은 raw 센서를 직접 trajectory로 매핑해 cascade 자체를 제거했다. 그러나 VA는 또 다른 함정을 만든다. 블랙박스라 안전 critical 순간에 *왜* 그렇게 결정했는지 설명할 수 없다. 사전학습된 world knowledge가 부족해 long-tail에서 여전히 깨진다. 결정적으로 자연어 지시 — \"이번 출구 말고 다음에서 좌회전\" — 를 받을 채널이 없다.\n\nsim2real과 digital twin 관점에서 이는 치명적이다. 시뮬레이터에서 수만 시간을 돌려도 모델이 **추론**과 **언어**를 못하면, distribution shift 한 번에 무너지고 사람이 개입할 통로조차 없다. data augmentation도 *어떤* 케이스가 부족한지 시스템이 스스로 진단하지 못하면 효율이 떨어진다.\n\n이 서베이는 LLM/LMM 시대의 새 답인 **Vision-Language-Action(VLA)** 을 'Past-Present-Future' 관점에서 정리한다. 내일은 VA가 정확히 어디서, 왜 무너지는지 네 가지 한계를 짚는다.",
+    "suggested_figure": "Figure 1 — Outline",
+    "figure_page": 2,
+    "figure_description": "논문 전체의 로드맵. Preliminary → VA Models → VLA Models → Datasets/Benchmarks → Challenges 흐름이 좌우로 펼쳐져 있고, VLA 내부가 End-to-End/Dual-System으로 갈라지는 계층 구조를 보여준다.",
+    "trigger_type": "A",
+    "key_concepts": [
+      {
+        "term": "Cascaded Error Propagation",
+        "definition": "모듈러 파이프라인에서 perception → prediction → planning → control로 정보가 한 방향으로만 흐를 때, 앞 단계의 작은 오차가 뒷 단계에서 비선형적으로 증폭되는 현상이다. 예컨대 객체 검출에서 1m 위치 오차가 motion forecasting에서 속도 추정 오차로 변환되고, 다시 planning의 cost map을 왜곡한다. **각 모듈이 독립적으로 최적화**되기 때문에 downstream의 견고성을 보장할 수 없고, end-to-end 학습이 가능한 시스템(VA, VLA)으로 진화한 핵심 동기다. 단, end-to-end도 학습 분포 안에서만 통한다는 한계는 남는다."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "break down in complex or long-tailed scenarios",
+        "korean": "복잡하거나 long-tail 시나리오에서 무너지다",
+        "example": "Hand-crafted interfaces often break down in complex or long-tailed scenarios.",
+        "context": "기존 방법의 한계를 지적할 때 motivation 단락에서 자주 쓰는 표현."
+      },
+      {
+        "expression": "propagate errors downstream",
+        "korean": "오차를 후속 단계로 전파하다",
+        "example": "The cascaded design propagates perception errors downstream, degrading planning and control.",
+        "context": "모듈러 시스템 비판이나 end-to-end 정당화 시 사용."
+      },
+      {
+        "expression": "motivate the emergence of",
+        "korean": "~의 등장을 촉발하다",
+        "example": "Progress in LLMs has motivated the emergence of VLA frameworks for driving.",
+        "context": "서론에서 새 패러다임을 도입할 때 자연스러운 연결어."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "이 논문이 모듈러 'Perception-Decision-Action' 파이프라인의 가장 근본적 약점으로 지목한 것은?",
+        "options": [
+          "각 모듈이 너무 무거워 inference latency가 큰 점",
+          "단계 간 오차 전파(cascaded error propagation)와 long-tail 무력함",
+          "LiDAR 의존도가 너무 높은 점",
+          "BEV representation을 사용하지 않는 점"
+        ],
+        "correct": 1,
+        "explanation": "논문은 cascade로 인한 error 전파와 hand-crafted rule의 long-tail 취약성을 두 축으로 명시한다. 다른 항목은 부차적이거나 논문 주장이 아니다."
+      },
+      {
+        "question": "VA 모델(UniAD, VAD 등)이 cascade 문제를 풀었지만 여전히 갖는 한계로 *틀린* 것은?",
+        "options": [
+          "블랙박스라 의사결정 근거 설명이 어렵다",
+          "자연어 instruction을 직접 받을 채널이 없다",
+          "사전학습된 world knowledge가 부족해 long-tail에 약하다",
+          "Trajectory를 출력할 수 없어 control signal만 낸다"
+        ],
+        "correct": 3,
+        "explanation": "VA 모델 다수는 정확히 trajectory를 출력한다(VAD, UniAD 등 REG 타입). 다른 셋은 본문이 명시한 VA의 한계와 일치한다."
+      }
+    ],
+    "open_question": {
+      "question": "당신의 AD 연구에서 사용하는 데이터셋과 시뮬레이터를 떠올렸을 때, 'cascade error'와 'long-tail' 중 어느 쪽이 더 큰 병목인가? 그리고 VLA가 그 병목을 *직접* 해결한다고 보는가, 아니면 우회한다고 보는가?",
+      "hint": "당신의 시스템에서 한 모듈의 정확도를 5%p 올렸을 때 전체 성능이 얼마나 따라 올라가는지를 떠올려 보라. 거의 안 올라간다면 cascade가 이미 평탄해진 상태고, 병목은 long-tail이다.",
+      "key_takeaway": "VLA는 cascade를 '제거'하는 게 아니라 *언어와 사전지식* 으로 long-tail 일반화를 보강하는 패러다임이다. 자신의 병목이 cascade라면 perception-action E2E도 충분하고, long-tail이라면 VLA 동기가 더 강해진다."
+    }
+  },
+  "day_2": {
+    "title": "VA가 무너지는 4지점",
+    "intent": "Vision-Action 모델의 한계 정밀 진단",
+    "content": "오늘은 VA가 *어디서* 깨지는지를 네 가지로 정리한다. 이 분해는 내일부터 등장할 VLA의 설계 결정을 읽는 렌즈가 된다.\n\n**(1) 제한적 해석가능성.** ResNet+MLP 기반 VA는 latent 위에서 직접 행동을 회귀한다. 사고 후 'why' 질문에 답할 표현이 없다. 안전 인증, 사고 분석, regulator 대응이 점점 필수가 되는 상황에서 이는 채택 자체를 가로막는다.\n\n**(2) 약한 일반화.** VA 정책은 collected demonstration의 분포에 강하게 묶인다. 같은 도시 안의 새 차선 패턴, 다른 나라의 우회전 우선 규칙 같은 변화에 대해 매번 재학습이 필요하다. 더 미묘하게는 **causal confusion**[De Haan et al. 2019] 문제 — 모델이 진짜 원인이 아니라 표면적 상관(예: 앞차 브레이크등이 아니라 같이 켜진 우측 깜빡이)에 결정을 의존하게 된다.\n\n**(3) Chain-of-Thought 부재.** VA는 픽셀→행동의 직접 매핑이라 'A이므로 B, 따라서 C' 형태의 multi-stage reasoning을 모델 안에서 표현할 수 없다. 비보호 좌회전처럼 '대향 차량 의도 추정 → gap 계산 → 사회적 협상'을 요구하는 상황에서 의사결정이 얕다.\n\n**(4) 언어 이해 없음.** 운전자가 \"이번 출구 말고 다음 출구로\"라고 말할 통로가 없다. high-level navigation goal과 low-level 행동 사이의 인터페이스가 일방향이다.\n\nVLA는 이 네 가지를 *동시에* 공략한다. VLM 백본이 (1)(2)를 사전학습 prior로, (3)을 token 단위 reasoning으로, (4)를 자연 인터페이스로 받는다. 내일은 그 핵심 아이디어를 한 문장으로 압축한다.",
+    "suggested_figure": "Figure 2 — Representative VA/VLA models 분류",
+    "figure_page": 4,
+    "figure_description": "End-to-End VA, World Model, End-to-End VLA, Dual-System VLA 네 갈래로 갈라지는 트리. 각 가지에 LBC·UniAD·DriveLM·DriveVLM 등 대표 작업들이 시기별로 배치되어 VA→VLA 진화의 흐름을 한눈에 보여준다.",
+    "trigger_type": "A",
+    "key_concepts": [
+      {
+        "term": "Causal Confusion (in Imitation Learning)",
+        "definition": "전문가 데모만 보고 학습한 정책이 '진짜 원인'이 아닌 *허위 단서*에 결정 권한을 위임하는 현상[De Haan et al. 2019]. 예: 신호등 빨강 때문이 아니라 *함께 등장한 정지선 표식* 때문에 멈추도록 학습됨. 분포 안에서는 두 단서가 동시에 나오므로 구분 불가하다가, 한 단서만 결손되면 catastrophic failure가 난다. VA·IL 시스템의 일반화 결함을 설명하는 핵심 개념으로, **언어 supervision은 인과 가설을 명시화**해 이를 완화하는 잠재적 통로다 — VLA의 한 이론적 정당성."
+      },
+      {
+        "term": "Chain-of-Thought (CoT) Reasoning 부재",
+        "definition": "VA 모델은 픽셀 → action을 *한 번의 forward*로 매핑하므로, '대향 차량 의도 → gap 추정 → 진입 결정' 같은 다단계 추론을 모델 내부에서 명시적으로 펼칠 수 없다. VLM은 token 단위 autoregressive 생성을 통해 reasoning 중간 단계를 노출시킬 수 있고, **CoT supervision**으로 reasoning과 action의 정합을 학습시킬 수 있다(RDA-Driver, Drive-R1 등). 단, 'CoT는 사후 합리화일 수 있다'는 해석성 함정도 함께 따라온다 — Day 10에서 다시 다룬다."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "behave as black boxes",
+        "korean": "블랙박스처럼 작동하다",
+        "example": "Existing VA models largely behave as black boxes, offering limited interpretability.",
+        "context": "기존 방법의 해석성 한계를 비판할 때."
+      },
+      {
+        "expression": "remain fragile under distribution shifts",
+        "korean": "분포 이동에서 취약함이 남다",
+        "example": "Their generalization remains fragile under rare or long-tail scenarios.",
+        "context": "일반화 한계를 정량 결과 없이 일반적으로 표현할 때."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "논문이 VA 모델의 한계로 제시한 4가지에 *포함되지 않는* 것은?",
+        "options": [
+          "Chain-of-thought reasoning 부재",
+          "자연어 instruction 수용 불가",
+          "GPU 메모리 사용량이 LLM 대비 과도함",
+          "약한 일반화(분포 이동/long-tail 취약)"
+        ],
+        "correct": 2,
+        "explanation": "메모리는 오히려 VLA에서 더 문제다. 논문이 명시한 VA 한계는 (1)해석성 (2)일반화 (3)CoT 부재 (4)언어 이해 없음."
+      },
+      {
+        "question": "Causal confusion이 imitation learning 기반 VA에서 long-tail 실패를 일으키는 메커니즘은?",
+        "options": [
+          "학습 데이터 양 부족으로 underfitting됨",
+          "허위 상관(spurious correlation)에 결정을 의존해 단서가 결손되면 무너짐",
+          "L2 loss가 multi-modal 분포를 평균화하기 때문",
+          "BEV 좌표계가 카메라 외인변환에 민감하기 때문"
+        ],
+        "correct": 1,
+        "explanation": "Causal confusion은 진짜 원인이 아닌 동시 발생한 표면 단서에 정책이 의존하게 되는 문제. 분포 내에선 둘이 같이 등장해 구분 안 됨."
+      }
+    ],
+    "open_question": {
+      "question": "내 모델이 'causal confusion'을 일으키는지 확인할 가장 값싼 실험은 무엇일까? 그 결과가 yes일 때, 언어 supervision이 정말 도움이 될까?",
+      "hint": "Counterfactual perturbation을 떠올려라 — 신호등은 그대로 두고 정지선만 페인트로 지운 합성 이미지에서 정책이 어떻게 반응하는지. VLA는 이 perturbation에 *말로 설명하라*고 요구할 수 있다는 점이 추가 채널이다.",
+      "key_takeaway": "Causal confusion 진단은 perturbation 기반 sanity check로 저렴하게 가능하다. 언어 supervision은 결정의 *근거*를 강제로 노출시켜 잘못된 인과 가설을 발견하기 쉬워지지만, 그 자체로 인과를 보장하지는 않는다."
+    }
+  },
+  "day_3": {
+    "title": "한 문장 핵심: VLA",
+    "intent": "VLA의 정식 정의·직관·기존 대비 우위",
+    "content": "**한 문장 요약.** VLA는 멀티모달 입력 $x$(영상·LiDAR·언어·ego state)를 VLM 백본 $F(\\cdot|\\theta)$로 통합 표현으로 매핑한 뒤, action head $H(\\cdot)$로 실행 가능한 행동 $a_t$를 내놓는 모델이다:\n\n$$a_t = H(F(x|\\theta))$$\n\n수식은 단순해 보이지만 함의는 크다. 기존 VA에서 $F$는 ResNet 같은 visual encoder였다. VLA의 $F$는 **수십~수백억 파라미터의 사전학습 VLM**이고, 따라서 $\\theta$ 안에 이미 'world knowledge'와 'language reasoning' prior가 들어 있다. action head $H$는 그것을 trajectory·control·텍스트 중 어떤 형태로든 뽑아낼 수 있는 어댑터다.\n\n**직관: System 2를 끼워 넣는다.** Kahneman의 *Thinking, Fast and Slow*[2011]가 자연스러운 비유다. VA는 빠른 직관(System 1) 전용 — 반사적이지만 새로 보는 상황에 약하다. VLA는 거기에 **느린 숙고(System 2)** 를 결합한다. 비보호 좌회전 같은 상황에서 \"대향 차량 속도와 거리, 보행자 의도, 좌회전 우선 규칙을 따져 본다\" 같은 단계적 추론이 백본 안에서 token 단위로 펼쳐진다.\n\n**왜 이 접근이 직전 세대보다 나은가.** ① **사전학습 활용** — long-tail 케이스에 대한 세상 지식을 처음부터 모으지 않아도 된다. ② **표현 자체에 reasoning 트레이스가 들어 있다** — CoT 출력으로 의사결정 근거를 직접 검증할 수 있다. ③ **자연어 인터페이스** — 운전자의 \"좀 더 조심스럽게\" 같은 추상 지시를 그대로 받는다. ④ **action head를 갈아끼울 수 있다** — 같은 백본 위에 trajectory regression, action token, diffusion head를 자유롭게 얹는 모듈식 구조.\n\n내일은 이 패러다임이 현실에서 어떻게 두 갈래(E2E vs Dual-System)로 분기했는지를 본다.",
+    "suggested_figure": "Figure 1 — Outline",
+    "figure_page": 2,
+    "figure_description": "Sensors·Language·Vehicle State 입력이 Model로 들어가 Trajectory·Action을 내놓는 좌측 다이어그램. VLA의 입력-처리-출력 구조를 가장 단순화한 그림으로, $x \\rightarrow F \\rightarrow H$ 수식 직관과 정확히 대응된다.",
+    "trigger_type": "B",
+    "key_concepts": [
+      {
+        "term": "VLA 정식 형식화 $a_t = H(F(x|\\theta))$",
+        "definition": "VLA의 세 요소: (i) **multimodal input** $x$ — 카메라·LiDAR·언어·ego state를 모은 heterogeneous tensor, (ii) **VLM backbone** $F(\\cdot|\\theta)$ — ViT 인코더 + LLM 디코더 + bridge로 구성된 사전학습 VLM, (iii) **action head** $H(\\cdot)$ — language head(LH), regression(REG), trajectory selection(SEL), generation(GEN) 중 선택. 수식은 단순하지만 $\\theta$에 사전학습 prior가 응축돼 있다는 점이 VA와 본질 차이다. *주의*: language를 입력으로 받는다는 사실과 출력 형식은 독립적이며, 출력은 텍스트일 수도 numeric trajectory일 수도 있다 — 이 분리가 Day 6의 분류 축이다."
+      },
+      {
+        "term": "Dual-Process(System 1/2) 영감",
+        "definition": "심리학의 dual-process theory(Kahneman)를 driving에 차용한 설계 철학. **System 1**(빠른 반사) = 기존 E2E planner / 전용 트라젝토리 모듈, **System 2**(느린 숙고) = VLM의 CoT reasoning. 둘을 하나의 네트워크에 통합하면 E2E VLA, 분리하면 Dual-System VLA가 된다. 이 메타포는 *latency 분리*와 *interpretability 분리*라는 공학적 결정을 자연어로 정당화해 주지만, 실제 인간 인지의 dual-process가 그대로 자율주행 architecture로 옮겨지는지는 별개 문제 — 영감일 뿐 증명은 아니다."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "couple A with B",
+        "korean": "A와 B를 결합하다",
+        "example": "VLA models couple a VLM backbone with an action-prediction head.",
+        "context": "두 구성요소의 통합 설계를 설명할 때 가장 흔한 술어."
+      },
+      {
+        "expression": "give rise to (a new paradigm)",
+        "korean": "(새 패러다임을) 낳다",
+        "example": "LLMs and multimodal learning gave rise to the VLA paradigm for driving.",
+        "context": "기술적 흐름의 연속성을 설명하는 transition."
+      },
+      {
+        "expression": "in contrast to prior approaches",
+        "korean": "기존 접근과 달리",
+        "example": "In contrast to prior VA approaches, VLA natively supports step-wise reasoning.",
+        "context": "직전 세대와의 차이를 강조하는 비교 구조."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "수식 $a_t = H(F(x|\\theta))$에서 VLA가 VA와 갖는 *본질적* 차이를 만드는 부분은?",
+        "options": [
+          "$x$가 멀티모달이라는 점",
+          "$\\theta$ 안에 대규모 사전학습 prior(언어·세상지식)가 응축돼 있다는 점",
+          "$H$가 반드시 language head라는 점",
+          "$a_t$가 항상 control signal이라는 점"
+        ],
+        "correct": 1,
+        "explanation": "VA도 멀티모달일 수 있고 head 형태도 다양하다. 결정적 차이는 백본의 사전학습 — 거기서 long-tail 일반화와 reasoning 능력이 온다."
+      },
+      {
+        "question": "Dual-process 메타포에서 'System 2'에 대응되는 VLA 구성은?",
+        "options": [
+          "BEV encoder",
+          "VLM 백본의 CoT reasoning",
+          "Action head의 MLP",
+          "LiDAR projection layer"
+        ],
+        "correct": 1,
+        "explanation": "느린 숙고(System 2)는 step-wise reasoning을 펼치는 VLM 백본에 해당. 다른 셋은 빠른 처리·기하 변환 모듈."
+      }
+    ],
+    "open_question": {
+      "question": "내가 푸는 문제에서 '$F$를 키우면 풀리는가, $H$를 갈아끼우면 풀리는가'?",
+      "hint": "Long-tail 인지 실패(perception miss)라면 $F$의 prior가 부족한 것이고, 인지는 되는데 action이 어색하다면 $H$의 표현력/inductive bias 문제다.",
+      "key_takeaway": "VLA의 가치는 백본과 head를 *분리해서 갈아끼울 수 있다는 모듈성*에 있다. 자기 문제의 병목이 perception/reasoning인지 action 생성인지 먼저 진단해야 어디에 투자할지가 결정된다."
+    }
+  },
+  "day_4": {
+    "title": "두 패러다임: E2E vs Dual",
+    "intent": "VLA 지형도와 트레이드오프",
+    "content": "VLA는 *VLM이 행동에 얼마나 깊이 관여하는가* 에 따라 두 가족으로 갈라진다.\n\n**End-to-End VLA.** 하나의 네트워크가 입력→reasoning→action을 통째로 담당한다. AutoVLA·EMMA·OpenDriveVLA·SimLingo 등. 장점: ① 정보 손실이 적다 — perception latent가 그대로 action head로 흘러간다. ② 학습 신호가 단일 — trajectory loss와 reasoning loss를 백본 전체로 backprop. 단점: ① VLM이 매 frame에서 inference에 참여하므로 **latency가 무겁다**(sub-50ms 못 맞춤). ② VLM의 hallucination이 직접 행동을 오염시킨다.\n\n**Dual-System VLA.** *느린* VLM이 의미적 가이드를 만들고, *빠른* specialized planner가 trajectory를 만든다. DriveVLM·Senna·DiffVLA·VLP·VLM-AD 등. 장점: ① VLM은 비동기·저빈도로 호출 가능 — ETA[78]는 이전 프레임의 reasoning을 현재로 fuse. ② planner가 kinematic feasibility를 보장 — 잘못된 언어 지시도 물리적으로 거른다. ③ 해석성·실행 가능성 분리. 단점: ① 두 시스템의 interface 설계가 어렵다(meta-action 텍스트 vs 잠재 feature). ② VLM의 reasoning이 실제 action에 얼마나 영향을 주는지 정량화하기 어렵다.\n\n**언제 어느 쪽을 골라야 하나.** ① 폐쇄 도메인·고빈도 control(고속도로 ADAS) → Dual-System으로 latency 분리. ② 자연어 instruction 따라가는 demo·연구 prototype → E2E의 단일 학습이 깔끔. ③ 안전 인증 필요 → Dual-System의 fast planner를 classical/optimization-based로 두면 검증이 쉽다. ④ 자원 부족(엣지) → 둘 다 어렵지만, Dual-System이 VLM 호출을 sparse하게 가져갈 수 있어 유리.\n\nE2E·Dual 모두 그 안에서 'textual vs numerical', 'explicit vs implicit' 같은 하위 축으로 다시 갈라진다 — Day 6, Day 7에서 본다. 내일은 그 전에 전체 파이프라인의 *블록 다이어그램*을 먼저 잡는다.",
+    "suggested_figure": "Figure 6 — Dual-System VLA categorization",
+    "figure_page": 15,
+    "figure_description": "Dual-System VLA에서 VLM과 E2E module이 어떻게 상호작용하는지 보여주는 두 갈래 도식. 위쪽은 'Explicit Action Guidance'(VLM 출력이 직접 meta-action/waypoint로 변환), 아래쪽은 'Implicit Representations Transfer'(VLM이 latent feature 또는 distillation 신호 제공).",
+    "trigger_type": "C",
+    "key_concepts": [
+      {
+        "term": "End-to-End VLA",
+        "definition": "단일 네트워크 안에서 perception→reasoning→action을 통합 학습하는 VLA 패러다임. 대표: EMMA(Gemini), AutoVLA, OpenDriveVLA, SimLingo. **장점**: 단일 backprop, 풍부한 latent 흐름. **약점**: real-time 어려움(sub-50ms 못 맞춤), VLM hallucination이 직접 행동을 오염. 출력은 textual(meta-action·waypoint as text) 또는 numerical(MLP head·action token) — 이 분기가 Day 6 주제. 학습은 보통 (i) VQA + driving label SFT, (ii) RL/GRPO finetuning 단계로 진행."
+      },
+      {
+        "term": "Dual-System VLA",
+        "definition": "*Thinking Fast and Slow*에서 영감 받은 분리 구조. **느린 VLM**이 high-level reasoning(meta-action, scene description, latent intent)을 만들고, **빠른 specialized module**(classical planner, diffusion policy, MPC 등)이 trajectory를 낸다. 대표: DriveVLM(meta-action 가이드), VLP(latent distillation), DiffVLA(diffusion + 언어 prior), InsightDrive(VLM + MPC). 두 시스템의 interface는 **explicit**(텍스트·meta-action) 또는 **implicit**(BEV feature·CoT distillation)로 갈리며, 안전 인증·latency 분리·해석성이 강점이지만 두 시스템 동기화·misalignment 누적이 함정."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "draw inspiration from",
+        "korean": "~에서 영감을 받다",
+        "example": "Dual-system VLA frameworks draw inspiration from the dual-process theory.",
+        "context": "이론·메타포를 도입할 때의 정형 표현."
+      },
+      {
+        "expression": "trade off A against B",
+        "korean": "A와 B 사이를 절충하다",
+        "example": "These designs trade off interpretability against end-to-end optimizability.",
+        "context": "경쟁 paradigm 비교 단락에서 두 축을 명시할 때."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "Dual-System VLA가 End-to-End VLA에 비해 *구조적으로* 유리한 측면은?",
+        "options": [
+          "단일 backprop으로 학습이 단순함",
+          "VLM을 비동기·저빈도로 호출해 real-time 제약을 분리할 수 있음",
+          "Hallucination이 원천적으로 발생하지 않음",
+          "Trajectory loss가 항상 더 작음"
+        ],
+        "correct": 1,
+        "explanation": "느린 VLM과 빠른 planner를 분리하면 VLM을 매 프레임 돌릴 필요가 없어 latency 분리가 가능. 학습 단순성·성능은 오히려 E2E가 유리할 수 있다."
+      },
+      {
+        "question": "다음 중 *End-to-End VLA* 계열에 속하는 모델은?",
+        "options": [
+          "DriveVLM (VLM → 전통 planner)",
+          "VLP (BEV-language alignment distillation)",
+          "AutoVLA (action token autoregressive 생성)",
+          "InsightDrive (VLM + MPC)"
+        ],
+        "correct": 2,
+        "explanation": "AutoVLA는 단일 백본 안에서 reasoning token과 action token을 함께 생성하는 E2E 구조. 나머지 셋은 Dual-System."
+      }
+    ],
+    "open_question": {
+      "question": "내가 만들고 있는 prototype이 'E2E로 가야 하는지, Dual-System으로 가야 하는지' 결정하는 1차 기준을 두 가지만 꼽는다면?",
+      "hint": "(1) target latency 예산(예: 50ms vs 200ms), (2) 자연어 instruction을 정말 매 frame 받아야 하는지 vs 'mode' 단위로만 받으면 되는지를 생각해 보라.",
+      "key_takeaway": "*Latency 예산*과 *언어 입력의 빈도* 가 결정적이다. 두 가지가 모두 빡빡하면 Dual-System이 거의 강제되고, 둘 다 여유 있으면 E2E가 학습·이터레이션이 빠르다."
+    }
+  },
+  "day_5": {
+    "title": "파이프라인 전체 지도",
+    "intent": "입력·백본·헤드·행동공간 4축 정리",
+    "content": "오늘은 모든 VLA를 *해부할 좌표계*를 잡는다. 어떤 논문을 읽든 이 4축으로 분해하면 차이가 보인다.\n\n**축 1 — Input modalities $x$.** (a) **Sensor**: surround-view image $x_{img} \\in \\mathbb{R}^{N_c \\times H \\times W \\times 3}$, LiDAR $x_{lidar} \\in \\mathbb{R}^{N_p \\times D}$. (b) **Latent**: BEV $x_{bev} \\in \\mathbb{R}^{C \\times H_{bev} \\times W_{bev}}$, occupancy $x_{occ} \\in \\mathbb{R}^{C_{occ} \\times X \\times Y \\times Z}$. (c) **Language**: system prompt, instruction, scene description, traffic rule, ego status, context info — 6가지 prompt type을 논문은 Table 2로 분류. (d) **Vehicle state**: 속도·가속·yaw rate 등 proprioception.\n\n**축 2 — VLM backbone $F$.** ViT/CLIP/EVA-02/SigLIP 같은 vision encoder + LLaMA/Qwen/Vicuna/Gemini 같은 LLM. 그 사이를 잇는 bridge(Q-Former, projector, unified token)가 modality alignment를 담당. *Single-system*에서는 backbone이 직접 action을 내고, *Dual-system*에서는 guidance만 낸다.\n\n**축 3 — Action head $H$.** 네 가지로 정리:\n- **LH (Language Head)**: VLM의 LM head로 'turn left' 같은 free-form text 또는 discretized action token autoregressive 생성(DriveMLM, AutoVLA).\n- **REG (Regression)**: Transformer+GRU+MLP로 numeric waypoint·control 직접 회귀(LMDrive, DriveGPT4-V2, SimLingo).\n- **SEL (Selection)**: 후보 trajectory를 sampling/생성 후 cost로 선택(WoTE, SeerDrive).\n- **GEN (Generation)**: diffusion·VAE로 multi-modal trajectory 분포 자체를 합성(ORION, DiffVLA, DiffusionDrive).\n\n**축 4 — Action 표현.** ① **discrete waypoints** $a_t = \\{(x_i, y_i)\\}_{i=1}^{\\Phi}$, ② **continuous trajectory** $(v(t), \\kappa(t))$ — 속도·곡률 함수, ③ **direct control** $(\\delta_t, \\tau_t, \\beta_t)$ — 조향·throttle·brake, ④ **language tokens**.\n\n같은 입력이라도 head·표현 조합에 따라 trade-off가 달라진다. 예: 안전 검증을 쉽게 하려면 GEN+continuous보다 SEL+discrete가 유리. 내일부터 3일간 이 좌표계 위에서 실제 모델군을 깊게 본다.",
+    "suggested_figure": "Figure 5 — End-to-End VLA categorization",
+    "figure_page": 13,
+    "figure_description": "End-to-End VLA를 'Textual Action Models'와 'Numerical Action Models'로 가르고 각 하위에 대표 모델(DriveMLM, EMMA, AutoVLA, ORION 등)이 배치된 분류 트리. Day 5의 action head 4분류(LH/REG/SEL/GEN)와 매핑된다.",
+    "trigger_type": "A",
+    "key_concepts": [
+      {
+        "term": "Action Head 4종 분류 (LH/REG/SEL/GEN)",
+        "definition": "VLA의 action 출력 메커니즘을 네 가지로 정형화: **LH**(Language Head, autoregressive 텍스트/action token, DriveMLM·AutoVLA), **REG**(MLP/GRU 직접 회귀, LMDrive·SimLingo), **SEL**(후보 trajectory 점수화 선택, WoTE·SeerDrive — kinematic feasibility 보장), **GEN**(diffusion/VAE 분포 생성, ORION·DiffVLA — multi-modal future 표현). 선택은 *학습 안정성 vs 표현력 vs 안전 검증 용이성*의 trade-off. 예컨대 LH는 fine-grained 정밀도가 떨어지고 quantization artifact가 생기지만 reasoning과 한 sequence로 통합되는 장점이 있다."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "We categorize X into Y types based on Z",
+        "korean": "X를 Z 기준으로 Y가지 유형으로 분류한다",
+        "example": "We categorize action heads into four types based on their output formulation.",
+        "context": "Taxonomy 논문/survey에서 분류 도입의 정형."
+      },
+      {
+        "expression": "be tailored to ... requirements",
+        "korean": "~의 요구에 맞게 설계되다",
+        "example": "Continuous trajectory representations are tailored to vehicle-dynamics requirements.",
+        "context": "특정 표현이 왜 그 형태인지 정당화할 때."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "Action head 분류에서 'kinematic feasibility를 head 단계에서 보장하기 가장 쉬운' 형태는?",
+        "options": [
+          "LH (action token autoregressive)",
+          "REG (MLP 직접 회귀)",
+          "SEL (사전 후보 trajectory 점수화 선택)",
+          "GEN (diffusion 합성)"
+        ],
+        "correct": 2,
+        "explanation": "후보 trajectory를 미리 kinematically feasible하게 생성해 두면 SEL이 선택만 하므로 hard constraint 적용이 쉽다. 다른 셋은 후처리 또는 sampling 통제가 필요."
+      },
+      {
+        "question": "Action 표현 $a_t = (v(t), \\kappa(t))$가 갖는 *고유한* 장점은?",
+        "options": [
+          "VLM token 공간과 직접 호환됨",
+          "차량 dynamics(속도 프로파일·곡률)를 연속 함수로 자연스럽게 표현함",
+          "Diffusion 모델로만 학습 가능함",
+          "Cost map 기반 selection에 가장 적합함"
+        ],
+        "correct": 1,
+        "explanation": "Continuous trajectory representation은 longitudinal $v(t)$와 lateral $\\kappa(t)$를 시간 함수로 두어 차량 운동학과 매끄럽게 결합된다."
+      }
+    ],
+    "open_question": {
+      "question": "내 task의 안전 검증 요건을 만족시키려면 head 선택을 어떻게 가져가야 할까?",
+      "hint": "검증해야 할 게 'collision avoidance hard constraint'인지 '운전 스타일 분포'인지를 먼저 구분하라. 전자는 SEL+pre-filtered 후보, 후자는 GEN이 자연스럽다.",
+      "key_takeaway": "Head 선택은 학습 편의가 아니라 *검증 가능성* 으로 역산해야 한다. Hard constraint가 많으면 SEL, multi-modal future 표현이 필요하면 GEN, 자연어 통합이 핵심이면 LH."
+    }
+  },
+  "day_6": {
+    "title": "E2E VLA 내부 들여다보기",
+    "intent": "Textual vs Numerical generator 심층",
+    "content": "오늘은 End-to-End VLA를 그 안에서 두 갈래로 쪼갠다 — *출력이 텍스트 공간에 있는가, 숫자 공간에 있는가*. 같은 백본을 써도 이 선택이 시스템의 성격을 갈라놓는다.\n\n**Textual Action Generator.** 모델이 운전 결정을 *언어로* 생성한다. 두 하위 형태:\n- **Meta-action**: 'accelerate', 'change lane', 'stop' 같은 이산 심볼. DriveMLM이 LLM 출력을 modular planner의 behavioral state와 정렬해, 언어가 'intermediate planner' 역할을 하도록 만들었다. AlphaDrive는 **GRPO**[Shao et al. 2024]를 도입해 trajectory quality·decision correctness·format consistency 보상을 결합한 RL로 meta-action을 다듬는다.\n- **Trajectory waypoint as text**: 좌표를 그대로 텍스트 토큰으로 출력. DriveLM은 graph-structured VQA로 perception→prediction→planning을 연쇄 질의로 풀고, 마지막에 텍스트화된 waypoint를 뱉는다. EMMA(Gemini 기반)는 카메라+navigation command를 한 언어 파이프라인으로 통합. **장점**: reasoning과 action이 한 sequence로 학습됨. **약점**: 이산 토큰 ↔ 연속 control 사이 *quantization* 갭, 그리고 극단적으로는 'collapsed trajectory'(반복 토큰).\n\n**Numerical Action Generator.** 백본은 그대로 두고 *숫자를 직접 뽑는 메커니즘*을 붙인다.\n- **Additional action head**: BEVDriver(GRU+BEV), CoVLA-Agent(MLP), DriveGPT4-V2(token+MLP 결합), DSDrive(dual-head: waypoint head + reasoning head + 큰 VLM에서 distill). DriveMoE는 lane-following·overtaking 등 skill별 expert를 dynamic routing. ORION은 head를 deterministic MLP에서 **diffusion**으로 바꿔 multi-modal future 분포를 모델링.\n- **Additional action tokens**: AutoVLA가 대표. 연속 trajectory를 codebook으로 *이산화*해 reasoning token과 같은 autoregressive sequence에 끼워 넣는다. RL fine-tuning으로 중복 reasoning을 패널티 줘 token 효율을 높임. OpenDriveVLA는 2D/3D perception을 LM의 semantic space에 hierarchical alignment한 뒤 token으로 decode.\n\n**Trade-off 요약.** Textual은 해석성이 거의 공짜로 따라오지만 정밀도가 떨어진다. Numerical은 control과 호환되지만 supervised data가 많이 필요하고, 토큰화 시 quantization artifact가 fine-grained control을 갉는다. 내일은 'VLM이 행동에 직접 개입하지 않고 *옆에서 가이드*'하는 Dual-System으로 넘어간다.",
+    "suggested_figure": "Figure 5 — End-to-End VLA categorization",
+    "figure_page": 13,
+    "figure_description": "End-to-End VLA가 Textual Action Models(meta-action·waypoint as text)와 Numerical Action Models(head·token)로 갈라지는 트리. 각 가지에 DriveMLM·EMMA·AutoVLA·SimLingo 등 대표 작업이 배치되어 오늘의 두 갈래 분류와 정확히 대응.",
+    "trigger_type": "B",
+    "key_concepts": [
+      {
+        "term": "Action Token Discretization (AutoVLA식)",
+        "definition": "연속 trajectory $(x_i, y_i)$를 *codebook*으로 이산화해 LLM의 vocabulary에 추가 token으로 통합. reasoning과 action이 *동일 autoregressive sequence*로 생성되어 학습/inference가 단일 loss로 묶인다. 장점: 단일 next-token 손실로 reasoning ↔ action 정합 학습이 자연스러움. 단점: codebook 해상도가 fine-grained control 한계를 정함 — quantization artifact가 곡률 추종이나 미세 횡방향 제어에서 드러나기 쉽다. AutoVLA는 redundant reasoning에 RL penalty를 걸어 token 효율을 보강."
+      },
+      {
+        "term": "Group Relative Policy Optimization (GRPO) for VLA",
+        "definition": "DeepSeek 계열에서 도입된 RL 알고리즘으로, value model 없이 같은 prompt에 대한 *그룹 샘플 간 상대 advantage*로 정책을 갱신. AlphaDrive·Drive-R1·AutoVLA가 채택. driving에서는 **trajectory quality + decision correctness + format consistency** 같은 복합 보상을 하나의 group reward로 묶기 좋다. 장점: PPO 대비 value head 비용 절감, 복합 보상 통합 용이. 함정: reward shaping이 잘못되면 reasoning이 *사후 합리화*로 collapse — Drive-R1은 SFT-CoT 후 RL의 2단계로 이를 완화."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "bridge the gap between A and B",
+        "korean": "A와 B 사이의 간극을 메우다",
+        "example": "Textual generators must bridge the gap between discrete language tokens and continuous control.",
+        "context": "두 표현/도메인 사이 미스매치를 짚을 때."
+      },
+      {
+        "expression": "sacrifice X for Y",
+        "korean": "Y를 위해 X를 희생하다",
+        "example": "Numerical generators sacrifice some interpretability for control-compatible outputs.",
+        "context": "Trade-off를 명시적으로 인정할 때 흔히 쓰는 표현."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "Textual action generator의 *근본적* 한계로 논문이 짚는 것은?",
+        "options": [
+          "BEV feature를 활용하지 못함",
+          "이산 언어 토큰과 연속 control 사이의 정밀도/quantization 갭",
+          "GPU 메모리 사용량이 numeric보다 큼",
+          "Multi-camera 입력을 받지 못함"
+        ],
+        "correct": 1,
+        "explanation": "텍스트 공간에서 행동을 생성하면 연속 제어와 만날 때 quantization 갭이 본질적 한계 — 극단적 경우 collapsed trajectory까지 발생."
+      },
+      {
+        "question": "AutoVLA의 핵심 설계 선택은?",
+        "options": [
+          "Diffusion head로 multi-modal trajectory 분포를 모델링",
+          "BEV feature를 그대로 MLP에 넣어 control 회귀",
+          "Trajectory를 codebook 토큰으로 이산화해 reasoning token과 한 autoregressive sequence에 통합",
+          "VLM을 freeze하고 작은 MPC만 학습"
+        ],
+        "correct": 2,
+        "explanation": "AutoVLA는 action token discretization으로 reasoning ↔ action을 동일 sequence에서 다루며, RL로 토큰 효율을 추가 최적화."
+      }
+    ],
+    "open_question": {
+      "question": "내가 textual head 모델을 prototype 한다면, quantization artifact를 가장 빨리 진단할 1개 metric은?",
+      "hint": "Open-loop L2도 좋지만 더 직접적인 건 *steering jerk*나 *yaw rate spike의 분포*. 사람 로그 분포 대비 꼬리가 두꺼우면 token 해상도가 부족한 신호다.",
+      "key_takeaway": "Average L2/CR만 보면 quantization 문제가 가려진다. 미세 제어 quality는 jerk·yaw rate 같은 *고차 도함수의 분포*로 봐야 보인다."
+    }
+  },
+  "day_7": {
+    "title": "Dual-System VLA 내부",
+    "intent": "Explicit Guidance vs Implicit Transfer",
+    "content": "Dual-System은 *VLM과 planner를 어떻게 연결하느냐* 에 따라 두 갈래다. 둘 다 'fast/slow 분리'라는 큰 그림은 같지만, interface 설계가 완전히 다른 시스템을 낳는다.\n\n**Explicit Action Guidance.** VLM이 *명시적·읽을 수 있는* 가이드를 내고, 빠른 planner가 그것을 받아 trajectory를 만든다.\n- **Meta-action 가이드**: FasionAD는 fast data-driven planner + slow VLM(meta-action 발행) + learned switching. Senna는 Senna-VLM(자연어 결정) + Senna-E2E(실행 trajectory). DiffVLA는 VLM이 lateral·longitudinal 결정을 *one-hot prior*로 diffusion planner에 주입해 multi-modal trajectory denoising을 guidance.\n- **Waypoint supervision**: DriveVLM은 chain-of-thought로 coarse waypoint를 먼저 만들고 conventional planner가 dense하게 refine. SOLVE는 공유 vision encoder + 'Trajectory CoT' 모듈로 후보를 반복 정제 후 최종 selection. **장점**: 인터페이스가 사람이 읽을 수 있어 디버깅·인증이 쉽다. **약점**: VLM 출력이 ambiguous하면 downstream에 그대로 전파.\n\n**Implicit Representations Transfer.** VLM이 *행동에 직접 손대지 않고* 학습 시 teacher 역할만. 두 갈래:\n- **Knowledge distillation**: VLP가 BEV feature·planning query를 사전학습 언어 임베딩과 contrastive 정렬, 'commonsense scene understanding'을 planner의 잠재공간에 주입. VLM-AD는 free-form 텍스트 justification + 구조화 behavior label을 alignment head·action classification head로 distill. VERDI·ALN-P3은 perception·prediction·planning 전 단계를 CoT explanation과 정렬하는 *full-stack co-distillation*.\n- **Multimodal feature fusion**: InsightDrive는 VLM이 만든 scene description으로 critical region을 강조해 BEV feature를 cross-attention 변조. VLM-E2E는 driver attention cue를 BEV에 gating으로 융합. NetRoller·ReCogDrive는 VLM의 잠재 reasoning을 compact feature로 어댑트. **ETA**[78]는 efficiency 관점에서 흥미롭다 — VLM reasoning을 이전 frame에서 *비동기로* 계산해 현재 feature에 action-mask로 fuse, 추론 시 VLM을 매 frame 호출할 필요 없게 만든다.\n\n**핵심 교훈.** Explicit은 *interpretability와 인증*에, Implicit은 *inference latency*와 *VLM 의존성 제거*에 강하다. 둘 다 \"VLM이 만들어낸 reasoning이 진짜 행동 quality로 변환되었는가\"를 정량화하기 어렵다는 공통 함정도 있다.",
+    "suggested_figure": "Figure 6 — Dual-System VLA categorization",
+    "figure_page": 15,
+    "figure_description": "Dual-System VLA가 'Explicit Action Guidance'와 'Implicit Representations Transfer'로 갈라지는 분류 도식. 위쪽은 VLM 출력이 직접 meta-action/waypoint로 변환되는 구조, 아래쪽은 latent feature 정렬/distillation 구조를 나란히 비교한다.",
+    "trigger_type": "C",
+    "key_concepts": [
+      {
+        "term": "Explicit Action Guidance",
+        "definition": "Dual-System VLA에서 VLM이 *사람도 읽을 수 있는* 가이드(meta-action 'change lane', 또는 coarse waypoint sequence)를 내고, downstream fast planner가 이를 받아 dense trajectory를 만드는 구조. 대표: DriveVLM(meta-action→planner refine), Senna(자연어 결정→E2E), DiffVLA(one-hot prior로 diffusion guidance), SOLVE(Trajectory CoT iterative refine). **장점**: interface가 텍스트라 디버깅·인증·human-in-the-loop가 자연스러움. **함정**: VLM hallucination이 그대로 행동에 전파, ambiguous instruction이 downstream cascade 만듦 — Day 2의 cascade 문제가 *다른 층위에서* 재현될 수 있다."
+      },
+      {
+        "term": "Implicit Representations Transfer (Knowledge Distillation Mode)",
+        "definition": "VLM을 *runtime이 아닌 학습 시*에만 사용해, reasoning ability를 작은 E2E driving net의 잠재공간으로 옮기는 패러다임. VLP는 BEV+planning query를 언어 임베딩과 contrastive 정렬, VLM-AD는 텍스트 justification을 alignment/classification head로 distill, VERDI·ALN-P3는 perception~planning 전 단계를 CoT와 co-distillation. **장점**: 추론 시 큰 VLM이 필요 없어 latency·메모리 절약, 해석성 일부는 학습된 head로 유지. **함정**: 'oversimplified distillation'으로 reasoning signal이 평탄화되어, VLM이 갖고 있던 long-tail prior가 student로 충분히 전달되지 않을 수 있다 — distill 신호 설계가 성능을 좌우."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "act as a teacher / auxiliary module",
+        "korean": "교사/보조 모듈 역할을 하다",
+        "example": "The VLM acts as a teacher during training, transferring reasoning ability to the compact E2E network.",
+        "context": "Distillation·auxiliary loss 구조를 도입할 때."
+      },
+      {
+        "expression": "asynchronously / at a lower frequency",
+        "korean": "비동기로/낮은 주기로",
+        "example": "ETA computes VLM reasoning asynchronously in earlier frames and fuses it into current features.",
+        "context": "Real-time 제약을 회피하는 시스템 설계 설명."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "Dual-System VLA의 *Implicit Transfer* 계열이 가지는 가장 명확한 system-level 이점은?",
+        "options": [
+          "추론 시 VLM 호출이 줄어 latency·메모리가 낮음",
+          "VLM의 hallucination이 원천적으로 사라짐",
+          "Open-loop L2가 반드시 더 좋음",
+          "안전 인증이 자동으로 통과됨"
+        ],
+        "correct": 0,
+        "explanation": "VLM이 학습 시 teacher로만 쓰이고 추론 시 작은 student만 돌리므로 runtime cost가 결정적으로 줄어듦. 다른 항목은 보장되지 않는다."
+      },
+      {
+        "question": "DiffVLA가 'Explicit Action Guidance'를 구현하는 방식은?",
+        "options": [
+          "VLM 출력을 BEV feature에 cross-attention으로 융합",
+          "Lateral·longitudinal 결정을 one-hot prior로 diffusion planner에 주입",
+          "VLM을 distillation teacher로만 사용",
+          "VLM이 직접 control signal을 회귀"
+        ],
+        "correct": 1,
+        "explanation": "DiffVLA는 VLM의 결정을 명시적 prior로 diffusion planner의 denoising을 가이드 — explicit guidance의 전형."
+      }
+    ],
+    "open_question": {
+      "question": "내 시스템이 ETA처럼 'VLM을 비동기로 호출'한다면, 가장 큰 실패 모드는 무엇일까? 그것을 마음 속으로 시뮬레이션해 보자.",
+      "hint": "VLM의 reasoning이 100ms 전 frame 기준이라면, 그 사이에 갑자기 *cut-in*이 발생했을 때 가이드가 stale해진다. 이 stale guidance가 현재 행동에 어떻게 잘못 영향을 주는지 머릿속에서 한 프레임씩 돌려 보라.",
+      "key_takeaway": "비동기 VLM fusion은 *temporal staleness*가 핵심 리스크다. action-mask·confidence gating으로 stale guidance를 적절히 약화시키는 메커니즘이 안전성의 분기점이 된다."
+    }
+  },
+  "day_8": {
+    "title": "데이터·평가 인프라",
+    "intent": "VLA 학습/벤치마크 생태계",
+    "content": "오늘은 모델보다 *인프라*다. 어떤 데이터로 학습하고 어떤 metric으로 비교하느냐가 패러다임 자체를 빚는다.\n\n**Vision-Action 기반 데이터셋(언어 없음)** — VLA의 토대.\n- **BDD100K**: 100K 다양한 운전 비디오, 날씨/조명/교통의 폭이 가장 넓음.\n- **nuScenes**: 1,000 multi-sensor 시나리오, 6-camera surround + LiDAR + radar + 3D box + trajectory. 대부분 VLA가 open-loop 평가에 사용.\n- **Waymo Open Dataset / Argoverse 2**: 더 큰 스케일, HD map.\n- **nuPlan**: long-horizon trajectory + simulation interface(closed-loop).\n- **Bench2Drive**: CARLA V2 기반 closed-loop, 성공률·driving score 중심.\n\n**VLA 데이터셋(언어 결합)** — 시간/의미적으로 정렬된 텍스트가 핵심.\n- **BDD-X**: BDD100K + 시간 정렬된 운전 *합리화(rationale)* — 'why' 라벨의 시초.\n- **DriveLM**: nuScenes/CARLA 위에 *graph-structured QA*(perception→prediction→planning 연쇄).\n- **ImpromptuVLA**: 8개 공개 데이터셋 통합 + caption/instruction/QA, **80K corner-case clip**으로 long-tail에 특화.\n- **CoVLA**: 6M caption 규모의 real-world driving caption 데이터.\n- 기타 LingoQA, NuInstruct, Reason2Drive, DriveAction 등.\n\n**평가 metric — 두 갈래.**\n- *Open-loop*: **L2** (3초 horizon trajectory 거리), **Collision Rate**, ADE, FDE, MR. simulator 없이 expert 궤적과 직접 비교.\n- *Closed-loop*: NAVSIM의 **PDMS**(Predictive Driver Model Score)가 핵심 — NC(No Collision) · DAC(Driving Admissibility) · TTC(Time-to-Collision) · EP(Ego Progress) · Comfort를 가중 결합한 단일 지표. Bench2Drive는 DS(Driving Score)·SR(Success Rate). WOD-E2E는 **RFS**(Rater Feedback Score)로 인간 선호와의 정렬을 측정.\n- *Text-based*: BLEU/ROUGE/CIDEr + rationale consistency.\n\n**핵심 함정.** ① **Open-loop L2는 multi-modal future에 불리** — 사람 궤적이 unique ground truth라는 가정이 어긋남(이를 RFS·closed-loop가 보완). ② **nuScenes 평가의 saturation** — 상위 모델들이 모두 0.28~0.34m로 몰려 있어 metric의 변별력이 떨어진다. ③ closed-loop는 reproducibility가 약함. 내일 실제 숫자를 보면서 이 함정들이 *어디서* 드러나는지를 확인한다.",
+    "suggested_figure": "Table 4 — Datasets & Benchmarks 요약",
+    "figure_page": 17,
+    "figure_description": "VA/VLA 데이터셋을 한 표로 비교: sensor 타입(실/시뮬), 언어 라벨링 방식(A/M), action 출력(Traj/Ctrl), evaluation metric(Open/CL/Lang). BDD100K~nuPlan(VA)과 BDD-X~ImpromptuVLA~CoVLA(VLA)가 시기·규모·언어 라벨 차원에서 한눈에 정렬.",
+    "trigger_type": "B",
+    "key_concepts": [
+      {
+        "term": "PDMS (Predictive Driver Model Score)",
+        "definition": "NAVSIM[Dauner et al. 2024]이 도입한 **단일 closed-loop 종합 지표**로, 다음 subscore의 가중 결합: NC(no-collision boolean), DAC(driving admissibility), TTC(time-to-collision threshold 충족), EP(ego progress), Comfort. nuPlan 기반 OpenScene 위에서 비반응형(non-reactive) simulation을 돌려 산출한다. **핵심 의의**: 안전(NC/DAC/TTC)과 진행(EP)·승차감(Comfort)이 단일 숫자로 통합되어 모델 비교가 단순해진다. **함정**: 가중치 설계가 ranking에 영향을 주고, non-reactive sim이므로 다른 agent의 적응적 행동이 빠진다 — 실제 도로 일반화의 보증은 아니다."
+      },
+      {
+        "term": "Rater Feedback Score (RFS)",
+        "definition": "WOD-E2E[Waymo 2025]가 도입한 **인간 선호 기반 평가**. 사람 평가자가 미리 그린 *trust region*(허용 가능한 trajectory 영역)에 예측 trajectory가 들어가는지로 점수를 매긴다. ADE/L2가 'expert 한 궤적만 정답'이라는 강한 가정을 깬다는 점에서 의의가 크다 — 동일 장면에서 사람도 다양한 합리적 trajectory를 만든다는 multi-modality를 metric이 인정. **Spotlight RFS**는 long-tail safety-critical scene만 별도 평가. VLA가 ADE는 낮아도 RFS는 잘 받는 경우가 있어, 인간 정렬이 numerical accuracy와 *직교한* 축임을 보여준다."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "facilitate consistent and meaningful comparisons",
+        "korean": "일관되고 의미 있는 비교를 촉진하다",
+        "example": "We present an organized synthesis of benchmarks to facilitate consistent and meaningful comparisons.",
+        "context": "Survey/benchmark 도입의 정형 표현."
+      },
+      {
+        "expression": "regard ... as ground truth",
+        "korean": "~를 정답으로 간주하다",
+        "example": "These metrics regard human driving demonstrations as the ground truth.",
+        "context": "Open-loop 평가의 가정·한계를 짚을 때."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "PDMS가 단일 지표인데도 'closed-loop 일반화를 보증하지는 않는다'고 말할 수 있는 이유는?",
+        "options": [
+          "NC를 계산하지 않기 때문",
+          "non-reactive simulation 기반이라 다른 agent의 적응적 행동이 빠지기 때문",
+          "Comfort term이 가중치가 너무 크기 때문",
+          "Open-loop L2와 동일한 metric이기 때문"
+        ],
+        "correct": 1,
+        "explanation": "NAVSIM은 비반응형(non-reactive) sim. 다른 차량이 ego 행동에 반응하지 않으므로 인간/타 agent의 적응적 거동이 평가에서 누락."
+      },
+      {
+        "question": "RFS가 ADE/L2와 *직교한* 정보를 준다는 주장의 근거는?",
+        "options": [
+          "RFS는 BLEU와 같은 텍스트 평가이므로",
+          "RFS는 expert 한 궤적이 아닌 인간 평가자의 trust region을 기준으로 multi-modal trajectory를 허용하기 때문",
+          "RFS는 항상 ADE보다 큰 값이 나오기 때문",
+          "RFS는 LiDAR 입력에서만 정의되기 때문"
+        ],
+        "correct": 1,
+        "explanation": "ADE는 단일 expert 궤적과의 거리, RFS는 사람이 허용 가능하다고 본 영역 안인지 — 가정 자체가 달라 두 지표는 다른 정보를 준다."
+      }
+    ],
+    "open_question": {
+      "question": "내 실험에서 nuScenes open-loop L2만 보고하던 관행이 있다면, 어떤 보조 지표를 *최소 1개* 더 추가하면 long-tail/안전성에 대한 신호가 살아날까?",
+      "hint": "Collision rate만 추가하는 것도 좋지만, *jerk·yaw rate*의 사분위 통계나 trust-region overlap 같은 multi-modal aware metric을 같이 보면 모델이 '평균만 맞추는 collapsed prediction'을 하는지 잡힌다.",
+      "key_takeaway": "Single-metric 보고는 model selection을 왜곡한다. *분포 metric*(jerk 분포·trajectory diversity)와 *인간 정렬 metric*(RFS류)을 보조로 두면 평가 saturation 너머의 실제 진보를 잡을 수 있다."
+    }
+  },
+  "day_9": {
+    "title": "숫자가 말하는 것",
+    "intent": "주요 벤치마크 핵심 수치 해석",
+    "content": "오늘은 논문이 실제로 보고한 숫자만 본다. 추세가 잘 드러나는 세 벤치마크와 효율 한 지점.\n\n**(1) nuScenes open-loop (Table 5).** Avg L2(↓) / Avg CR(↓).\n- VA 기준: **UniAD 0.69 / 0.12**, **VAD 0.37 / 0.14**, SparseAD 0.34 / 0.06.\n- VLA로 넘어가면: **Drive-R1 0.31 / 0.09**(InternVL2 + CoT SFT + RL), **SOLVE 0.28 / 0.20**, **FutureSightDrive 0.28 / 0.10**, **EMMA 0.32 / —**(Gemini 기반), **AutoDrive-R² 0.19 / —**, **Reasoning-VLA 0.22 / 0.07**.\n- 해석: 상위권이 0.28~0.33m 좁은 구간에 몰려 *saturation*. Collision rate는 모델별 변동이 더 크다(0.06~0.94). 단순 L2 하나로 sort하면 정보가 거의 없다.\n\n**(2) NAVSIM (Table 7).** PDMS(↑) 중심.\n- VA: WoTE **88.3**, DiffusionDriveV2 **91.2**, NaviHydra **92.7**, AD-R1 **91.9**, SeerDrive **90.7**.\n- VLA: AutoVLA **92.1**(NC 99.1 / DAC 97.1 / TTC 97.1 / EP 87.6), AdaThinkDrive **93.0**, **ReflectDrive 94.7**(NC 99.7 / DAC 99.5 / TTC 99.1 / EP 88.9 — closed-loop 최상위).\n- 해석: VLA가 TTC·EP에서 *분명한* 우위(언어 가이드로 long-horizon 진행성). 단, NC/DAC는 VA 강자들과 비등 — 안전 기본기는 specialized planner가 여전히 강함.\n\n**(3) Bench2Drive (Table 8).** Driving Score(↑) / SR(%)(↑).\n- VA: Raw2Drive **71.36 / 50.24**, GuideFlow **75.21 / 51.36**.\n- VLA: ORION **77.74 / 54.62**, AutoVLA **78.84 / 57.73**, **SimLingo 85.94 / 66.82**, SimLingo-Base 85.07 / 67.27.\n- 해석: closed-loop CARLA에서 VLA의 우위가 가장 크다. SimLingo의 '**action dreaming**' 정렬 메커니즘이 자연어 instruction을 control sequence와 결합해 +10~15 DS를 끌어올림. Bench2Drive efficiency는 244.18까지 — 진행 속도와 안전을 동시에.\n\n**(4) Efficiency.** InsightDrive **16.3 FPS** 보고. 그러나 논문은 sub-50ms (≥20 FPS)가 안전 critical real-time의 'unmet requirement'라고 명시 — 즉 *대부분의 VLA가 아직 양산 latency를 못 맞춘다*.\n\n**한 줄 요약.** 언어를 끼우면 closed-loop multi-step 의사결정(NAVSIM EP/TTC, Bench2Drive DS)에서 *명확한* 이득이 있다. 그러나 nuScenes open-loop는 saturation으로 변별 약하고, real-time latency는 여전히 양산 수준에 미달.\n\n내일은 이 숫자를 내 연구로 옮길 때 어떤 follow-up을 봐야 할지로 닫는다.",
+    "suggested_figure": "Table 8 — Bench2Drive closed-loop 비교",
+    "figure_page": 22,
+    "figure_description": "Bench2Drive에서 VA(TCP·UniAD·VAD·GuideFlow·Raw2Drive)와 VLA(ORION·AutoVLA·SimLingo·DriveMoE 등)를 DS·SR·Efficiency·Comfort로 나란히 비교. 하단 VLA 블록에서 SimLingo가 85.94 DS / 66.82 SR로 최상위로 떠 있어 언어-action 정렬의 closed-loop 이득이 시각적으로 드러남.",
+    "trigger_type": "A",
+    "key_concepts": [
+      {
+        "term": "nuScenes Open-Loop Saturation",
+        "definition": "현 시점 nuScenes open-loop L2의 상위 모델들이 **0.28~0.34m**의 좁은 구간에 몰려 있는 현상. 평균 L2 한 자리로는 모델 간 의미 있는 차이를 가르기 어렵다. 원인: (i) ego status를 입력으로 받으면 *trivially* 양호한 L2가 나오는 데이터 leak 문제[BEV-Planner 분석], (ii) human 궤적이 unique ground truth라는 가정이 multi-modal 미래에 부정확. **대응**: collision rate를 같이 보고, NAVSIM/Bench2Drive 같은 closed-loop, WOD-E2E의 RFS 같은 인간 정렬 metric을 *함께* 보고하는 게 표준이 되는 흐름."
+      },
+      {
+        "term": "SimLingo의 Action Dreaming (Bench2Drive 85.94 DS)",
+        "definition": "SimLingo[CVPR'25]가 **Bench2Drive 1위(85.94 DS / 66.82 SR)**를 차지한 핵심 메커니즘. 모델이 입력 자연어 instruction을 받았을 때 *그에 대응하는 가상 행동 sequence(action dream)*를 inner-loop로 생성하고, 이를 실제 control과 정렬하는 보조 supervision. open-loop 평가용이지만 closed-loop 일반화도 같이 좋아진 점이 핵심. **함의**: language-action alignment가 단순 caption supervision보다 한 단계 깊은 '*명령→행동 시퀀스 매핑*' supervision일 때 closed-loop 이득이 가장 크다. 즉 closed-loop 강함은 vision-language pretraining만으로는 안 나오고, action 쪽 정렬이 같이 가야 한다는 신호."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "remain an unmet requirement",
+        "korean": "여전히 충족되지 않은 요건으로 남다",
+        "example": "Achieving sub-50ms inference remains an unmet requirement for safety-critical deployment.",
+        "context": "현재 SOTA가 아직 못 도달한 spec을 명시할 때."
+      },
+      {
+        "expression": "demonstrate clear benefits from",
+        "korean": "~로부터 분명한 이점을 보이다",
+        "example": "Recent VLA approaches demonstrate clear benefits from language grounding in closed-loop benchmarks.",
+        "context": "Result 단락에서 ablation 비교 결과를 정리할 때."
+      },
+      {
+        "expression": "highlight the importance of aligning A with B",
+        "korean": "A와 B 정렬의 중요성을 부각하다",
+        "example": "These results highlight the importance of aligning language reasoning with trajectory generation.",
+        "context": "정량 결과로부터 design lesson을 끌어낼 때."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "NAVSIM 결과에서 VLA가 VA 대비 *가장 두드러진* 개선을 보이는 subscore는?",
+        "options": [
+          "NC (no-collision) — 안전 기본기",
+          "DAC (driving admissibility)",
+          "TTC와 EP — 시간 여유와 진행성(long-horizon 의사결정)",
+          "Comfort"
+        ],
+        "correct": 2,
+        "explanation": "AutoVLA 97.1 TTC / 87.6 EP, ReflectDrive 99.1 TTC / 88.9 EP. NC·DAC는 VA 상위와 비등 — VLA 이득은 long-horizon 의사결정 쪽에서 가장 크다."
+      },
+      {
+        "question": "논문이 'sub-50ms inference remains unmet'이라고 명시했을 때 이 발언의 함의로 *가장 정확한* 해석은?",
+        "options": [
+          "InsightDrive처럼 16.3 FPS 보고하는 효율 시도는 있지만, 양산 safety-critical 기준(≥20 FPS)을 일관되게 만족하는 VLA는 아직 없다",
+          "모든 VLA는 50ms를 넘는다",
+          "GPU H100 이상이면 자동으로 50ms를 맞춘다",
+          "Latency 문제는 Dual-System에서는 해결되었다"
+        ],
+        "correct": 0,
+        "explanation": "InsightDrive·FastDriveVLA 등 효율 시도는 있으나 sub-50ms 일관 달성은 'unmet'. 16.3 FPS는 61ms 수준이라 기준 미달."
+      }
+    ],
+    "open_question": {
+      "question": "내가 nuScenes L2 0.05m 개선을 보고하려고 한다면, 그 개선을 *진짜* 진보로 만들 보조 evidence는 무엇이어야 할까?",
+      "hint": "Saturation 구간이므로 L2 단독은 약하다. Collision rate, NAVSIM PDMS(가능하면), 또는 long-tail subset(예: ImpromptuVLA corner cases)에서의 일관된 개선을 함께 보고하는 것이 신뢰를 만든다.",
+      "key_takeaway": "Saturated benchmark에서의 소폭 개선은 *복수 metric·복수 split*에서 일관성으로 정당화해야 한다 — single number는 점점 설득력을 잃고 있다."
+    }
+  },
+  "day_10": {
+    "title": "내 연구로 가져오기",
+    "intent": "AD 연구자 관점의 응용·follow-up·반성",
+    "content": "10일을 마무리한다. 이 서베이가 *내 연구에 무엇을 남기는가* 를 4가지 각도로 정리하자.\n\n**(1) 즉시 적용 가능한 설계 결정.** ① **백본 선택은 사전학습 strength로 역산** — long-tail 인지가 병목이면 큰 VLM(Qwen2.5-VL, InternVL3)을 keep, 그렇지 않다면 작은 VLM + 강한 action head가 더 효율적. ② **Head는 검증 가능성으로 역산**(Day 5) — hard constraint 많으면 SEL, multi-modal future 표현 필요하면 GEN, 자연어 통합이 핵심이면 LH. ③ **E2E vs Dual-System은 latency 예산·언어 입력 빈도로 결정**(Day 4).\n\n**(2) 실험·평가 관행 업그레이드.** ① nuScenes open-loop L2 단독 보고는 점점 통하지 않는다 — collision rate, NAVSIM PDMS subscore, RFS류 인간 정렬 metric을 같이 보고하는 게 표준화 중. ② Open-loop와 closed-loop 사이 *gap*을 측정·보고하는 것 자체가 contribution이 될 수 있다. ③ long-tail subset 별도 보고(ImpromptuVLA corner cases 등).\n\n**(3) 주목할 follow-up 방향.** 서베이가 명시한 것들:\n- **Vision-Language-World Model 통합** — VLA + 예측 가능한 world model로 candidate action의 미래 결과를 시뮬레이션, 'proactive planning'으로 확장(Genie 3 계열).\n- **Domain-specific foundation model** — 일반 VLM의 driving prior 부족 문제를 해소할 driving-native foundation model(현재 missing cornerstone).\n- **Continual/onboard learning** — fleet 데이터에서 catastrophic forgetting 없이 점진 학습.\n- **Formal verification** — empirical metric을 넘어 instruction following·hallucination resistance에 대한 이론적 보증.\n\n**(4) 반성 — VLA의 미해결 함정.** ① CoT 출력이 *사후 합리화*일 수 있다(faithfulness 미보장). ② 큰 VLM이 always-on이면 양산 latency가 안 나온다. ③ 'language로 가르치면 안전해진다'는 가정은 직관일 뿐 정량적 보증이 아직 없다 — Day 8 RFS 같은 인간 정렬 metric의 표준화가 그 답에 가까이 가는 통로.\n\n**마지막 질문 — 머릿속에서 시뮬레이션해 보자.** 내가 1년 후 \"VLA를 X에 적용해 Y 개선\"이라는 한 줄 contribution을 쓴다면, X와 Y는 무엇인가? 그 contribution이 *언어가 아니었다면 불가능했음*을 어떻게 증명할 수 있나? 이것이 VLA 연구가 정말 자기 자리를 잡는 핵심 질문이다. — 10일 끝.",
+    "suggested_figure": "Figure 1 — Outline (Challenges & Future Directions 강조)",
+    "figure_page": 2,
+    "figure_description": "논문 전체 outline 중 오른쪽 'Challenges'(Computation Efficiency, Generalization, Interpretability, Long-Horizon Coherence, Foundation Model Construction)와 'Future Directions'(World Model 결합, World Knowledge 주입, Continual Learning, Standardized Evaluation, Human-AI Interaction) 블록이 Day 10에서 강조할 항목과 정확히 대응.",
+    "trigger_type": "C",
+    "key_concepts": [
+      {
+        "term": "Unified Vision-Language-World Model 통합",
+        "definition": "VLA 다음 진화로 서베이가 제시하는 핵심 방향. VLA가 *현재 frame에서 행동을 추론*하는 데 그치는 반면, world model(image-based/occupancy-based/latent-based)을 결합하면 *후보 행동 각각이 만들어낼 미래 scene*을 시뮬레이션해 가장 안전한 선택을 *proactive*하게 고를 수 있다. 대표 흐름: Drive-WM(image WM + selection), OccWorld(occupancy 예측 + planning), LAW/SeerDrive(latent WM closed-loop), Genie 3 계열의 generative world model. **함의**: VA 시대의 world model 갈래(Day 1·5에서 언급한 §3.2)와 VLA의 reasoning이 합쳐지는 지점 — 추론, 언어, 동역학을 한 모델에서 다루는 것이 '진짜' embodied foundation model의 모습."
+      },
+      {
+        "term": "Faithfulness of CoT (해석성 함정)",
+        "definition": "VLA가 출력하는 chain-of-thought 텍스트가 *실제 모델 내부 의사결정의 충실한 반영*인가, 아니면 학습된 *그럴듯한 사후 합리화*인가의 문제. 서베이는 'language hallucination[Hu et al. 2023]: the model may justify an incorrect decision with a confident but spurious narrative'라고 명시. 안전 인증 관점에서 치명적: 잘못된 결정에 매끄러운 설명이 따라오면 *디버깅 신호가 더 약해진다*. 완화책 흐름: (i) RDA-Driver처럼 reasoning ↔ trajectory consistency loss, (ii) Drive-R1처럼 SFT-CoT + RL의 단계적 alignment, (iii) ETA처럼 reasoning을 *행동에 실제로 영향을 주는 latent feature*로 변환해 faithfulness를 구조적으로 강제. 그러나 *증명*은 아직 없다 — 미해결."
+      }
+    ],
+    "english_expressions": [
+      {
+        "expression": "outline future research directions",
+        "korean": "향후 연구 방향을 제시하다",
+        "example": "We identify key challenges and outline future research directions to guide progress.",
+        "context": "Survey/position paper의 conclusion에서 정형."
+      },
+      {
+        "expression": "form the backbone of next-generation systems",
+        "korean": "차세대 시스템의 근간을 이루다",
+        "example": "Unified world models may form the backbone of next-generation autonomous agents.",
+        "context": "미래 방향을 강하게 주장할 때의 수사."
+      },
+      {
+        "expression": "balance personalization with safety requirements",
+        "korean": "개인화와 안전 요건 사이를 절충하다",
+        "example": "The challenge lies in balancing personalization with strict safety requirements.",
+        "context": "Trade-off가 future direction의 핵심일 때."
+      }
+    ],
+    "mcq": [
+      {
+        "question": "이 서베이가 'next-generation' 방향으로 가장 적극적으로 제안하는 통합은?",
+        "options": [
+          "VLA + Diffusion-only planning",
+          "VLA + 예측적 world model의 통합(unified vision-language-world model)",
+          "VLA + 룰 기반 modular planner로의 회귀",
+          "VLA + RGB-only sensor로의 단순화"
+        ],
+        "correct": 1,
+        "explanation": "논문은 VLA가 frame-by-frame reactive 한계를 넘으려면 world model 통합으로 proactive planning이 가능해져야 한다고 명시. §3.2의 world model 갈래가 자연스럽게 연결된다."
+      },
+      {
+        "question": "CoT의 'faithfulness 문제'가 안전 인증에서 *특히* 위험한 이유는?",
+        "options": [
+          "CoT 출력이 항상 ground truth와 일치해야 하기 때문",
+          "잘못된 결정에 그럴듯한 사후 합리화가 따라오면 디버깅·인증 신호가 오히려 약해질 수 있기 때문",
+          "CoT는 BLEU로만 평가 가능하기 때문",
+          "CoT는 다국어 환경에서 동작하지 않기 때문"
+        ],
+        "correct": 1,
+        "explanation": "Confident but spurious narrative — 자신감 있는 잘못된 설명이 결정의 위험성을 가린다는 점이 서베이의 명시적 우려."
+      }
+    ],
+    "open_question": {
+      "question": "1년 후 당신이 \"VLA를 X에 적용해 Y를 개선했다\"라는 한 줄 contribution을 쓴다고 머릿속에서 시뮬레이션해 보자. X와 Y는 무엇이고, 그 개선이 *언어가 없었다면 불가능했다*는 점을 어떻게 증명할 것인가?",
+      "hint": "Ablation 구조부터 떠올려 보라: language-conditioned 버전 vs same-architecture without language conditioning을, 같은 데이터·같은 trajectory loss로 학습시켜 비교. 그 차이가 *long-tail subset 또는 instruction-following test*에서만 나오면 '언어가 본질'임을 보여주는 가장 강한 증거다.",
+      "key_takeaway": "VLA 연구의 진짜 가치는 'language ablation'에서 드러난다 — 언어를 빼도 같은 결과면 그건 VLA 기여가 아니다. 자기 연구의 '언어 ablation 가설'을 미리 설계해 두는 것이, 10일 학습의 가장 실용적인 출구다."
+    }
+  }
+}

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 3 — 한 문장 핵심: VLA</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 3</div>
+  <div class="hero-tag">개요</div>
+  <h1 class="hero-title">한 문장 핵심: VLA</h1>
+  <div class="hero-subtitle">VLA의 정식 정의·직관·기존 대비 우위</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 30%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content"><strong>한 문장 요약.</strong> VLA는 멀티모달 입력 $x$(영상·LiDAR·언어·ego state)를 VLM 백본 $F(\cdot|\theta)$로 통합 표현으로 매핑한 뒤, action head $H(\cdot)$로 실행 가능한 행동 $a_t$를 내놓는 모델이다:
+
+$$a_t = H(F(x|\theta))$$
+
+수식은 단순해 보이지만 함의는 크다. 기존 VA에서 $F$는 ResNet 같은 visual encoder였다. VLA의 $F$는 <strong>수십~수백억 파라미터의 사전학습 VLM</strong>이고, 따라서 $\theta$ 안에 이미 &#x27;world knowledge&#x27;와 &#x27;language reasoning&#x27; prior가 들어 있다. action head $H$는 그것을 trajectory·control·텍스트 중 어떤 형태로든 뽑아낼 수 있는 어댑터다.
+
+<strong>직관: System 2를 끼워 넣는다.</strong> Kahneman의 *Thinking, Fast and Slow*[2011]가 자연스러운 비유다. VA는 빠른 직관(System 1) 전용 — 반사적이지만 새로 보는 상황에 약하다. VLA는 거기에 <strong>느린 숙고(System 2)</strong> 를 결합한다. 비보호 좌회전 같은 상황에서 &quot;대향 차량 속도와 거리, 보행자 의도, 좌회전 우선 규칙을 따져 본다&quot; 같은 단계적 추론이 백본 안에서 token 단위로 펼쳐진다.
+
+<strong>왜 이 접근이 직전 세대보다 나은가.</strong> ① <strong>사전학습 활용</strong> — long-tail 케이스에 대한 세상 지식을 처음부터 모으지 않아도 된다. ② <strong>표현 자체에 reasoning 트레이스가 들어 있다</strong> — CoT 출력으로 의사결정 근거를 직접 검증할 수 있다. ③ <strong>자연어 인터페이스</strong> — 운전자의 &quot;좀 더 조심스럽게&quot; 같은 추상 지시를 그대로 받는다. ④ <strong>action head를 갈아끼울 수 있다</strong> — 같은 백본 위에 trajectory regression, action token, diffusion head를 자유롭게 얹는 모듈식 구조.
+
+내일은 이 패러다임이 현실에서 어떻게 두 갈래(E2E vs Dual-System)로 분기했는지를 본다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 — Outline</div><a href="figures/page_2.png" target="_blank"><img src="figures/page_2.png" alt="Figure" loading="lazy"></a><div class="figure-explain">Sensors·Language·Vehicle State 입력이 Model로 들어가 Trajectory·Action을 내놓는 좌측 다이어그램. VLA의 입력-처리-출력 구조를 가장 단순화한 그림으로, $x \rightarrow F \rightarrow H$ 수식 직관과 정확히 대응된다.</div></div>
+<div class="trigger">Trigger Type B</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">VLA 정식 형식화 $a_t = H(F(x|\theta))$</div><div class="concept-def">VLA의 세 요소: (i) **multimodal input** $x$ — 카메라·LiDAR·언어·ego state를 모은 heterogeneous tensor, (ii) **VLM backbone** $F(\cdot|\theta)$ — ViT 인코더 + LLM 디코더 + bridge로 구성된 사전학습 VLM, (iii) **action head** $H(\cdot)$ — language head(LH), regression(REG), trajectory selection(SEL), generation(GEN) 중 선택. 수식은 단순하지만 $\theta$에 사전학습 prior가 응축돼 있다는 점이 VA와 본질 차이다. *주의*: language를 입력으로 받는다는 사실과 출력 형식은 독립적이며, 출력은 텍스트일 수도 numeric trajectory일 수도 있다 — 이 분리가 Day 6의 분류 축이다.</div></div>
+<div class="concept-card"><div class="concept-term">Dual-Process(System 1/2) 영감</div><div class="concept-def">심리학의 dual-process theory(Kahneman)를 driving에 차용한 설계 철학. **System 1**(빠른 반사) = 기존 E2E planner / 전용 트라젝토리 모듈, **System 2**(느린 숙고) = VLM의 CoT reasoning. 둘을 하나의 네트워크에 통합하면 E2E VLA, 분리하면 Dual-System VLA가 된다. 이 메타포는 *latency 분리*와 *interpretability 분리*라는 공학적 결정을 자연어로 정당화해 주지만, 실제 인간 인지의 dual-process가 그대로 자율주행 architecture로 옮겨지는지는 별개 문제 — 영감일 뿐 증명은 아니다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">couple A with B</div><div class="expr-ko">A와 B를 결합하다</div><div class="expr-example">VLA models couple a VLM backbone with an action-prediction head.</div><div class="expr-context">두 구성요소의 통합 설계를 설명할 때 가장 흔한 술어.</div></div>
+<div class="expr-card"><div class="expr-en">give rise to (a new paradigm)</div><div class="expr-ko">(새 패러다임을) 낳다</div><div class="expr-example">LLMs and multimodal learning gave rise to the VLA paradigm for driving.</div><div class="expr-context">기술적 흐름의 연속성을 설명하는 transition.</div></div>
+<div class="expr-card"><div class="expr-en">in contrast to prior approaches</div><div class="expr-ko">기존 접근과 달리</div><div class="expr-example">In contrast to prior VA approaches, VLA natively supports step-wise reasoning.</div><div class="expr-context">직전 세대와의 차이를 강조하는 비교 구조.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">수식 $a_t = H(F(x|\theta))$에서 VLA가 VA와 갖는 *본질적* 차이를 만드는 부분은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">$x$가 멀티모달이라는 점</button><button class="mcq-option" data-correct="true">$\theta$ 안에 대규모 사전학습 prior(언어·세상지식)가 응축돼 있다는 점</button><button class="mcq-option" data-correct="false">$H$가 반드시 language head라는 점</button><button class="mcq-option" data-correct="false">$a_t$가 항상 control signal이라는 점</button></div><div class="mcq-explanation">VA도 멀티모달일 수 있고 head 형태도 다양하다. 결정적 차이는 백본의 사전학습 — 거기서 long-tail 일반화와 reasoning 능력이 온다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">Dual-process 메타포에서 &#x27;System 2&#x27;에 대응되는 VLA 구성은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">BEV encoder</button><button class="mcq-option" data-correct="true">VLM 백본의 CoT reasoning</button><button class="mcq-option" data-correct="false">Action head의 MLP</button><button class="mcq-option" data-correct="false">LiDAR projection layer</button></div><div class="mcq-explanation">느린 숙고(System 2)는 step-wise reasoning을 펼치는 VLM 백본에 해당. 다른 셋은 빠른 처리·기하 변환 모듈.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">내가 푸는 문제에서 &#x27;$F$를 키우면 풀리는가, $H$를 갈아끼우면 풀리는가&#x27;?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>Long-tail 인지 실패(perception miss)라면 $F$의 prior가 부족한 것이고, 인지는 되는데 action이 어색하다면 $H$의 표현력/inductive bias 문제다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>VLA의 가치는 백본과 head를 *분리해서 갈아끼울 수 있다는 모듈성*에 있다. 자기 문제의 병목이 perception/reasoning인지 action 생성인지 먼저 진단해야 어디에 투자할지가 결정된다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_2.html">← Day 2</a><a href="day_4.html">Day 4 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

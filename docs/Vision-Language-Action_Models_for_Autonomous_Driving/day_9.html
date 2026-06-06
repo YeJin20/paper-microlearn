@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 9 — 숫자가 말하는 것</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 9</div>
+  <div class="hero-tag">결과</div>
+  <h1 class="hero-title">숫자가 말하는 것</h1>
+  <div class="hero-subtitle">주요 벤치마크 핵심 수치 해석</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 90%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">오늘은 논문이 실제로 보고한 숫자만 본다. 추세가 잘 드러나는 세 벤치마크와 효율 한 지점.
+
+<strong>(1) nuScenes open-loop (Table 5).</strong> Avg L2(↓) / Avg CR(↓).
+- VA 기준: <strong>UniAD 0.69 / 0.12</strong>, <strong>VAD 0.37 / 0.14</strong>, SparseAD 0.34 / 0.06.
+- VLA로 넘어가면: <strong>Drive-R1 0.31 / 0.09</strong>(InternVL2 + CoT SFT + RL), <strong>SOLVE 0.28 / 0.20</strong>, <strong>FutureSightDrive 0.28 / 0.10</strong>, <strong>EMMA 0.32 / —</strong>(Gemini 기반), <strong>AutoDrive-R² 0.19 / —</strong>, <strong>Reasoning-VLA 0.22 / 0.07</strong>.
+- 해석: 상위권이 0.28~0.33m 좁은 구간에 몰려 *saturation*. Collision rate는 모델별 변동이 더 크다(0.06~0.94). 단순 L2 하나로 sort하면 정보가 거의 없다.
+
+<strong>(2) NAVSIM (Table 7).</strong> PDMS(↑) 중심.
+- VA: WoTE <strong>88.3</strong>, DiffusionDriveV2 <strong>91.2</strong>, NaviHydra <strong>92.7</strong>, AD-R1 <strong>91.9</strong>, SeerDrive <strong>90.7</strong>.
+- VLA: AutoVLA <strong>92.1</strong>(NC 99.1 / DAC 97.1 / TTC 97.1 / EP 87.6), AdaThinkDrive <strong>93.0</strong>, <strong>ReflectDrive 94.7</strong>(NC 99.7 / DAC 99.5 / TTC 99.1 / EP 88.9 — closed-loop 최상위).
+- 해석: VLA가 TTC·EP에서 *분명한* 우위(언어 가이드로 long-horizon 진행성). 단, NC/DAC는 VA 강자들과 비등 — 안전 기본기는 specialized planner가 여전히 강함.
+
+<strong>(3) Bench2Drive (Table 8).</strong> Driving Score(↑) / SR(%)(↑).
+- VA: Raw2Drive <strong>71.36 / 50.24</strong>, GuideFlow <strong>75.21 / 51.36</strong>.
+- VLA: ORION <strong>77.74 / 54.62</strong>, AutoVLA <strong>78.84 / 57.73</strong>, <strong>SimLingo 85.94 / 66.82</strong>, SimLingo-Base 85.07 / 67.27.
+- 해석: closed-loop CARLA에서 VLA의 우위가 가장 크다. SimLingo의 &#x27;<strong>action dreaming</strong>&#x27; 정렬 메커니즘이 자연어 instruction을 control sequence와 결합해 +10~15 DS를 끌어올림. Bench2Drive efficiency는 244.18까지 — 진행 속도와 안전을 동시에.
+
+<strong>(4) Efficiency.</strong> InsightDrive <strong>16.3 FPS</strong> 보고. 그러나 논문은 sub-50ms (≥20 FPS)가 안전 critical real-time의 &#x27;unmet requirement&#x27;라고 명시 — 즉 *대부분의 VLA가 아직 양산 latency를 못 맞춘다*.
+
+<strong>한 줄 요약.</strong> 언어를 끼우면 closed-loop multi-step 의사결정(NAVSIM EP/TTC, Bench2Drive DS)에서 *명확한* 이득이 있다. 그러나 nuScenes open-loop는 saturation으로 변별 약하고, real-time latency는 여전히 양산 수준에 미달.
+
+내일은 이 숫자를 내 연구로 옮길 때 어떤 follow-up을 봐야 할지로 닫는다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 8 — Bench2Drive closed-loop 비교</div><a href="figures/page_22.png" target="_blank"><img src="figures/page_22.png" alt="Figure" loading="lazy"></a><div class="figure-explain">Bench2Drive에서 VA(TCP·UniAD·VAD·GuideFlow·Raw2Drive)와 VLA(ORION·AutoVLA·SimLingo·DriveMoE 등)를 DS·SR·Efficiency·Comfort로 나란히 비교. 하단 VLA 블록에서 SimLingo가 85.94 DS / 66.82 SR로 최상위로 떠 있어 언어-action 정렬의 closed-loop 이득이 시각적으로 드러남.</div></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">nuScenes Open-Loop Saturation</div><div class="concept-def">현 시점 nuScenes open-loop L2의 상위 모델들이 **0.28~0.34m**의 좁은 구간에 몰려 있는 현상. 평균 L2 한 자리로는 모델 간 의미 있는 차이를 가르기 어렵다. 원인: (i) ego status를 입력으로 받으면 *trivially* 양호한 L2가 나오는 데이터 leak 문제[BEV-Planner 분석], (ii) human 궤적이 unique ground truth라는 가정이 multi-modal 미래에 부정확. **대응**: collision rate를 같이 보고, NAVSIM/Bench2Drive 같은 closed-loop, WOD-E2E의 RFS 같은 인간 정렬 metric을 *함께* 보고하는 게 표준이 되는 흐름.</div></div>
+<div class="concept-card"><div class="concept-term">SimLingo의 Action Dreaming (Bench2Drive 85.94 DS)</div><div class="concept-def">SimLingo[CVPR&#x27;25]가 **Bench2Drive 1위(85.94 DS / 66.82 SR)**를 차지한 핵심 메커니즘. 모델이 입력 자연어 instruction을 받았을 때 *그에 대응하는 가상 행동 sequence(action dream)*를 inner-loop로 생성하고, 이를 실제 control과 정렬하는 보조 supervision. open-loop 평가용이지만 closed-loop 일반화도 같이 좋아진 점이 핵심. **함의**: language-action alignment가 단순 caption supervision보다 한 단계 깊은 &#x27;*명령→행동 시퀀스 매핑*&#x27; supervision일 때 closed-loop 이득이 가장 크다. 즉 closed-loop 강함은 vision-language pretraining만으로는 안 나오고, action 쪽 정렬이 같이 가야 한다는 신호.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">remain an unmet requirement</div><div class="expr-ko">여전히 충족되지 않은 요건으로 남다</div><div class="expr-example">Achieving sub-50ms inference remains an unmet requirement for safety-critical deployment.</div><div class="expr-context">현재 SOTA가 아직 못 도달한 spec을 명시할 때.</div></div>
+<div class="expr-card"><div class="expr-en">demonstrate clear benefits from</div><div class="expr-ko">~로부터 분명한 이점을 보이다</div><div class="expr-example">Recent VLA approaches demonstrate clear benefits from language grounding in closed-loop benchmarks.</div><div class="expr-context">Result 단락에서 ablation 비교 결과를 정리할 때.</div></div>
+<div class="expr-card"><div class="expr-en">highlight the importance of aligning A with B</div><div class="expr-ko">A와 B 정렬의 중요성을 부각하다</div><div class="expr-example">These results highlight the importance of aligning language reasoning with trajectory generation.</div><div class="expr-context">정량 결과로부터 design lesson을 끌어낼 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">NAVSIM 결과에서 VLA가 VA 대비 *가장 두드러진* 개선을 보이는 subscore는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">NC (no-collision) — 안전 기본기</button><button class="mcq-option" data-correct="false">DAC (driving admissibility)</button><button class="mcq-option" data-correct="true">TTC와 EP — 시간 여유와 진행성(long-horizon 의사결정)</button><button class="mcq-option" data-correct="false">Comfort</button></div><div class="mcq-explanation">AutoVLA 97.1 TTC / 87.6 EP, ReflectDrive 99.1 TTC / 88.9 EP. NC·DAC는 VA 상위와 비등 — VLA 이득은 long-horizon 의사결정 쪽에서 가장 크다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">논문이 &#x27;sub-50ms inference remains unmet&#x27;이라고 명시했을 때 이 발언의 함의로 *가장 정확한* 해석은?</div><div class="mcq-options"><button class="mcq-option" data-correct="true">InsightDrive처럼 16.3 FPS 보고하는 효율 시도는 있지만, 양산 safety-critical 기준(≥20 FPS)을 일관되게 만족하는 VLA는 아직 없다</button><button class="mcq-option" data-correct="false">모든 VLA는 50ms를 넘는다</button><button class="mcq-option" data-correct="false">GPU H100 이상이면 자동으로 50ms를 맞춘다</button><button class="mcq-option" data-correct="false">Latency 문제는 Dual-System에서는 해결되었다</button></div><div class="mcq-explanation">InsightDrive·FastDriveVLA 등 효율 시도는 있으나 sub-50ms 일관 달성은 &#x27;unmet&#x27;. 16.3 FPS는 61ms 수준이라 기준 미달.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">내가 nuScenes L2 0.05m 개선을 보고하려고 한다면, 그 개선을 *진짜* 진보로 만들 보조 evidence는 무엇이어야 할까?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>Saturation 구간이므로 L2 단독은 약하다. Collision rate, NAVSIM PDMS(가능하면), 또는 long-tail subset(예: ImpromptuVLA corner cases)에서의 일관된 개선을 함께 보고하는 것이 신뢰를 만든다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>Saturated benchmark에서의 소폭 개선은 *복수 metric·복수 split*에서 일관성으로 정당화해야 한다 — single number는 점점 설득력을 잃고 있다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_8.html">← Day 8</a><a href="day_10.html">Day 10 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

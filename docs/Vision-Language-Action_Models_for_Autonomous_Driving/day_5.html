@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 5 — 파이프라인 전체 지도</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 5</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">파이프라인 전체 지도</h1>
+  <div class="hero-subtitle">입력·백본·헤드·행동공간 4축 정리</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 50%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">오늘은 모든 VLA를 *해부할 좌표계*를 잡는다. 어떤 논문을 읽든 이 4축으로 분해하면 차이가 보인다.
+
+<strong>축 1 — Input modalities $x$.</strong> (a) <strong>Sensor</strong>: surround-view image $x_{img} \in \mathbb{R}^{N_c \times H \times W \times 3}$, LiDAR $x_{lidar} \in \mathbb{R}^{N_p \times D}$. (b) <strong>Latent</strong>: BEV $x_{bev} \in \mathbb{R}^{C \times H_{bev} \times W_{bev}}$, occupancy $x_{occ} \in \mathbb{R}^{C_{occ} \times X \times Y \times Z}$. (c) <strong>Language</strong>: system prompt, instruction, scene description, traffic rule, ego status, context info — 6가지 prompt type을 논문은 Table 2로 분류. (d) <strong>Vehicle state</strong>: 속도·가속·yaw rate 등 proprioception.
+
+<strong>축 2 — VLM backbone $F$.</strong> ViT/CLIP/EVA-02/SigLIP 같은 vision encoder + LLaMA/Qwen/Vicuna/Gemini 같은 LLM. 그 사이를 잇는 bridge(Q-Former, projector, unified token)가 modality alignment를 담당. *Single-system*에서는 backbone이 직접 action을 내고, *Dual-system*에서는 guidance만 낸다.
+
+<strong>축 3 — Action head $H$.</strong> 네 가지로 정리:
+- <strong>LH (Language Head)</strong>: VLM의 LM head로 &#x27;turn left&#x27; 같은 free-form text 또는 discretized action token autoregressive 생성(DriveMLM, AutoVLA).
+- <strong>REG (Regression)</strong>: Transformer+GRU+MLP로 numeric waypoint·control 직접 회귀(LMDrive, DriveGPT4-V2, SimLingo).
+- <strong>SEL (Selection)</strong>: 후보 trajectory를 sampling/생성 후 cost로 선택(WoTE, SeerDrive).
+- <strong>GEN (Generation)</strong>: diffusion·VAE로 multi-modal trajectory 분포 자체를 합성(ORION, DiffVLA, DiffusionDrive).
+
+<strong>축 4 — Action 표현.</strong> ① <strong>discrete waypoints</strong> $a_t = \{(x_i, y_i)\}_{i=1}^{\Phi}$, ② <strong>continuous trajectory</strong> $(v(t), \kappa(t))$ — 속도·곡률 함수, ③ <strong>direct control</strong> $(\delta_t, \tau_t, \beta_t)$ — 조향·throttle·brake, ④ <strong>language tokens</strong>.
+
+같은 입력이라도 head·표현 조합에 따라 trade-off가 달라진다. 예: 안전 검증을 쉽게 하려면 GEN+continuous보다 SEL+discrete가 유리. 내일부터 3일간 이 좌표계 위에서 실제 모델군을 깊게 본다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 5 — End-to-End VLA categorization</div><a href="figures/page_13.png" target="_blank"><img src="figures/page_13.png" alt="Figure" loading="lazy"></a><div class="figure-explain">End-to-End VLA를 &#x27;Textual Action Models&#x27;와 &#x27;Numerical Action Models&#x27;로 가르고 각 하위에 대표 모델(DriveMLM, EMMA, AutoVLA, ORION 등)이 배치된 분류 트리. Day 5의 action head 4분류(LH/REG/SEL/GEN)와 매핑된다.</div></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Action Head 4종 분류 (LH/REG/SEL/GEN)</div><div class="concept-def">VLA의 action 출력 메커니즘을 네 가지로 정형화: **LH**(Language Head, autoregressive 텍스트/action token, DriveMLM·AutoVLA), **REG**(MLP/GRU 직접 회귀, LMDrive·SimLingo), **SEL**(후보 trajectory 점수화 선택, WoTE·SeerDrive — kinematic feasibility 보장), **GEN**(diffusion/VAE 분포 생성, ORION·DiffVLA — multi-modal future 표현). 선택은 *학습 안정성 vs 표현력 vs 안전 검증 용이성*의 trade-off. 예컨대 LH는 fine-grained 정밀도가 떨어지고 quantization artifact가 생기지만 reasoning과 한 sequence로 통합되는 장점이 있다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">We categorize X into Y types based on Z</div><div class="expr-ko">X를 Z 기준으로 Y가지 유형으로 분류한다</div><div class="expr-example">We categorize action heads into four types based on their output formulation.</div><div class="expr-context">Taxonomy 논문/survey에서 분류 도입의 정형.</div></div>
+<div class="expr-card"><div class="expr-en">be tailored to ... requirements</div><div class="expr-ko">~의 요구에 맞게 설계되다</div><div class="expr-example">Continuous trajectory representations are tailored to vehicle-dynamics requirements.</div><div class="expr-context">특정 표현이 왜 그 형태인지 정당화할 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Action head 분류에서 &#x27;kinematic feasibility를 head 단계에서 보장하기 가장 쉬운&#x27; 형태는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">LH (action token autoregressive)</button><button class="mcq-option" data-correct="false">REG (MLP 직접 회귀)</button><button class="mcq-option" data-correct="true">SEL (사전 후보 trajectory 점수화 선택)</button><button class="mcq-option" data-correct="false">GEN (diffusion 합성)</button></div><div class="mcq-explanation">후보 trajectory를 미리 kinematically feasible하게 생성해 두면 SEL이 선택만 하므로 hard constraint 적용이 쉽다. 다른 셋은 후처리 또는 sampling 통제가 필요.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">Action 표현 $a_t = (v(t), \kappa(t))$가 갖는 *고유한* 장점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">VLM token 공간과 직접 호환됨</button><button class="mcq-option" data-correct="true">차량 dynamics(속도 프로파일·곡률)를 연속 함수로 자연스럽게 표현함</button><button class="mcq-option" data-correct="false">Diffusion 모델로만 학습 가능함</button><button class="mcq-option" data-correct="false">Cost map 기반 selection에 가장 적합함</button></div><div class="mcq-explanation">Continuous trajectory representation은 longitudinal $v(t)$와 lateral $\kappa(t)$를 시간 함수로 두어 차량 운동학과 매끄럽게 결합된다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">내 task의 안전 검증 요건을 만족시키려면 head 선택을 어떻게 가져가야 할까?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>검증해야 할 게 &#x27;collision avoidance hard constraint&#x27;인지 &#x27;운전 스타일 분포&#x27;인지를 먼저 구분하라. 전자는 SEL+pre-filtered 후보, 후자는 GEN이 자연스럽다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>Head 선택은 학습 편의가 아니라 *검증 가능성* 으로 역산해야 한다. Hard constraint가 많으면 SEL, multi-modal future 표현이 필요하면 GEN, 자연어 통합이 핵심이면 LH.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_4.html">← Day 4</a><a href="day_6.html">Day 6 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

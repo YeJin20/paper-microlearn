@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 2 — VA가 무너지는 4지점</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 2</div>
+  <div class="hero-tag">배경</div>
+  <h1 class="hero-title">VA가 무너지는 4지점</h1>
+  <div class="hero-subtitle">Vision-Action 모델의 한계 정밀 진단</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 20%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">오늘은 VA가 *어디서* 깨지는지를 네 가지로 정리한다. 이 분해는 내일부터 등장할 VLA의 설계 결정을 읽는 렌즈가 된다.
+
+<strong>(1) 제한적 해석가능성.</strong> ResNet+MLP 기반 VA는 latent 위에서 직접 행동을 회귀한다. 사고 후 &#x27;why&#x27; 질문에 답할 표현이 없다. 안전 인증, 사고 분석, regulator 대응이 점점 필수가 되는 상황에서 이는 채택 자체를 가로막는다.
+
+<strong>(2) 약한 일반화.</strong> VA 정책은 collected demonstration의 분포에 강하게 묶인다. 같은 도시 안의 새 차선 패턴, 다른 나라의 우회전 우선 규칙 같은 변화에 대해 매번 재학습이 필요하다. 더 미묘하게는 <strong>causal confusion</strong>[De Haan et al. 2019] 문제 — 모델이 진짜 원인이 아니라 표면적 상관(예: 앞차 브레이크등이 아니라 같이 켜진 우측 깜빡이)에 결정을 의존하게 된다.
+
+<strong>(3) Chain-of-Thought 부재.</strong> VA는 픽셀→행동의 직접 매핑이라 &#x27;A이므로 B, 따라서 C&#x27; 형태의 multi-stage reasoning을 모델 안에서 표현할 수 없다. 비보호 좌회전처럼 &#x27;대향 차량 의도 추정 → gap 계산 → 사회적 협상&#x27;을 요구하는 상황에서 의사결정이 얕다.
+
+<strong>(4) 언어 이해 없음.</strong> 운전자가 &quot;이번 출구 말고 다음 출구로&quot;라고 말할 통로가 없다. high-level navigation goal과 low-level 행동 사이의 인터페이스가 일방향이다.
+
+VLA는 이 네 가지를 *동시에* 공략한다. VLM 백본이 (1)(2)를 사전학습 prior로, (3)을 token 단위 reasoning으로, (4)를 자연 인터페이스로 받는다. 내일은 그 핵심 아이디어를 한 문장으로 압축한다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 2 — Representative VA/VLA models 분류</div><a href="figures/page_4.png" target="_blank"><img src="figures/page_4.png" alt="Figure" loading="lazy"></a><div class="figure-explain">End-to-End VA, World Model, End-to-End VLA, Dual-System VLA 네 갈래로 갈라지는 트리. 각 가지에 LBC·UniAD·DriveLM·DriveVLM 등 대표 작업들이 시기별로 배치되어 VA→VLA 진화의 흐름을 한눈에 보여준다.</div></div>
+<div class="trigger">Trigger Type A</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Causal Confusion (in Imitation Learning)</div><div class="concept-def">전문가 데모만 보고 학습한 정책이 &#x27;진짜 원인&#x27;이 아닌 *허위 단서*에 결정 권한을 위임하는 현상[De Haan et al. 2019]. 예: 신호등 빨강 때문이 아니라 *함께 등장한 정지선 표식* 때문에 멈추도록 학습됨. 분포 안에서는 두 단서가 동시에 나오므로 구분 불가하다가, 한 단서만 결손되면 catastrophic failure가 난다. VA·IL 시스템의 일반화 결함을 설명하는 핵심 개념으로, **언어 supervision은 인과 가설을 명시화**해 이를 완화하는 잠재적 통로다 — VLA의 한 이론적 정당성.</div></div>
+<div class="concept-card"><div class="concept-term">Chain-of-Thought (CoT) Reasoning 부재</div><div class="concept-def">VA 모델은 픽셀 → action을 *한 번의 forward*로 매핑하므로, &#x27;대향 차량 의도 → gap 추정 → 진입 결정&#x27; 같은 다단계 추론을 모델 내부에서 명시적으로 펼칠 수 없다. VLM은 token 단위 autoregressive 생성을 통해 reasoning 중간 단계를 노출시킬 수 있고, **CoT supervision**으로 reasoning과 action의 정합을 학습시킬 수 있다(RDA-Driver, Drive-R1 등). 단, &#x27;CoT는 사후 합리화일 수 있다&#x27;는 해석성 함정도 함께 따라온다 — Day 10에서 다시 다룬다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">behave as black boxes</div><div class="expr-ko">블랙박스처럼 작동하다</div><div class="expr-example">Existing VA models largely behave as black boxes, offering limited interpretability.</div><div class="expr-context">기존 방법의 해석성 한계를 비판할 때.</div></div>
+<div class="expr-card"><div class="expr-en">remain fragile under distribution shifts</div><div class="expr-ko">분포 이동에서 취약함이 남다</div><div class="expr-example">Their generalization remains fragile under rare or long-tail scenarios.</div><div class="expr-context">일반화 한계를 정량 결과 없이 일반적으로 표현할 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">논문이 VA 모델의 한계로 제시한 4가지에 *포함되지 않는* 것은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">Chain-of-thought reasoning 부재</button><button class="mcq-option" data-correct="false">자연어 instruction 수용 불가</button><button class="mcq-option" data-correct="true">GPU 메모리 사용량이 LLM 대비 과도함</button><button class="mcq-option" data-correct="false">약한 일반화(분포 이동/long-tail 취약)</button></div><div class="mcq-explanation">메모리는 오히려 VLA에서 더 문제다. 논문이 명시한 VA 한계는 (1)해석성 (2)일반화 (3)CoT 부재 (4)언어 이해 없음.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">Causal confusion이 imitation learning 기반 VA에서 long-tail 실패를 일으키는 메커니즘은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">학습 데이터 양 부족으로 underfitting됨</button><button class="mcq-option" data-correct="true">허위 상관(spurious correlation)에 결정을 의존해 단서가 결손되면 무너짐</button><button class="mcq-option" data-correct="false">L2 loss가 multi-modal 분포를 평균화하기 때문</button><button class="mcq-option" data-correct="false">BEV 좌표계가 카메라 외인변환에 민감하기 때문</button></div><div class="mcq-explanation">Causal confusion은 진짜 원인이 아닌 동시 발생한 표면 단서에 정책이 의존하게 되는 문제. 분포 내에선 둘이 같이 등장해 구분 안 됨.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">내 모델이 &#x27;causal confusion&#x27;을 일으키는지 확인할 가장 값싼 실험은 무엇일까? 그 결과가 yes일 때, 언어 supervision이 정말 도움이 될까?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>Counterfactual perturbation을 떠올려라 — 신호등은 그대로 두고 정지선만 페인트로 지운 합성 이미지에서 정책이 어떻게 반응하는지. VLA는 이 perturbation에 *말로 설명하라*고 요구할 수 있다는 점이 추가 채널이다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>Causal confusion 진단은 perturbation 기반 sanity check로 저렴하게 가능하다. 언어 supervision은 결정의 *근거*를 강제로 노출시켜 잘못된 인과 가설을 발견하기 쉬워지지만, 그 자체로 인과를 보장하지는 않는다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_1.html">← Day 1</a><a href="day_3.html">Day 3 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

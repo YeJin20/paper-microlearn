@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 4 — 두 패러다임: E2E vs Dual</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 4</div>
+  <div class="hero-tag">개요</div>
+  <h1 class="hero-title">두 패러다임: E2E vs Dual</h1>
+  <div class="hero-subtitle">VLA 지형도와 트레이드오프</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 40%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">VLA는 *VLM이 행동에 얼마나 깊이 관여하는가* 에 따라 두 가족으로 갈라진다.
+
+<strong>End-to-End VLA.</strong> 하나의 네트워크가 입력→reasoning→action을 통째로 담당한다. AutoVLA·EMMA·OpenDriveVLA·SimLingo 등. 장점: ① 정보 손실이 적다 — perception latent가 그대로 action head로 흘러간다. ② 학습 신호가 단일 — trajectory loss와 reasoning loss를 백본 전체로 backprop. 단점: ① VLM이 매 frame에서 inference에 참여하므로 <strong>latency가 무겁다</strong>(sub-50ms 못 맞춤). ② VLM의 hallucination이 직접 행동을 오염시킨다.
+
+<strong>Dual-System VLA.</strong> *느린* VLM이 의미적 가이드를 만들고, *빠른* specialized planner가 trajectory를 만든다. DriveVLM·Senna·DiffVLA·VLP·VLM-AD 등. 장점: ① VLM은 비동기·저빈도로 호출 가능 — ETA[78]는 이전 프레임의 reasoning을 현재로 fuse. ② planner가 kinematic feasibility를 보장 — 잘못된 언어 지시도 물리적으로 거른다. ③ 해석성·실행 가능성 분리. 단점: ① 두 시스템의 interface 설계가 어렵다(meta-action 텍스트 vs 잠재 feature). ② VLM의 reasoning이 실제 action에 얼마나 영향을 주는지 정량화하기 어렵다.
+
+<strong>언제 어느 쪽을 골라야 하나.</strong> ① 폐쇄 도메인·고빈도 control(고속도로 ADAS) → Dual-System으로 latency 분리. ② 자연어 instruction 따라가는 demo·연구 prototype → E2E의 단일 학습이 깔끔. ③ 안전 인증 필요 → Dual-System의 fast planner를 classical/optimization-based로 두면 검증이 쉽다. ④ 자원 부족(엣지) → 둘 다 어렵지만, Dual-System이 VLM 호출을 sparse하게 가져갈 수 있어 유리.
+
+E2E·Dual 모두 그 안에서 &#x27;textual vs numerical&#x27;, &#x27;explicit vs implicit&#x27; 같은 하위 축으로 다시 갈라진다 — Day 6, Day 7에서 본다. 내일은 그 전에 전체 파이프라인의 *블록 다이어그램*을 먼저 잡는다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 6 — Dual-System VLA categorization</div><a href="figures/page_15.png" target="_blank"><img src="figures/page_15.png" alt="Figure" loading="lazy"></a><div class="figure-explain">Dual-System VLA에서 VLM과 E2E module이 어떻게 상호작용하는지 보여주는 두 갈래 도식. 위쪽은 &#x27;Explicit Action Guidance&#x27;(VLM 출력이 직접 meta-action/waypoint로 변환), 아래쪽은 &#x27;Implicit Representations Transfer&#x27;(VLM이 latent feature 또는 distillation 신호 제공).</div></div>
+<div class="trigger">Trigger Type C</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">End-to-End VLA</div><div class="concept-def">단일 네트워크 안에서 perception→reasoning→action을 통합 학습하는 VLA 패러다임. 대표: EMMA(Gemini), AutoVLA, OpenDriveVLA, SimLingo. **장점**: 단일 backprop, 풍부한 latent 흐름. **약점**: real-time 어려움(sub-50ms 못 맞춤), VLM hallucination이 직접 행동을 오염. 출력은 textual(meta-action·waypoint as text) 또는 numerical(MLP head·action token) — 이 분기가 Day 6 주제. 학습은 보통 (i) VQA + driving label SFT, (ii) RL/GRPO finetuning 단계로 진행.</div></div>
+<div class="concept-card"><div class="concept-term">Dual-System VLA</div><div class="concept-def">*Thinking Fast and Slow*에서 영감 받은 분리 구조. **느린 VLM**이 high-level reasoning(meta-action, scene description, latent intent)을 만들고, **빠른 specialized module**(classical planner, diffusion policy, MPC 등)이 trajectory를 낸다. 대표: DriveVLM(meta-action 가이드), VLP(latent distillation), DiffVLA(diffusion + 언어 prior), InsightDrive(VLM + MPC). 두 시스템의 interface는 **explicit**(텍스트·meta-action) 또는 **implicit**(BEV feature·CoT distillation)로 갈리며, 안전 인증·latency 분리·해석성이 강점이지만 두 시스템 동기화·misalignment 누적이 함정.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">draw inspiration from</div><div class="expr-ko">~에서 영감을 받다</div><div class="expr-example">Dual-system VLA frameworks draw inspiration from the dual-process theory.</div><div class="expr-context">이론·메타포를 도입할 때의 정형 표현.</div></div>
+<div class="expr-card"><div class="expr-en">trade off A against B</div><div class="expr-ko">A와 B 사이를 절충하다</div><div class="expr-example">These designs trade off interpretability against end-to-end optimizability.</div><div class="expr-context">경쟁 paradigm 비교 단락에서 두 축을 명시할 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Dual-System VLA가 End-to-End VLA에 비해 *구조적으로* 유리한 측면은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">단일 backprop으로 학습이 단순함</button><button class="mcq-option" data-correct="true">VLM을 비동기·저빈도로 호출해 real-time 제약을 분리할 수 있음</button><button class="mcq-option" data-correct="false">Hallucination이 원천적으로 발생하지 않음</button><button class="mcq-option" data-correct="false">Trajectory loss가 항상 더 작음</button></div><div class="mcq-explanation">느린 VLM과 빠른 planner를 분리하면 VLM을 매 프레임 돌릴 필요가 없어 latency 분리가 가능. 학습 단순성·성능은 오히려 E2E가 유리할 수 있다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">다음 중 *End-to-End VLA* 계열에 속하는 모델은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">DriveVLM (VLM → 전통 planner)</button><button class="mcq-option" data-correct="false">VLP (BEV-language alignment distillation)</button><button class="mcq-option" data-correct="true">AutoVLA (action token autoregressive 생성)</button><button class="mcq-option" data-correct="false">InsightDrive (VLM + MPC)</button></div><div class="mcq-explanation">AutoVLA는 단일 백본 안에서 reasoning token과 action token을 함께 생성하는 E2E 구조. 나머지 셋은 Dual-System.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">내가 만들고 있는 prototype이 &#x27;E2E로 가야 하는지, Dual-System으로 가야 하는지&#x27; 결정하는 1차 기준을 두 가지만 꼽는다면?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>(1) target latency 예산(예: 50ms vs 200ms), (2) 자연어 instruction을 정말 매 frame 받아야 하는지 vs &#x27;mode&#x27; 단위로만 받으면 되는지를 생각해 보라.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>*Latency 예산*과 *언어 입력의 빈도* 가 결정적이다. 두 가지가 모두 빡빡하면 Dual-System이 거의 강제되고, 둘 다 여유 있으면 E2E가 학습·이터레이션이 빠르다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_3.html">← Day 3</a><a href="day_5.html">Day 5 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

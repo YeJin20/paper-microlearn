@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 8 — 데이터·평가 인프라</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 8</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">데이터·평가 인프라</h1>
+  <div class="hero-subtitle">VLA 학습/벤치마크 생태계</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 80%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">오늘은 모델보다 *인프라*다. 어떤 데이터로 학습하고 어떤 metric으로 비교하느냐가 패러다임 자체를 빚는다.
+
+<strong>Vision-Action 기반 데이터셋(언어 없음)</strong> — VLA의 토대.
+- <strong>BDD100K</strong>: 100K 다양한 운전 비디오, 날씨/조명/교통의 폭이 가장 넓음.
+- <strong>nuScenes</strong>: 1,000 multi-sensor 시나리오, 6-camera surround + LiDAR + radar + 3D box + trajectory. 대부분 VLA가 open-loop 평가에 사용.
+- <strong>Waymo Open Dataset / Argoverse 2</strong>: 더 큰 스케일, HD map.
+- <strong>nuPlan</strong>: long-horizon trajectory + simulation interface(closed-loop).
+- <strong>Bench2Drive</strong>: CARLA V2 기반 closed-loop, 성공률·driving score 중심.
+
+<strong>VLA 데이터셋(언어 결합)</strong> — 시간/의미적으로 정렬된 텍스트가 핵심.
+- <strong>BDD-X</strong>: BDD100K + 시간 정렬된 운전 *합리화(rationale)* — &#x27;why&#x27; 라벨의 시초.
+- <strong>DriveLM</strong>: nuScenes/CARLA 위에 *graph-structured QA*(perception→prediction→planning 연쇄).
+- <strong>ImpromptuVLA</strong>: 8개 공개 데이터셋 통합 + caption/instruction/QA, <strong>80K corner-case clip</strong>으로 long-tail에 특화.
+- <strong>CoVLA</strong>: 6M caption 규모의 real-world driving caption 데이터.
+- 기타 LingoQA, NuInstruct, Reason2Drive, DriveAction 등.
+
+<strong>평가 metric — 두 갈래.</strong>
+- *Open-loop*: <strong>L2</strong> (3초 horizon trajectory 거리), <strong>Collision Rate</strong>, ADE, FDE, MR. simulator 없이 expert 궤적과 직접 비교.
+- *Closed-loop*: NAVSIM의 <strong>PDMS</strong>(Predictive Driver Model Score)가 핵심 — NC(No Collision) · DAC(Driving Admissibility) · TTC(Time-to-Collision) · EP(Ego Progress) · Comfort를 가중 결합한 단일 지표. Bench2Drive는 DS(Driving Score)·SR(Success Rate). WOD-E2E는 <strong>RFS</strong>(Rater Feedback Score)로 인간 선호와의 정렬을 측정.
+- *Text-based*: BLEU/ROUGE/CIDEr + rationale consistency.
+
+<strong>핵심 함정.</strong> ① <strong>Open-loop L2는 multi-modal future에 불리</strong> — 사람 궤적이 unique ground truth라는 가정이 어긋남(이를 RFS·closed-loop가 보완). ② <strong>nuScenes 평가의 saturation</strong> — 상위 모델들이 모두 0.28~0.34m로 몰려 있어 metric의 변별력이 떨어진다. ③ closed-loop는 reproducibility가 약함. 내일 실제 숫자를 보면서 이 함정들이 *어디서* 드러나는지를 확인한다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Table 4 — Datasets &amp; Benchmarks 요약</div><a href="figures/page_17.png" target="_blank"><img src="figures/page_17.png" alt="Figure" loading="lazy"></a><div class="figure-explain">VA/VLA 데이터셋을 한 표로 비교: sensor 타입(실/시뮬), 언어 라벨링 방식(A/M), action 출력(Traj/Ctrl), evaluation metric(Open/CL/Lang). BDD100K~nuPlan(VA)과 BDD-X~ImpromptuVLA~CoVLA(VLA)가 시기·규모·언어 라벨 차원에서 한눈에 정렬.</div></div>
+<div class="trigger">Trigger Type B</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">PDMS (Predictive Driver Model Score)</div><div class="concept-def">NAVSIM[Dauner et al. 2024]이 도입한 **단일 closed-loop 종합 지표**로, 다음 subscore의 가중 결합: NC(no-collision boolean), DAC(driving admissibility), TTC(time-to-collision threshold 충족), EP(ego progress), Comfort. nuPlan 기반 OpenScene 위에서 비반응형(non-reactive) simulation을 돌려 산출한다. **핵심 의의**: 안전(NC/DAC/TTC)과 진행(EP)·승차감(Comfort)이 단일 숫자로 통합되어 모델 비교가 단순해진다. **함정**: 가중치 설계가 ranking에 영향을 주고, non-reactive sim이므로 다른 agent의 적응적 행동이 빠진다 — 실제 도로 일반화의 보증은 아니다.</div></div>
+<div class="concept-card"><div class="concept-term">Rater Feedback Score (RFS)</div><div class="concept-def">WOD-E2E[Waymo 2025]가 도입한 **인간 선호 기반 평가**. 사람 평가자가 미리 그린 *trust region*(허용 가능한 trajectory 영역)에 예측 trajectory가 들어가는지로 점수를 매긴다. ADE/L2가 &#x27;expert 한 궤적만 정답&#x27;이라는 강한 가정을 깬다는 점에서 의의가 크다 — 동일 장면에서 사람도 다양한 합리적 trajectory를 만든다는 multi-modality를 metric이 인정. **Spotlight RFS**는 long-tail safety-critical scene만 별도 평가. VLA가 ADE는 낮아도 RFS는 잘 받는 경우가 있어, 인간 정렬이 numerical accuracy와 *직교한* 축임을 보여준다.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">facilitate consistent and meaningful comparisons</div><div class="expr-ko">일관되고 의미 있는 비교를 촉진하다</div><div class="expr-example">We present an organized synthesis of benchmarks to facilitate consistent and meaningful comparisons.</div><div class="expr-context">Survey/benchmark 도입의 정형 표현.</div></div>
+<div class="expr-card"><div class="expr-en">regard ... as ground truth</div><div class="expr-ko">~를 정답으로 간주하다</div><div class="expr-example">These metrics regard human driving demonstrations as the ground truth.</div><div class="expr-context">Open-loop 평가의 가정·한계를 짚을 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">PDMS가 단일 지표인데도 &#x27;closed-loop 일반화를 보증하지는 않는다&#x27;고 말할 수 있는 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">NC를 계산하지 않기 때문</button><button class="mcq-option" data-correct="true">non-reactive simulation 기반이라 다른 agent의 적응적 행동이 빠지기 때문</button><button class="mcq-option" data-correct="false">Comfort term이 가중치가 너무 크기 때문</button><button class="mcq-option" data-correct="false">Open-loop L2와 동일한 metric이기 때문</button></div><div class="mcq-explanation">NAVSIM은 비반응형(non-reactive) sim. 다른 차량이 ego 행동에 반응하지 않으므로 인간/타 agent의 적응적 거동이 평가에서 누락.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">RFS가 ADE/L2와 *직교한* 정보를 준다는 주장의 근거는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">RFS는 BLEU와 같은 텍스트 평가이므로</button><button class="mcq-option" data-correct="true">RFS는 expert 한 궤적이 아닌 인간 평가자의 trust region을 기준으로 multi-modal trajectory를 허용하기 때문</button><button class="mcq-option" data-correct="false">RFS는 항상 ADE보다 큰 값이 나오기 때문</button><button class="mcq-option" data-correct="false">RFS는 LiDAR 입력에서만 정의되기 때문</button></div><div class="mcq-explanation">ADE는 단일 expert 궤적과의 거리, RFS는 사람이 허용 가능하다고 본 영역 안인지 — 가정 자체가 달라 두 지표는 다른 정보를 준다.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">내 실험에서 nuScenes open-loop L2만 보고하던 관행이 있다면, 어떤 보조 지표를 *최소 1개* 더 추가하면 long-tail/안전성에 대한 신호가 살아날까?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>Collision rate만 추가하는 것도 좋지만, *jerk·yaw rate*의 사분위 통계나 trust-region overlap 같은 multi-modal aware metric을 같이 보면 모델이 &#x27;평균만 맞추는 collapsed prediction&#x27;을 하는지 잡힌다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>Single-metric 보고는 model selection을 왜곡한다. *분포 metric*(jerk 분포·trajectory diversity)와 *인간 정렬 metric*(RFS류)을 보조로 두면 평가 saturation 너머의 실제 진보를 잡을 수 있다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_7.html">← Day 7</a><a href="day_9.html">Day 9 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

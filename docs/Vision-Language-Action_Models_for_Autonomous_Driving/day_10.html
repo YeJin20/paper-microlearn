@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 10 — 내 연구로 가져오기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 10</div>
+  <div class="hero-tag">응용</div>
+  <h1 class="hero-title">내 연구로 가져오기</h1>
+  <div class="hero-subtitle">AD 연구자 관점의 응용·follow-up·반성</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 100%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">10일을 마무리한다. 이 서베이가 *내 연구에 무엇을 남기는가* 를 4가지 각도로 정리하자.
+
+<strong>(1) 즉시 적용 가능한 설계 결정.</strong> ① <strong>백본 선택은 사전학습 strength로 역산</strong> — long-tail 인지가 병목이면 큰 VLM(Qwen2.5-VL, InternVL3)을 keep, 그렇지 않다면 작은 VLM + 강한 action head가 더 효율적. ② <strong>Head는 검증 가능성으로 역산</strong>(Day 5) — hard constraint 많으면 SEL, multi-modal future 표현 필요하면 GEN, 자연어 통합이 핵심이면 LH. ③ <strong>E2E vs Dual-System은 latency 예산·언어 입력 빈도로 결정</strong>(Day 4).
+
+<strong>(2) 실험·평가 관행 업그레이드.</strong> ① nuScenes open-loop L2 단독 보고는 점점 통하지 않는다 — collision rate, NAVSIM PDMS subscore, RFS류 인간 정렬 metric을 같이 보고하는 게 표준화 중. ② Open-loop와 closed-loop 사이 *gap*을 측정·보고하는 것 자체가 contribution이 될 수 있다. ③ long-tail subset 별도 보고(ImpromptuVLA corner cases 등).
+
+<strong>(3) 주목할 follow-up 방향.</strong> 서베이가 명시한 것들:
+- <strong>Vision-Language-World Model 통합</strong> — VLA + 예측 가능한 world model로 candidate action의 미래 결과를 시뮬레이션, &#x27;proactive planning&#x27;으로 확장(Genie 3 계열).
+- <strong>Domain-specific foundation model</strong> — 일반 VLM의 driving prior 부족 문제를 해소할 driving-native foundation model(현재 missing cornerstone).
+- <strong>Continual/onboard learning</strong> — fleet 데이터에서 catastrophic forgetting 없이 점진 학습.
+- <strong>Formal verification</strong> — empirical metric을 넘어 instruction following·hallucination resistance에 대한 이론적 보증.
+
+<strong>(4) 반성 — VLA의 미해결 함정.</strong> ① CoT 출력이 *사후 합리화*일 수 있다(faithfulness 미보장). ② 큰 VLM이 always-on이면 양산 latency가 안 나온다. ③ &#x27;language로 가르치면 안전해진다&#x27;는 가정은 직관일 뿐 정량적 보증이 아직 없다 — Day 8 RFS 같은 인간 정렬 metric의 표준화가 그 답에 가까이 가는 통로.
+
+<strong>마지막 질문 — 머릿속에서 시뮬레이션해 보자.</strong> 내가 1년 후 &quot;VLA를 X에 적용해 Y 개선&quot;이라는 한 줄 contribution을 쓴다면, X와 Y는 무엇인가? 그 contribution이 *언어가 아니었다면 불가능했음*을 어떻게 증명할 수 있나? 이것이 VLA 연구가 정말 자기 자리를 잡는 핵심 질문이다. — 10일 끝.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 1 — Outline (Challenges &amp; Future Directions 강조)</div><a href="figures/page_2.png" target="_blank"><img src="figures/page_2.png" alt="Figure" loading="lazy"></a><div class="figure-explain">논문 전체 outline 중 오른쪽 &#x27;Challenges&#x27;(Computation Efficiency, Generalization, Interpretability, Long-Horizon Coherence, Foundation Model Construction)와 &#x27;Future Directions&#x27;(World Model 결합, World Knowledge 주입, Continual Learning, Standardized Evaluation, Human-AI Interaction) 블록이 Day 10에서 강조할 항목과 정확히 대응.</div></div>
+<div class="trigger">Trigger Type C</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Unified Vision-Language-World Model 통합</div><div class="concept-def">VLA 다음 진화로 서베이가 제시하는 핵심 방향. VLA가 *현재 frame에서 행동을 추론*하는 데 그치는 반면, world model(image-based/occupancy-based/latent-based)을 결합하면 *후보 행동 각각이 만들어낼 미래 scene*을 시뮬레이션해 가장 안전한 선택을 *proactive*하게 고를 수 있다. 대표 흐름: Drive-WM(image WM + selection), OccWorld(occupancy 예측 + planning), LAW/SeerDrive(latent WM closed-loop), Genie 3 계열의 generative world model. **함의**: VA 시대의 world model 갈래(Day 1·5에서 언급한 §3.2)와 VLA의 reasoning이 합쳐지는 지점 — 추론, 언어, 동역학을 한 모델에서 다루는 것이 &#x27;진짜&#x27; embodied foundation model의 모습.</div></div>
+<div class="concept-card"><div class="concept-term">Faithfulness of CoT (해석성 함정)</div><div class="concept-def">VLA가 출력하는 chain-of-thought 텍스트가 *실제 모델 내부 의사결정의 충실한 반영*인가, 아니면 학습된 *그럴듯한 사후 합리화*인가의 문제. 서베이는 &#x27;language hallucination[Hu et al. 2023]: the model may justify an incorrect decision with a confident but spurious narrative&#x27;라고 명시. 안전 인증 관점에서 치명적: 잘못된 결정에 매끄러운 설명이 따라오면 *디버깅 신호가 더 약해진다*. 완화책 흐름: (i) RDA-Driver처럼 reasoning ↔ trajectory consistency loss, (ii) Drive-R1처럼 SFT-CoT + RL의 단계적 alignment, (iii) ETA처럼 reasoning을 *행동에 실제로 영향을 주는 latent feature*로 변환해 faithfulness를 구조적으로 강제. 그러나 *증명*은 아직 없다 — 미해결.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">outline future research directions</div><div class="expr-ko">향후 연구 방향을 제시하다</div><div class="expr-example">We identify key challenges and outline future research directions to guide progress.</div><div class="expr-context">Survey/position paper의 conclusion에서 정형.</div></div>
+<div class="expr-card"><div class="expr-en">form the backbone of next-generation systems</div><div class="expr-ko">차세대 시스템의 근간을 이루다</div><div class="expr-example">Unified world models may form the backbone of next-generation autonomous agents.</div><div class="expr-context">미래 방향을 강하게 주장할 때의 수사.</div></div>
+<div class="expr-card"><div class="expr-en">balance personalization with safety requirements</div><div class="expr-ko">개인화와 안전 요건 사이를 절충하다</div><div class="expr-example">The challenge lies in balancing personalization with strict safety requirements.</div><div class="expr-context">Trade-off가 future direction의 핵심일 때.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">이 서베이가 &#x27;next-generation&#x27; 방향으로 가장 적극적으로 제안하는 통합은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">VLA + Diffusion-only planning</button><button class="mcq-option" data-correct="true">VLA + 예측적 world model의 통합(unified vision-language-world model)</button><button class="mcq-option" data-correct="false">VLA + 룰 기반 modular planner로의 회귀</button><button class="mcq-option" data-correct="false">VLA + RGB-only sensor로의 단순화</button></div><div class="mcq-explanation">논문은 VLA가 frame-by-frame reactive 한계를 넘으려면 world model 통합으로 proactive planning이 가능해져야 한다고 명시. §3.2의 world model 갈래가 자연스럽게 연결된다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">CoT의 &#x27;faithfulness 문제&#x27;가 안전 인증에서 *특히* 위험한 이유는?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">CoT 출력이 항상 ground truth와 일치해야 하기 때문</button><button class="mcq-option" data-correct="true">잘못된 결정에 그럴듯한 사후 합리화가 따라오면 디버깅·인증 신호가 오히려 약해질 수 있기 때문</button><button class="mcq-option" data-correct="false">CoT는 BLEU로만 평가 가능하기 때문</button><button class="mcq-option" data-correct="false">CoT는 다국어 환경에서 동작하지 않기 때문</button></div><div class="mcq-explanation">Confident but spurious narrative — 자신감 있는 잘못된 설명이 결정의 위험성을 가린다는 점이 서베이의 명시적 우려.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">1년 후 당신이 &quot;VLA를 X에 적용해 Y를 개선했다&quot;라는 한 줄 contribution을 쓴다고 머릿속에서 시뮬레이션해 보자. X와 Y는 무엇이고, 그 개선이 *언어가 없었다면 불가능했다*는 점을 어떻게 증명할 것인가?</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>Ablation 구조부터 떠올려 보라: language-conditioned 버전 vs same-architecture without language conditioning을, 같은 데이터·같은 trajectory loss로 학습시켜 비교. 그 차이가 *long-tail subset 또는 instruction-following test*에서만 나오면 &#x27;언어가 본질&#x27;임을 보여주는 가장 강한 증거다.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>VLA 연구의 진짜 가치는 &#x27;language ablation&#x27;에서 드러난다 — 언어를 빼도 같은 결과면 그건 VLA 기여가 아니다. 자기 연구의 &#x27;언어 ablation 가설&#x27;을 미리 설계해 두는 것이, 10일 학습의 가장 실용적인 출구다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_9.html">← Day 9</a><span class="disabled">다음 →</span></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 7 — Dual-System VLA 내부</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$', right: '$', display: false}
+    ],
+    throwOnError: false
+  });"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", sans-serif;
+  background: #fafafa; color: #1a1a1a;
+  line-height: 1.7; padding: 16px 16px 80px;
+  max-width: 680px; margin: 0 auto;
+}
+
+/* HERO CARD */
+.hero {
+  background:
+    radial-gradient(ellipse at top right, rgba(2, 49, 189, 0.18), transparent 55%),
+    #161616;
+  color: white;
+  border-radius: 20px;
+  padding: 36px 28px;
+  margin: 8px 0 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-meta { color: #4d7cff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 24px; }
+.hero-tag {
+  position: absolute; top: 28px; right: 28px;
+  background: rgba(255,255,255,0.1); color: white;
+  padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 500;
+}
+.hero-title { font-size: 36px; font-weight: 800; line-height: 1.15; margin-bottom: 18px; color: white; word-break: keep-all; }
+.hero-subtitle { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.55; }
+.progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin-top: 24px; }
+.progress-fill { height: 100%; background: #4d7cff; border-radius: 2px; transition: width 0.3s; }
+@media (max-width: 480px) {
+  .hero { padding: 28px 22px; }
+  .hero-tag { top: 22px; right: 22px; font-size: 12px; padding: 5px 11px; }
+  .hero-title { font-size: 30px; }
+  .hero-subtitle { font-size: 15px; }
+}
+
+/* TABS */
+.tabs {
+  display: flex; overflow-x: auto;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px; gap: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.tab {
+  padding: 12px 16px; background: none; border: none;
+  font-size: 15px; color: #888; cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; font-family: inherit;
+}
+.tab.active { color: #0231BD; border-bottom-color: #0231BD; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* CONTENT (학습 탭) */
+.content { font-size: 17px; white-space: pre-wrap; margin-bottom: 24px; }
+.content strong { color: #0231BD; font-weight: 700; }
+.figure-box {
+  background: #f0f4ff; border-left: 4px solid #5b8def;
+  padding: 14px 16px; border-radius: 8px;
+  margin: 24px 0; font-size: 15px;
+}
+.figure-box .label { font-size: 12px; color: #5b8def; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+.figure-box .desc { margin-bottom: 10px; }
+.figure-box img { display: block; max-width: 100%; margin-top: 8px; border-radius: 6px; border: 1px solid #d0d8ec; cursor: zoom-in; }
+.figure-explain {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed #d0d8ec;
+  font-size: 13px; color: #555; line-height: 1.55;
+}
+.trigger { color: #aaa; font-size: 12px; text-align: center; margin: 24px 0; }
+
+/* CONCEPTS */
+.concept-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.concept-term { font-size: 16px; font-weight: 700; color: #0231BD; margin-bottom: 6px; }
+.concept-def { font-size: 15px; color: #333; }
+
+/* EXPRESSIONS */
+.expr-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.expr-en { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.expr-ko { font-size: 13px; color: #888; margin-bottom: 12px; }
+.expr-example {
+  background: #f7f9ff; border-left: 3px solid #4d7cff;
+  padding: 10px 12px; border-radius: 4px; font-size: 14px;
+  font-style: italic; color: #333; margin-bottom: 8px;
+}
+.expr-context { font-size: 13px; color: #666; }
+
+/* MCQ */
+.mcq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px; margin-bottom: 16px;
+}
+.mcq-q-num { font-size: 12px; color: #4d7cff; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 8px; }
+.mcq-question { font-size: 16px; font-weight: 600; margin-bottom: 16px; line-height: 1.5; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-option {
+  text-align: left; padding: 12px 14px;
+  background: #f7f7f7; border: 1px solid #eee;
+  border-radius: 8px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+  transition: background 0.15s;
+}
+.mcq-option:hover { background: #eef0f3; }
+.mcq-option.correct { background: #e7f6ec; border-color: #34a853; color: #1e7e34; }
+.mcq-option.wrong { background: #fbe9e9; border-color: #ea4335; color: #b22222; }
+.mcq-explanation { display: none; margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 6px; font-size: 14px; color: #333; }
+.mcq-explanation.show { display: block; }
+
+/* OPEN QUESTION */
+.oq-card {
+  background: white; border: 1px solid #eee;
+  border-radius: 10px; padding: 18px;
+}
+.oq-question { font-size: 16px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.oq-answer {
+  width: 100%; min-height: 100px; padding: 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-family: inherit; font-size: 15px; line-height: 1.5;
+  resize: vertical; margin-bottom: 12px;
+}
+.oq-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.oq-btn {
+  padding: 10px 14px; background: #f0f0f0; border: none;
+  border-radius: 6px; font-size: 14px; cursor: pointer;
+  font-family: inherit; color: #333;
+}
+.oq-btn.primary { background: #0231BD; color: white; }
+.oq-hint, .oq-takeaway { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.oq-hint.show, .oq-takeaway.show { display: block; }
+.oq-hint { background: #fffce0; border-left: 3px solid #f9c74f; }
+.oq-takeaway { background: #f0f4ff; border-left: 3px solid #0231BD; }
+.oq-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+.oq-hint .oq-label { color: #b58c00; }
+.oq-takeaway .oq-label { color: #0231BD; }
+
+/* NAV */
+.nav {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee;
+}
+.nav a, .nav span {
+  flex: 1; text-align: center; padding: 14px;
+  border-radius: 8px; text-decoration: none;
+  font-weight: 500; color: #333; background: #f0f0f0;
+}
+.nav .disabled { color: #bbb; background: #f7f7f7; pointer-events: none; }
+.home-link { display: block; text-align: center; margin-top: 24px; color: #888; font-size: 14px; text-decoration: none; }
+
+/* INDEX */
+.day-list { list-style: none; padding: 0; }
+.day-list li { margin-bottom: 10px; }
+.day-list a {
+  display: block; padding: 16px 18px; background: white;
+  border-radius: 10px; border: 1px solid #eee;
+  text-decoration: none; color: #1a1a1a;
+}
+.day-num { color: #5b8def; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+.day-title { font-size: 16px; font-weight: 500; margin-top: 2px; }
+.index-title { font-size: 22px; font-weight: 700; margin: 24px 0 8px; }
+.index-meta { color: #888; font-size: 14px; margin-bottom: 24px; }
+.day-list .today a { border-color: #0231BD; background: #f0f4ff; }
+.today-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #0231BD;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+</style>
+</head>
+<body>
+
+
+<div class="hero">
+  <div class="hero-meta">오늘의 학습 · DAY 7</div>
+  <div class="hero-tag">방법론</div>
+  <h1 class="hero-title">Dual-System VLA 내부</h1>
+  <div class="hero-subtitle">Explicit Guidance vs Implicit Transfer</div>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width: 70%"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-target="tab-content">학습</button>
+  <button class="tab" data-target="tab-concepts">핵심 개념</button>
+  <button class="tab" data-target="tab-expressions">영어 표현</button>
+  <button class="tab" data-target="tab-quiz">퀴즈</button>
+</div>
+
+<div class="tab-panel active" id="tab-content">
+<div class="content">Dual-System은 *VLM과 planner를 어떻게 연결하느냐* 에 따라 두 갈래다. 둘 다 &#x27;fast/slow 분리&#x27;라는 큰 그림은 같지만, interface 설계가 완전히 다른 시스템을 낳는다.
+
+<strong>Explicit Action Guidance.</strong> VLM이 *명시적·읽을 수 있는* 가이드를 내고, 빠른 planner가 그것을 받아 trajectory를 만든다.
+- <strong>Meta-action 가이드</strong>: FasionAD는 fast data-driven planner + slow VLM(meta-action 발행) + learned switching. Senna는 Senna-VLM(자연어 결정) + Senna-E2E(실행 trajectory). DiffVLA는 VLM이 lateral·longitudinal 결정을 *one-hot prior*로 diffusion planner에 주입해 multi-modal trajectory denoising을 guidance.
+- <strong>Waypoint supervision</strong>: DriveVLM은 chain-of-thought로 coarse waypoint를 먼저 만들고 conventional planner가 dense하게 refine. SOLVE는 공유 vision encoder + &#x27;Trajectory CoT&#x27; 모듈로 후보를 반복 정제 후 최종 selection. <strong>장점</strong>: 인터페이스가 사람이 읽을 수 있어 디버깅·인증이 쉽다. <strong>약점</strong>: VLM 출력이 ambiguous하면 downstream에 그대로 전파.
+
+<strong>Implicit Representations Transfer.</strong> VLM이 *행동에 직접 손대지 않고* 학습 시 teacher 역할만. 두 갈래:
+- <strong>Knowledge distillation</strong>: VLP가 BEV feature·planning query를 사전학습 언어 임베딩과 contrastive 정렬, &#x27;commonsense scene understanding&#x27;을 planner의 잠재공간에 주입. VLM-AD는 free-form 텍스트 justification + 구조화 behavior label을 alignment head·action classification head로 distill. VERDI·ALN-P3은 perception·prediction·planning 전 단계를 CoT explanation과 정렬하는 *full-stack co-distillation*.
+- <strong>Multimodal feature fusion</strong>: InsightDrive는 VLM이 만든 scene description으로 critical region을 강조해 BEV feature를 cross-attention 변조. VLM-E2E는 driver attention cue를 BEV에 gating으로 융합. NetRoller·ReCogDrive는 VLM의 잠재 reasoning을 compact feature로 어댑트. <strong>ETA</strong>[78]는 efficiency 관점에서 흥미롭다 — VLM reasoning을 이전 frame에서 *비동기로* 계산해 현재 feature에 action-mask로 fuse, 추론 시 VLM을 매 frame 호출할 필요 없게 만든다.
+
+<strong>핵심 교훈.</strong> Explicit은 *interpretability와 인증*에, Implicit은 *inference latency*와 *VLM 의존성 제거*에 강하다. 둘 다 &quot;VLM이 만들어낸 reasoning이 진짜 행동 quality로 변환되었는가&quot;를 정량화하기 어렵다는 공통 함정도 있다.</div>
+<div class="figure-box"><div class="label">참고 그림</div><div class="desc">Figure 6 — Dual-System VLA categorization</div><a href="figures/page_15.png" target="_blank"><img src="figures/page_15.png" alt="Figure" loading="lazy"></a><div class="figure-explain">Dual-System VLA가 &#x27;Explicit Action Guidance&#x27;와 &#x27;Implicit Representations Transfer&#x27;로 갈라지는 분류 도식. 위쪽은 VLM 출력이 직접 meta-action/waypoint로 변환되는 구조, 아래쪽은 latent feature 정렬/distillation 구조를 나란히 비교한다.</div></div>
+<div class="trigger">Trigger Type C</div></div>
+<div class="tab-panel" id="tab-concepts"><div class="concept-card"><div class="concept-term">Explicit Action Guidance</div><div class="concept-def">Dual-System VLA에서 VLM이 *사람도 읽을 수 있는* 가이드(meta-action &#x27;change lane&#x27;, 또는 coarse waypoint sequence)를 내고, downstream fast planner가 이를 받아 dense trajectory를 만드는 구조. 대표: DriveVLM(meta-action→planner refine), Senna(자연어 결정→E2E), DiffVLA(one-hot prior로 diffusion guidance), SOLVE(Trajectory CoT iterative refine). **장점**: interface가 텍스트라 디버깅·인증·human-in-the-loop가 자연스러움. **함정**: VLM hallucination이 그대로 행동에 전파, ambiguous instruction이 downstream cascade 만듦 — Day 2의 cascade 문제가 *다른 층위에서* 재현될 수 있다.</div></div>
+<div class="concept-card"><div class="concept-term">Implicit Representations Transfer (Knowledge Distillation Mode)</div><div class="concept-def">VLM을 *runtime이 아닌 학습 시*에만 사용해, reasoning ability를 작은 E2E driving net의 잠재공간으로 옮기는 패러다임. VLP는 BEV+planning query를 언어 임베딩과 contrastive 정렬, VLM-AD는 텍스트 justification을 alignment/classification head로 distill, VERDI·ALN-P3는 perception~planning 전 단계를 CoT와 co-distillation. **장점**: 추론 시 큰 VLM이 필요 없어 latency·메모리 절약, 해석성 일부는 학습된 head로 유지. **함정**: &#x27;oversimplified distillation&#x27;으로 reasoning signal이 평탄화되어, VLM이 갖고 있던 long-tail prior가 student로 충분히 전달되지 않을 수 있다 — distill 신호 설계가 성능을 좌우.</div></div></div>
+<div class="tab-panel" id="tab-expressions"><div class="expr-card"><div class="expr-en">act as a teacher / auxiliary module</div><div class="expr-ko">교사/보조 모듈 역할을 하다</div><div class="expr-example">The VLM acts as a teacher during training, transferring reasoning ability to the compact E2E network.</div><div class="expr-context">Distillation·auxiliary loss 구조를 도입할 때.</div></div>
+<div class="expr-card"><div class="expr-en">asynchronously / at a lower frequency</div><div class="expr-ko">비동기로/낮은 주기로</div><div class="expr-example">ETA computes VLM reasoning asynchronously in earlier frames and fuses it into current features.</div><div class="expr-context">Real-time 제약을 회피하는 시스템 설계 설명.</div></div></div>
+<div class="tab-panel" id="tab-quiz"><div class="mcq-card"><div class="mcq-q-num">객관식 Q1</div><div class="mcq-question">Dual-System VLA의 *Implicit Transfer* 계열이 가지는 가장 명확한 system-level 이점은?</div><div class="mcq-options"><button class="mcq-option" data-correct="true">추론 시 VLM 호출이 줄어 latency·메모리가 낮음</button><button class="mcq-option" data-correct="false">VLM의 hallucination이 원천적으로 사라짐</button><button class="mcq-option" data-correct="false">Open-loop L2가 반드시 더 좋음</button><button class="mcq-option" data-correct="false">안전 인증이 자동으로 통과됨</button></div><div class="mcq-explanation">VLM이 학습 시 teacher로만 쓰이고 추론 시 작은 student만 돌리므로 runtime cost가 결정적으로 줄어듦. 다른 항목은 보장되지 않는다.</div></div>
+<div class="mcq-card"><div class="mcq-q-num">객관식 Q2</div><div class="mcq-question">DiffVLA가 &#x27;Explicit Action Guidance&#x27;를 구현하는 방식은?</div><div class="mcq-options"><button class="mcq-option" data-correct="false">VLM 출력을 BEV feature에 cross-attention으로 융합</button><button class="mcq-option" data-correct="true">Lateral·longitudinal 결정을 one-hot prior로 diffusion planner에 주입</button><button class="mcq-option" data-correct="false">VLM을 distillation teacher로만 사용</button><button class="mcq-option" data-correct="false">VLM이 직접 control signal을 회귀</button></div><div class="mcq-explanation">DiffVLA는 VLM의 결정을 명시적 prior로 diffusion planner의 denoising을 가이드 — explicit guidance의 전형.</div></div>
+
+<div class="oq-card">
+  <div class="mcq-q-num">주관식</div>
+  <div class="oq-question">내 시스템이 ETA처럼 &#x27;VLM을 비동기로 호출&#x27;한다면, 가장 큰 실패 모드는 무엇일까? 그것을 마음 속으로 시뮬레이션해 보자.</div>
+  <textarea class="oq-answer" placeholder="답을 적어보세요..."></textarea>
+  <div class="oq-btn-row">
+    <button class="oq-btn oq-hint-btn">힌트 보기</button>
+    <button class="oq-btn primary oq-submit-btn">답안 제출 → 피드백 보기</button>
+  </div>
+  <div class="oq-hint">
+    <div class="oq-label">힌트</div>
+    <div>VLM의 reasoning이 100ms 전 frame 기준이라면, 그 사이에 갑자기 *cut-in*이 발생했을 때 가이드가 stale해진다. 이 stale guidance가 현재 행동에 어떻게 잘못 영향을 주는지 머릿속에서 한 프레임씩 돌려 보라.</div>
+  </div>
+  <div class="oq-takeaway">
+    <div class="oq-label">꼭 짚고 가야 할 것</div>
+    <div>비동기 VLM fusion은 *temporal staleness*가 핵심 리스크다. action-mask·confidence gating으로 stale guidance를 적절히 약화시키는 메커니즘이 안전성의 분기점이 된다.</div>
+  </div>
+</div></div>
+<div class="nav"><a href="day_6.html">← Day 6</a><a href="day_8.html">Day 8 →</a></div>
+<a class="home-link" href="index.html">전체 Day 목록 →</a>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.target;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(target).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.mcq-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const card = opt.closest('.mcq-card');
+    card.querySelectorAll('.mcq-option').forEach(o => {
+      o.classList.remove('correct', 'wrong');
+    });
+    if (opt.dataset.correct === 'true') {
+      opt.classList.add('correct');
+    } else {
+      opt.classList.add('wrong');
+      card.querySelector('.mcq-option[data-correct="true"]').classList.add('correct');
+    }
+    card.querySelector('.mcq-explanation').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-hint-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-hint').classList.add('show');
+  });
+});
+
+document.querySelectorAll('.oq-submit-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.oq-card').querySelector('.oq-takeaway').classList.add('show');
+  });
+});
+</script>
+</body>
+</html>
